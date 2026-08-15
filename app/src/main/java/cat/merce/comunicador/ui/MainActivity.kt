@@ -15,6 +15,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import cat.merce.comunicador.input.PressCollapser
 import cat.merce.comunicador.input.Switch
 import cat.merce.comunicador.input.SwitchFilter
 import cat.merce.comunicador.prediction.NgramModel
@@ -59,6 +60,9 @@ class MainActivity : ComponentActivity() {
 
     /** Whether each axis direction is currently pressed, for edge detection. */
     private val axisDown = HashMap<String, Boolean>()
+
+    /** Turns one squeeze of an analog trigger into a single press. */
+    private val collapser = PressCollapser()
 
     private fun buildFilter() = SwitchFilter(
         debounceMs = controller.debounceMs,
@@ -251,6 +255,12 @@ class MainActivity : ComponentActivity() {
      * act on it if it is one of the bound inputs.
      */
     private fun handlePress(token: String, name: String) {
+        // An analog trigger reports continuously as it is squeezed, so one pull
+        // arrives as a flood. Collapse each burst to its first event before
+        // anything else looks at it, including the check screen, where the
+        // flood was drowning out everything else.
+        if (!collapser.isNewPress(token, SystemClock.elapsedRealtime())) return
+
         val role = controller.bindingRole
         if (role != null) {
             captureBinding(role, token, name)
