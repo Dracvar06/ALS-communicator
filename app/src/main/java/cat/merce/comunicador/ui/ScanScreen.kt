@@ -85,7 +85,8 @@ fun ScanScreen(controller: ScanController) {
 
     Box(modifier = Modifier.fillMaxSize().background(Background)) {
         when {
-            controller.bindingRole != null -> BindingPanel(controller)
+            controller.bindingRole != null || controller.bindingMoreRole != null ->
+                BindingPanel(controller)
             controller.inDiagnostics -> DiagnosticsPanel(controller)
             controller.inSettings -> SettingsPanel(controller)
             controller.inPhrases -> {
@@ -503,21 +504,25 @@ private fun SettingsPanel(controller: ScanController) {
 
         Spacer(Modifier.height(32.dp))
 
-        // Bind a specific controller / switch button to each action.
+        // Bind one or more controller / switch buttons to each action.
         Text(
             text = "Botons",
             color = Ink,
             fontFamily = Hyperlegible,
             fontSize = 30.sp
         )
-        controller.lastBoundLabel?.let {
-            Text(
-                text = "Assignat: $it",
-                color = CellLit,
-                fontFamily = Hyperlegible,
-                fontSize = 20.sp
-            )
-        }
+        Text(
+            text = "Escriure: " + boundOrDefault(controller.writeButtonLabels),
+            color = DimInk,
+            fontFamily = Hyperlegible,
+            fontSize = 20.sp
+        )
+        Text(
+            text = "Desfer: " + boundOrDefault(controller.undoButtonLabels),
+            color = DimInk,
+            fontFamily = Hyperlegible,
+            fontSize = 20.sp
+        )
         Spacer(Modifier.height(10.dp))
         Row {
             TouchButton(
@@ -559,13 +564,19 @@ private fun SettingsPanel(controller: ScanController) {
     }
 }
 
+private fun boundOrDefault(labels: List<String>): String =
+    if (labels.isEmpty()) "—" else labels.joinToString(", ")
+
 /**
- * Waits for a helper to press the button they want bound to an action. The key
- * itself is captured in MainActivity; this is only the prompt and a way out.
+ * Binds one or more buttons to an action. First it waits for a press (captured
+ * in MainActivity), then it offers to add another, so several buttons can drive
+ * the same action — all of X, Y, A, B, or both triggers, say.
  */
 @Composable
 private fun BindingPanel(controller: ScanController) {
-    val role = controller.bindingRole
+    val waitingRole = controller.bindingRole
+    val moreRole = controller.bindingMoreRole
+    val role = waitingRole ?: moreRole
     val what = if (role == SwitchRole.Write) "ESCRIURE" else "DESFER"
 
     Column(
@@ -573,7 +584,7 @@ private fun BindingPanel(controller: ScanController) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Prem el botó per a",
+            text = if (waitingRole != null) "Prem el botó per a" else "Botó per a",
             color = DimInk,
             fontFamily = Hyperlegible,
             fontSize = 28.sp
@@ -585,15 +596,44 @@ private fun BindingPanel(controller: ScanController) {
             fontWeight = FontWeight.Bold,
             fontSize = 64.sp
         )
-        Spacer(Modifier.height(20.dp))
-        Text(
-            text = "Prem ara, al comandament o al polsador, el botó que vulguis fer servir.",
-            color = DimInk,
-            fontFamily = Hyperlegible,
-            fontSize = 22.sp
-        )
-        Spacer(Modifier.height(40.dp))
-        TouchButton(text = "CANCEL·LA", onTap = controller::cancelBinding)
+
+        if (controller.boundThisSession.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "Assignats: " + controller.boundThisSession.joinToString(", "),
+                color = CellLit,
+                fontFamily = Hyperlegible,
+                fontSize = 22.sp
+            )
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        if (waitingRole != null) {
+            // Waiting for the press.
+            Text(
+                text = "Prem ara, al comandament o al polsador, el botó que vulguis fer servir.",
+                color = DimInk,
+                fontFamily = Hyperlegible,
+                fontSize = 22.sp
+            )
+            Spacer(Modifier.height(40.dp))
+            TouchButton(text = "CANCEL·LA", onTap = controller::cancelBinding)
+        } else {
+            // Just captured one; offer to add more or finish.
+            Text(
+                text = "Vols afegir un altre botó per a la mateixa acció?",
+                color = DimInk,
+                fontFamily = Hyperlegible,
+                fontSize = 22.sp
+            )
+            Spacer(Modifier.height(40.dp))
+            Row {
+                TouchButton(text = "AFEGEIX UN ALTRE", onTap = controller::bindMore)
+                Spacer(Modifier.width(20.dp))
+                TouchButton(text = "FET", onTap = controller::finishBinding)
+            }
+        }
     }
 }
 

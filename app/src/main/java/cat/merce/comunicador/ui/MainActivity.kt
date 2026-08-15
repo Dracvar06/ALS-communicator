@@ -4,7 +4,9 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.SystemClock
 import android.speech.tts.TextToSpeech
+import android.view.InputDevice
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -46,14 +48,29 @@ class MainActivity : ComponentActivity() {
     /** Turns a bouncing physical switch into single presses. */
     private lateinit var switches: SwitchFilter
 
-    /** The key codes bound to each action. Editable from settings. */
-    private var writeKeys: Set<Int> = DEFAULT_WRITE_KEYS
-    private var undoKeys: Set<Int> = DEFAULT_UNDO_KEYS
+    /**
+     * The inputs bound to each action, as tokens. A token is either a keyboard
+     * or button key ("k:96") or an analog axis direction ("a:17:+"), because a
+     * controller's triggers and d-pad arrive as axes, not keys. Editable from
+     * settings, several allowed per action.
+     */
+    private var writeTokens: Set<String> = DEFAULT_WRITE_TOKENS
+    private var undoTokens: Set<String> = DEFAULT_UNDO_TOKENS
+
+    /** Whether each axis direction is currently pressed, for edge detection. */
+    private val axisDown = HashMap<String, Boolean>()
 
     private fun buildFilter() = SwitchFilter(
         debounceMs = controller.debounceMs,
         restartOnReject = controller.antiTremor,
     )
+
+    private fun pushButtonLabels() {
+        controller.setButtonLabels(
+            write = writeTokens.map { labelForToken(it) },
+            undo = undoTokens.map { labelForToken(it) },
+        )
+    }
 
     /** Speaks phrases aloud. Null until it has finished starting up. */
     private var tts: TextToSpeech? = null
@@ -112,15 +129,14 @@ class MainActivity : ComponentActivity() {
                 tts?.setLanguage(Locale("es"))
             }
         }
-        // Which button drives each action. A single bound button once a helper
-        // has set one, otherwise the built-in defaults so a keyboard or game
-        // controller works out of the box.
-        writeKeys = settings.getInt(KEY_WRITE_KEY, 0).let {
-            if (it != 0) setOf(it) else DEFAULT_WRITE_KEYS
-        }
-        undoKeys = settings.getInt(KEY_UNDO_KEY, 0).let {
-            if (it != 0) setOf(it) else DEFAULT_UNDO_KEYS
-        }
+        // What drives each action: the helper's bound buttons if they have set
+        // any, otherwise the built-in defaults so a keyboard or game controller
+        // works out of the box.
+        writeTokens = settings.getStringSet(KEY_WRITE_TOKENS, null)?.takeIf { it.isNotEmpty() }
+            ?: DEFAULT_WRITE_TOKENS
+        undoTokens = settings.getStringSet(KEY_UNDO_TOKENS, null)?.takeIf { it.isNotEmpty() }
+            ?: DEFAULT_UNDO_TOKENS
+        pushButtonLabels()
 
         switches = buildFilter()
         controller.onDebounceChanged = { millis ->
@@ -208,20 +224,52 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    /** Saves the captured button as this action's button, and confirms it. */
-    private fun bindButton(role: SwitchRole, keyCode: Int) {
+    /**
+     * Saves a captured input as one of this action's buttons. The first capture
+     * of a binding session replaces the set, so re-binding starts clean; the
+     * rest add to it, so several buttons can drive the same action.
+     */
+    private fun captureBinding(role: SwitchRole, token: String, name: String) {
+        val first = controller.boundThisSession.isEmpty()
         when (role) {
             SwitchRole.Write -> {
-                writeKeys = setOf(keyCode)
-                settings.edit { putInt(KEY_WRITE_KEY, keyCode) }
+                writeTokens = if (first) setOf(token) else writeTokens + token
+                settings.edit { putStringSet(KEY_WRITE_TOKENS, writeTokens) }
             }
             SwitchRole.Undo -> {
-                undoKeys = setOf(keyCode)
-                settings.edit { putInt(KEY_UNDO_KEY, keyCode) }
+                undoTokens = if (first) setOf(token) else undoTokens + token
+                settings.edit { putStringSet(KEY_UNDO_TOKENS, undoTokens) }
             }
         }
-        val name = KeyEvent.keyCodeToString(keyCode).removePrefix("KEYCODE_")
-        controller.completeBinding(name)
+        pushButtonLabels()
+        controller.addedBinding(role, name)
+    }
+
+    /**
+     * One input happened: a key press or an axis crossing into its pressed
+     * range. Route it — capture it if binding, show it if on diagnostics, or
+     * act on it if it is one of the bound inputs.
+     */
+    private fun handlePress(token: String, name: String) {
+        val role = controller.bindingRole
+        if (role != null) {
+            captureBinding(role, token, name)
+            return
+        }
+
+        val write = token in writeTokens
+        val undo = token in undoTokens
+
+        if (controller.inDiagnostics) {
+            report(token, name, write, undo)
+            return
+        }
+        if (!write && !undo) return
+
+        val which = if (write) Switch.Write else Switch.Undo
+        if (switches.accept(which, SystemClock.elapsedRealtime())) {
+            if (write) controller.press() else controller.undo()
+        }
     }
 
     private fun rememberWord(previous: String, word: String) {
@@ -254,45 +302,67 @@ class MainActivity : ComponentActivity() {
      * can only ever do the one thing it is for.
      */
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        // Binding a button takes priority: the next press is captured and saved
-        // as this action's button, rather than doing anything.
-        val role = controller.bindingRole
-        if (role != null) {
-            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-                bindButton(role, event.keyCode)
-            }
+        val down = event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0
+        val token = keyToken(event.keyCode)
+
+        // While binding or on diagnostics, every key is swallowed: one to be
+        // captured, the other to be shown. repeatCount filters the auto-repeat
+        // of a held button, which would otherwise pour presses in.
+        if (controller.bindingRole != null || controller.inDiagnostics) {
+            if (down) handlePress(token, keyName(event.keyCode))
             return true
         }
 
-        val write = event.keyCode in writeKeys
-        val undo = event.keyCode in undoKeys
-
-        // On the diagnostics screen every key is swallowed and reported,
-        // including ones the app does not use. Finding out what an unknown
-        // switch box sends is the entire point of that screen.
-        if (controller.inDiagnostics) {
-            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-                reportKey(event, write, undo)
-            }
-            return true
+        // Otherwise only take the keys that are actually bound; let the rest
+        // through so the system still works.
+        if (token !in writeTokens && token !in undoTokens) {
+            return super.dispatchKeyEvent(event)
         }
-
-        if (!write && !undo) return super.dispatchKeyEvent(event)
-
-        // Act on the press, and swallow the matching release so nothing else
-        // sees it. repeatCount filters the auto-repeat that arrives when a
-        // switch is held down, which would otherwise pour selections in.
-        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-            val which = if (write) Switch.Write else Switch.Undo
-            // A physical switch bounces; this is what turns that into one press.
-            if (switches.accept(which, SystemClock.elapsedRealtime())) {
-                if (write) controller.press() else controller.undo()
-            }
-        }
+        if (down) handlePress(token, keyName(event.keyCode))
         return true
     }
 
-    private fun reportKey(event: KeyEvent, write: Boolean, undo: Boolean) {
+    /**
+     * A controller's triggers and d-pad arrive here as analog axes, not keys.
+     * Each axis direction is watched crossing into its pressed range, and that
+     * crossing is treated as one press.
+     */
+    override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+        val fromGamepad = event.source and InputDevice.SOURCE_JOYSTICK ==
+            InputDevice.SOURCE_JOYSTICK
+        if (!fromGamepad || event.action != MotionEvent.ACTION_MOVE) {
+            return super.dispatchGenericMotionEvent(event)
+        }
+
+        for (channel in AXIS_CHANNELS) {
+            val value = event.getAxisValue(channel.axis)
+            val wasDown = axisDown[channel.token] ?: false
+            // Hysteresis, so a trigger resting near the threshold does not
+            // flutter between pressed and not.
+            val nowDown = if (wasDown) {
+                channel.signed(value) > AXIS_RELEASE
+            } else {
+                channel.signed(value) > AXIS_PRESS
+            }
+            if (nowDown && !wasDown &&
+                (controller.bindingRole != null || controller.inDiagnostics ||
+                    channel.token in writeTokens || channel.token in undoTokens)
+            ) {
+                handlePress(channel.token, channel.label)
+            }
+            axisDown[channel.token] = nowDown
+        }
+
+        // Consume while binding or testing, so a stray stick move does nothing
+        // there; otherwise let the system have the event.
+        return if (controller.bindingRole != null || controller.inDiagnostics) {
+            true
+        } else {
+            super.dispatchGenericMotionEvent(event)
+        }
+    }
+
+    private fun report(token: String, name: String, write: Boolean, undo: Boolean) {
         val now = SystemClock.elapsedRealtime()
         val gap = lastDiagnosticKeyAt?.let { now - it }
         lastDiagnosticKeyAt = now
@@ -304,8 +374,8 @@ class MainActivity : ComponentActivity() {
         }
         controller.reportKey(
             KeyReport(
-                keyCode = event.keyCode,
-                name = KeyEvent.keyCodeToString(event.keyCode).removePrefix("KEYCODE_"),
+                keyCode = tokenCode(token),
+                name = name,
                 role = when (which) {
                     Switch.Write -> "escriu"
                     Switch.Undo -> "desfà"
@@ -326,9 +396,15 @@ class MainActivity : ComponentActivity() {
         const val KEY_TOUCH_INPUT = "touch_input"
         const val KEY_FIRST_CELL_EXTRA = "first_cell_extra_ms"
         const val KEY_ANTI_TREMOR = "anti_tremor"
-        const val KEY_WRITE_KEY = "write_key"
-        const val KEY_UNDO_KEY = "undo_key"
+        const val KEY_WRITE_TOKENS = "write_tokens"
+        const val KEY_UNDO_TOKENS = "undo_tokens"
         const val PHRASES_FILE = "phrases.txt"
+
+        /** A key press is not treated as a press until an axis exceeds this... */
+        const val AXIS_PRESS = 0.5f
+
+        /** ...and is not treated as released until it falls back below this. */
+        const val AXIS_RELEASE = 0.3f
         const val MODEL_ASSET = "ca-model.txt"
 
         /** Her own writing. Stays in the app's private storage, never leaves. */
@@ -347,24 +423,63 @@ class MainActivity : ComponentActivity() {
          *    d-pad-left undo, following Android's confirm/back convention;
          *  - a generic switch box: the number keys 1 and 2.
          */
-        // The d-pad and stick are deliberately not here: on many controllers a
-        // resting stick drifts and reports as d-pad, a steady trickle of
-        // phantom presses that would type on their own. A helper who wants the
-        // d-pad can still bind it explicitly. These defaults are the real
-        // buttons that stay quiet at rest, plus a keyboard's keys.
-        val DEFAULT_WRITE_KEYS = setOf(
-            KeyEvent.KEYCODE_SPACE,
-            KeyEvent.KEYCODE_1,
-            KeyEvent.KEYCODE_BUTTON_A,
-            KeyEvent.KEYCODE_BUTTON_R1,
+        // Sensible defaults so a keyboard or controller works before a helper
+        // binds anything: space/enter, 1/2, and the controller's A/B and
+        // bumpers. Triggers and d-pad are left out of the defaults because they
+        // arrive as axes and vary by controller; a helper binds those.
+        val DEFAULT_WRITE_TOKENS = setOf(
+            keyToken(KeyEvent.KEYCODE_SPACE),
+            keyToken(KeyEvent.KEYCODE_1),
+            keyToken(KeyEvent.KEYCODE_BUTTON_A),
+            keyToken(KeyEvent.KEYCODE_BUTTON_R1),
         )
 
-        val DEFAULT_UNDO_KEYS = setOf(
-            KeyEvent.KEYCODE_ENTER,
-            KeyEvent.KEYCODE_NUMPAD_ENTER,
-            KeyEvent.KEYCODE_2,
-            KeyEvent.KEYCODE_BUTTON_B,
-            KeyEvent.KEYCODE_BUTTON_L1,
+        val DEFAULT_UNDO_TOKENS = setOf(
+            keyToken(KeyEvent.KEYCODE_ENTER),
+            keyToken(KeyEvent.KEYCODE_NUMPAD_ENTER),
+            keyToken(KeyEvent.KEYCODE_2),
+            keyToken(KeyEvent.KEYCODE_BUTTON_B),
+            keyToken(KeyEvent.KEYCODE_BUTTON_L1),
         )
+
+        /**
+         * The analog axis directions worth watching: the two triggers (which
+         * different controllers report on different axes, so several are
+         * listed), and the four d-pad directions, which are a hat axis rather
+         * than keys on most controllers.
+         */
+        val AXIS_CHANNELS = listOf(
+            AxisChannel(MotionEvent.AXIS_LTRIGGER, true, "L2"),
+            AxisChannel(MotionEvent.AXIS_BRAKE, true, "L2"),
+            AxisChannel(MotionEvent.AXIS_RTRIGGER, true, "R2"),
+            AxisChannel(MotionEvent.AXIS_GAS, true, "R2"),
+            AxisChannel(MotionEvent.AXIS_HAT_X, true, "CREUETA DRETA"),
+            AxisChannel(MotionEvent.AXIS_HAT_X, false, "CREUETA ESQUERRA"),
+            AxisChannel(MotionEvent.AXIS_HAT_Y, false, "CREUETA AMUNT"),
+            AxisChannel(MotionEvent.AXIS_HAT_Y, true, "CREUETA AVALL"),
+        )
+
+        fun keyToken(code: Int) = "k:$code"
+
+        fun keyName(code: Int) =
+            KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_")
+
+        /** A readable name for a bound token, for showing the helper. */
+        fun labelForToken(token: String): String = when {
+            token.startsWith("k:") -> keyName(token.removePrefix("k:").toIntOrNull() ?: 0)
+            else -> AXIS_CHANNELS.firstOrNull { it.token == token }?.label ?: "EIX"
+        }
+
+        /** A number to show beside a reported input; the axis or key code. */
+        fun tokenCode(token: String): Int =
+            token.substringAfter(':').substringBefore(':').toIntOrNull() ?: 0
+    }
+
+    /** One direction of one analog axis, treated as a button. */
+    class AxisChannel(val axis: Int, val positive: Boolean, val label: String) {
+        val token = "a:$axis:${if (positive) "+" else "-"}"
+
+        /** Positive so that "pressed" is always "above the threshold". */
+        fun signed(value: Float) = if (positive) value else -value
     }
 }

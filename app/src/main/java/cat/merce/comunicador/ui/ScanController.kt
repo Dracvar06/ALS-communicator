@@ -156,14 +156,27 @@ class ScanController(
 
     /**
      * Non-null while waiting for a helper to press the button they want bound to
-     * this action. The input layer captures the next key and calls
-     * [completeBinding]. Null the rest of the time.
+     * this action. The input layer captures the next press and calls
+     * [addedBinding]. Null the rest of the time.
      */
     var bindingRole: SwitchRole? by mutableStateOf(null)
         private set
 
-    /** The name of the last button bound, shown as a brief confirmation. */
-    var lastBoundLabel: String? by mutableStateOf(null)
+    /**
+     * Non-null while showing "added — another?" after a capture, so several
+     * buttons can be bound to the same action in one go.
+     */
+    var bindingMoreRole: SwitchRole? by mutableStateOf(null)
+        private set
+
+    /** The buttons bound during the current binding session, for the prompt. */
+    var boundThisSession: List<String> by mutableStateOf(emptyList())
+        private set
+
+    /** The buttons currently bound to each action, shown in settings. */
+    var writeButtonLabels: List<String> by mutableStateOf(emptyList())
+        private set
+    var undoButtonLabels: List<String> by mutableStateOf(emptyList())
         private set
 
     /** Called with a phrase to say out loud. */
@@ -412,20 +425,44 @@ class ScanController(
         onAntiTremorChanged?.invoke(enabled)
     }
 
-    /** A helper asked to bind the button for [role]; wait for a press. */
+    /** A helper asked to bind buttons for [role]; wait for the first press. */
     fun startBinding(role: SwitchRole) {
-        lastBoundLabel = null
+        boundThisSession = emptyList()
+        bindingMoreRole = null
         bindingRole = role
     }
 
     fun cancelBinding() {
         bindingRole = null
+        bindingMoreRole = null
     }
 
-    /** The input layer captured a button and saved it; show what was bound. */
-    fun completeBinding(label: String) {
-        lastBoundLabel = label
+    /**
+     * The input layer captured a button for [role] and saved it. Move to the
+     * "add another?" prompt so more buttons can be bound to the same action.
+     */
+    fun addedBinding(role: SwitchRole, label: String) {
+        boundThisSession = boundThisSession + label
         bindingRole = null
+        bindingMoreRole = role
+    }
+
+    /** From the prompt: bind one more button to the same action. */
+    fun bindMore() {
+        bindingMoreRole?.let { bindingRole = it }
+        bindingMoreRole = null
+    }
+
+    /** From the prompt: done binding this action. */
+    fun finishBinding() {
+        bindingRole = null
+        bindingMoreRole = null
+    }
+
+    /** The input layer reports the buttons now bound to each action. */
+    fun setButtonLabels(write: List<String>, undo: List<String>) {
+        writeButtonLabels = write
+        undoButtonLabels = undo
     }
 
     fun changeDebounce(millis: Long) {

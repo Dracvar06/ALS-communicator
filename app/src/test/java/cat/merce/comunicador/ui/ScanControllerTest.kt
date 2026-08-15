@@ -422,12 +422,43 @@ class ScanControllerTest {
     }
 
     @Test
-    fun `completing a binding stops waiting and records what was bound`() {
+    fun `capturing a button moves to the add-another prompt`() {
         val c = ScanController()
         c.startBinding(SwitchRole.Undo)
-        c.completeBinding("BUTTON_B")
+        c.addedBinding(SwitchRole.Undo, "BUTTON_B")
         assertEquals(null, c.bindingRole)
-        assertEquals("BUTTON_B", c.lastBoundLabel)
+        assertEquals(SwitchRole.Undo, c.bindingMoreRole)
+        assertEquals(listOf("BUTTON_B"), c.boundThisSession)
+    }
+
+    @Test
+    fun `add another waits for a second button, keeping the first`() {
+        val c = ScanController()
+        c.startBinding(SwitchRole.Write)
+        c.addedBinding(SwitchRole.Write, "BUTTON_A")
+        c.bindMore()
+        assertEquals(SwitchRole.Write, c.bindingRole)
+        c.addedBinding(SwitchRole.Write, "R2")
+        assertEquals(listOf("BUTTON_A", "R2"), c.boundThisSession)
+    }
+
+    @Test
+    fun `finishing a binding leaves both waiting states clear`() {
+        val c = ScanController()
+        c.startBinding(SwitchRole.Write)
+        c.addedBinding(SwitchRole.Write, "BUTTON_A")
+        c.finishBinding()
+        assertEquals(null, c.bindingRole)
+        assertEquals(null, c.bindingMoreRole)
+    }
+
+    @Test
+    fun `starting a new binding session clears the previous session's list`() {
+        val c = ScanController()
+        c.startBinding(SwitchRole.Write)
+        c.addedBinding(SwitchRole.Write, "BUTTON_A")
+        c.startBinding(SwitchRole.Undo)
+        assertEquals(emptyList<String>(), c.boundThisSession)
     }
 
     @Test
@@ -436,6 +467,7 @@ class ScanControllerTest {
         c.startBinding(SwitchRole.Write)
         c.cancelBinding()
         assertEquals(null, c.bindingRole)
+        assertEquals(null, c.bindingMoreRole)
     }
 
     // ---------------------------------------------------------------
