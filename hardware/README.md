@@ -12,20 +12,16 @@ phone sees a keyboard, the app sees its two switches, and nothing in the app has
 to know a switch was involved at all.
 
 Nothing plugs into the phone. It connects to the ESP32 over Bluetooth, through
-the air, like any wireless keyboard. The 3.5mm jack is only between each switch
-and the box:
+the air, like any wireless keyboard:
 
 ```
-  [ button ] --plug--> [ 3.5mm socket on the box ] --wires--> [ ESP32 ]
-                                                                  |
-                                                          Bluetooth (no wire)
-                                                                  v
-                                                          [ phone / tablet ]
+  [ switch ] --wires soldered--> [ ESP32 ] ...Bluetooth... [ phone / tablet ]
 ```
 
-The jack is there so a switch can be unplugged and swapped for a different one —
-a hand button today, a head switch later — without opening the box or soldering.
-There are two sockets because there are two switches.
+This build solders the switches straight to the board. A 3.5mm jack socket per
+switch is an optional extra that would let a switch be unplugged and swapped
+without a soldering iron — worth it if her movement is likely to change and you
+want tool-free swaps, skippable otherwise.
 
 ## Which ESP32, exactly
 
@@ -65,25 +61,35 @@ Buy **two** — they cost a few euros and it is good to have a spare.
 | Part | Notes | Rough cost |
 | --- | --- | --- |
 | ESP32-WROOM-32 dev board | The board picked above. | €5–8 |
-| 2 × accessibility switches | The big round buttons, each ending in a 3.5mm mono jack. This is the AAC standard. | varies |
-| 2 × panel-mount 3.5mm mono jack sockets | So a switch can be unplugged and swapped without touching the board. | ~€2 |
-| A small box, and USB power | A phone power bank runs it for days; a LiPo makes it tidy later. | — |
+| 2 × switches | A snap-action microswitch (e.g. KW11-3Z) works well, especially with a 3D-printed lever shaped to her movement. Any momentary switch will do. | ~€2 |
+| Thin hookup wire | 4 short lengths, two per switch. | ~€1 |
+| USB power bank + USB cable | **Easy to forget:** the board needs power the whole time. A power bank runs it for days; the flashing cable can double as the power cable. | — |
+| A box | 3D-printed or otherwise. | — |
+
+Optional: heat-shrink or tape over the joints, and a dab of hot glue to anchor
+the switch cables so a tug cannot break a solder joint. A LiPo battery with a
+charging board is the tidy, self-contained power source once it all works.
 
 Total for the electronics is well under €15. The switches are the part worth
 spending on, since they are what her hand actually meets.
 
 ## Wiring
 
-Per switch, only two connections:
+Per switch, two connections. A snap-action microswitch has three pins — use
+**COM** and **NO**, and leave **NC** unconnected:
 
 ```
-  3.5mm jack TIP    ──▶  GPIO pin   (25 = write, 26 = undo)
-  3.5mm jack SLEEVE ──▶  GND
+  switch COM ──▶  GND
+  switch NO  ──▶  GPIO pin   (25 = write, 26 = undo)
 ```
 
 No resistors. The ESP32's internal pull-ups hold each pin HIGH until the switch
 closes and pulls it to GND. Pins 25 and 26 are used because they are ordinary
 GPIOs with a pull-up; **do not** use 34–39, which are input-only and would float.
+
+If a switch reads as permanently pressed on the check screen, you have wired
+**NC** instead of **NO** — move that wire to the other outer pin. (With a
+multimeter: press the switch; the two pins that gain continuity are COM and NO.)
 
 ## Flashing
 
