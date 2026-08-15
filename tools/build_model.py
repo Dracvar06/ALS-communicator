@@ -54,6 +54,14 @@ def tokenise(line):
 
 
 def read_lines(path):
+    # "-" reads plain text from standard input, so a huge corpus can be
+    # streamed and cut short rather than downloaded whole. The English
+    # subtitle dump is 9.5GB; a couple of million sentences is plenty.
+    if path == "-":
+        for line in sys.stdin:
+            yield line
+        return
+
     opener = gzip.open if path.endswith(".gz") else open
     with opener(path, "rt", encoding="utf-8", errors="replace") as handle:
         for line in handle:
