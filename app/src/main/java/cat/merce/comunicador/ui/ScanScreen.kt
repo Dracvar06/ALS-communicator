@@ -3,6 +3,8 @@ package cat.merce.comunicador.ui
 import android.os.SystemClock
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -383,27 +385,38 @@ private fun SettingsCornerButton(onOpen: () -> Unit, modifier: Modifier = Modifi
 
 @Composable
 private fun ComposedText(text: String, modifier: Modifier = Modifier) {
-    Box(
+    val scroll = rememberScrollState()
+
+    // Keep the end of the sentence in view. What she just wrote is the part
+    // she needs to see; the beginning can slide off to the left.
+    LaunchedEffect(text) { scroll.scrollTo(scroll.maxValue) }
+
+    BoxWithConstraints(
         modifier = modifier
             .padding(4.dp)
             .background(TextAreaBackground, RoundedCornerShape(10.dp))
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = 10.dp),
         contentAlignment = Alignment.CenterStart
     ) {
-        Text(
-            // A trailing bar so the end of the sentence is visible, and so a
-            // typed space is not an invisible event.
-            text = "$text|",
-            color = Ink,
-            fontFamily = Hyperlegible,
-            fontSize = 52.sp
-        )
+        val size = minOf(maxHeight.value * 0.52f, 52f)
+        Row(modifier = Modifier.horizontalScroll(scroll)) {
+            Text(
+                // A trailing bar so the end of the sentence is visible, and so
+                // a typed space is not an invisible event.
+                text = "$text|",
+                color = Ink,
+                fontFamily = Hyperlegible,
+                fontSize = size.sp,
+                maxLines = 1,
+                softWrap = false
+            )
+        }
     }
 }
 
 @Composable
 private fun KeyCell(label: String, lit: Boolean, modifier: Modifier = Modifier) {
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .padding(4.dp)
             .background(
@@ -412,21 +425,33 @@ private fun KeyCell(label: String, lit: Boolean, modifier: Modifier = Modifier) 
             ),
         contentAlignment = Alignment.Center
     ) {
+        // Sized from the cell it is sitting in rather than from a number picked
+        // against one screen. The same six rows have to fit a ten inch tablet
+        // and a phone held sideways, where each row is less than half as tall;
+        // fixed sizes simply cropped the letters on the smaller one.
+        //
+        // Measured in dp rather than sp on purpose. A large system font-scale
+        // setting would otherwise push the letters back out of their cells, and
+        // a letter she cannot see is worse than one that ignores that setting.
+        val fitHeight = maxHeight.value * if (label.length > 1) 0.34f else 0.52f
+        val fitWidth = maxWidth.value / (label.length.coerceAtLeast(1) * 0.66f)
+        val size = minOf(fitHeight, fitWidth, MAX_KEY_TEXT_SP)
+
         Text(
             text = label,
             color = Ink,
             fontFamily = Hyperlegible,
             fontWeight = FontWeight.Bold,
-            // Whole words have to be smaller than single characters to fit.
-            fontSize = when {
-                label.length > 7 -> 22.sp
-                label.length > 1 -> 30.sp
-                else -> 60.sp
-            },
+            fontSize = size.sp,
+            maxLines = 1,
+            softWrap = false,
             textAlign = TextAlign.Center
         )
     }
 }
+
+/** Beyond this a letter looks shouted rather than clear, even given the room. */
+private const val MAX_KEY_TEXT_SP = 64f
 
 /** 1300 becomes "1,3", using the comma Catalan writes decimals with. */
 private fun formatSeconds(millis: Long): String {
