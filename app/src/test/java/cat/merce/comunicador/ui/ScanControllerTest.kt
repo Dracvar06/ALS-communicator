@@ -395,6 +395,50 @@ class ScanControllerTest {
     }
 
     // ---------------------------------------------------------------
+    // Anti-tremor setting
+    // ---------------------------------------------------------------
+
+    @Test
+    fun `turning anti-tremor on is reported so it can be saved`() {
+        val c = ScanController(initialAntiTremor = false)
+        var saved: Boolean? = null
+        c.onAntiTremorChanged = { saved = it }
+
+        c.useAntiTremor(true)
+        assertTrue(c.antiTremor)
+        assertEquals(true, saved)
+    }
+
+    // ---------------------------------------------------------------
+    // Binding a button to an action
+    // ---------------------------------------------------------------
+
+    @Test
+    fun `starting a binding waits for a button`() {
+        val c = ScanController()
+        assertEquals(null, c.bindingRole)
+        c.startBinding(SwitchRole.Write)
+        assertEquals(SwitchRole.Write, c.bindingRole)
+    }
+
+    @Test
+    fun `completing a binding stops waiting and records what was bound`() {
+        val c = ScanController()
+        c.startBinding(SwitchRole.Undo)
+        c.completeBinding("BUTTON_B")
+        assertEquals(null, c.bindingRole)
+        assertEquals("BUTTON_B", c.lastBoundLabel)
+    }
+
+    @Test
+    fun `a binding can be cancelled`() {
+        val c = ScanController()
+        c.startBinding(SwitchRole.Write)
+        c.cancelBinding()
+        assertEquals(null, c.bindingRole)
+    }
+
+    // ---------------------------------------------------------------
     // Touch input, for trying it without a switch box
     // ---------------------------------------------------------------
 

@@ -132,6 +132,31 @@ class SwitchFilterTest {
         assertTrue(f.accept(Switch.Write, 5))
     }
 
+    // ---------------------------------------------------------------
+    // Tremor mode: every press restarts the window
+    // ---------------------------------------------------------------
+
+    @Test
+    fun `in tremor mode a burst of presses counts only once`() {
+        val f = SwitchFilter(debounceMs = 400, restartOnReject = true)
+        assertTrue(f.accept(Switch.Write, 0))     // first counts
+        assertFalse(f.accept(Switch.Write, 200))  // within window, rejected, restarts
+        assertFalse(f.accept(Switch.Write, 350))  // within window of 200, rejected, restarts
+        assertFalse(f.accept(Switch.Write, 500))  // within window of 350, rejected
+        // Only after a full quiet window from the last press does one count.
+        assertTrue(f.accept(Switch.Write, 900))
+    }
+
+    @Test
+    fun `without tremor mode the window is measured from the accepted press`() {
+        val f = SwitchFilter(debounceMs = 400, restartOnReject = false)
+        assertTrue(f.accept(Switch.Write, 0))
+        assertFalse(f.accept(Switch.Write, 200))  // rejected, does not restart
+        assertFalse(f.accept(Switch.Write, 350))
+        // 400ms after the accepted press at 0, so this counts despite the burst.
+        assertTrue(f.accept(Switch.Write, 400))
+    }
+
     @Test
     fun `negative windows are rejected`() {
         assertThrows(IllegalArgumentException::class.java) { SwitchFilter(debounceMs = -1) }

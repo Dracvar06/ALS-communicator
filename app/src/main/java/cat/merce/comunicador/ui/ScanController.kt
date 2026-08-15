@@ -32,11 +32,15 @@ data class KeyReport(
     val accepted: Boolean,
 )
 
+/** Which of the two actions a physical button is being bound to. */
+enum class SwitchRole { Write, Undo }
+
 class ScanController(
     initialIntervalMs: Long = DEFAULT_SCAN_INTERVAL_MS,
     initialDebounceMs: Long = SwitchFilter.DEFAULT_DEBOUNCE_MS,
     initialTouchInput: Boolean = true,
     initialFirstCellExtraMs: Long = DEFAULT_FIRST_CELL_EXTRA_MS,
+    initialAntiTremor: Boolean = false,
 ) {
 
     /**
@@ -138,6 +142,29 @@ class ScanController(
 
     /** Called when touch input is turned on or off, so it can be saved. */
     var onTouchInputChanged: ((Boolean) -> Unit)? = null
+
+    /**
+     * When on, every press restarts the minimum-time window, so a tremor's
+     * burst of taps counts once. Read by the input layer, which builds the
+     * filter from it.
+     */
+    var antiTremor: Boolean by mutableStateOf(initialAntiTremor)
+        private set
+
+    /** Called when the anti-tremor setting changes, so it can be saved. */
+    var onAntiTremorChanged: ((Boolean) -> Unit)? = null
+
+    /**
+     * Non-null while waiting for a helper to press the button they want bound to
+     * this action. The input layer captures the next key and calls
+     * [completeBinding]. Null the rest of the time.
+     */
+    var bindingRole: SwitchRole? by mutableStateOf(null)
+        private set
+
+    /** The name of the last button bound, shown as a brief confirmation. */
+    var lastBoundLabel: String? by mutableStateOf(null)
+        private set
 
     /** Called with a phrase to say out loud. */
     var onSpeak: ((String) -> Unit)? = null
@@ -373,6 +400,28 @@ class ScanController(
         if (enabled == touchInput) return
         touchInput = enabled
         onTouchInputChanged?.invoke(enabled)
+    }
+
+    fun useAntiTremor(enabled: Boolean) {
+        if (enabled == antiTremor) return
+        antiTremor = enabled
+        onAntiTremorChanged?.invoke(enabled)
+    }
+
+    /** A helper asked to bind the button for [role]; wait for a press. */
+    fun startBinding(role: SwitchRole) {
+        lastBoundLabel = null
+        bindingRole = role
+    }
+
+    fun cancelBinding() {
+        bindingRole = null
+    }
+
+    /** The input layer captured a button and saved it; show what was bound. */
+    fun completeBinding(label: String) {
+        lastBoundLabel = label
+        bindingRole = null
     }
 
     fun changeDebounce(millis: Long) {

@@ -20,15 +20,23 @@ enum class Switch { Write, Undo }
  *    default, and exists for the case where a spasm hits both switches at once.
  *    Turning it up costs her the ability to write and immediately undo.
  *
- * Rejected presses do not extend either window. A switch that bounces
- * continuously would otherwise hold the window open forever and lock her out
- * entirely, which is the worst thing this class could possibly do.
+ * [restartOnReject] chooses what a too-soon press does to the window:
+ *
+ *  - off (the default): the window is measured from the last *accepted* press,
+ *    so a rejected press changes nothing. A switch that bounces continuously
+ *    cannot lock her out, because the window still opens on time.
+ *  - on: every press restarts the window, accepted or not, so a burst of
+ *    presses only counts once she has been still for the whole window. This is
+ *    for a real tremor, where three taps in half a second are all one attempt.
+ *    The cost is that a switch chattering non-stop could hold the window open,
+ *    so it is a choice a helper makes, not the default.
  *
  * Holds no clock: the caller passes the time in. Pure Kotlin, no Android.
  */
 class SwitchFilter(
     private val debounceMs: Long = DEFAULT_DEBOUNCE_MS,
     private val settleMs: Long = DEFAULT_SETTLE_MS,
+    private val restartOnReject: Boolean = false,
 ) {
 
     init {
@@ -36,8 +44,8 @@ class SwitchFilter(
         require(settleMs >= 0) { "settleMs cannot be negative, was $settleMs" }
     }
 
-    private var lastAccepted: Switch? = null
-    private var lastAcceptedAt: Long = 0
+    private var lastSwitch: Switch? = null
+    private var lastAt: Long = 0
 
     /**
      * @param atMillis when the switch closed, from a clock that only goes
@@ -45,19 +53,24 @@ class SwitchFilter(
      * @return true if this is a real press and should be acted on.
      */
     fun accept(switch: Switch, atMillis: Long): Boolean {
-        val previous = lastAccepted
+        val previous = lastSwitch
         if (previous != null) {
-            val since = atMillis - lastAcceptedAt
+            val since = atMillis - lastAt
             // A clock that jumped backwards tells us nothing, so start again
             // rather than lock her out until it catches up.
             if (since >= 0) {
                 val window = if (switch == previous) maxOf(debounceMs, settleMs) else settleMs
-                if (since < window) return false
+                if (since < window) {
+                    // In tremor mode a rejected press pushes the window along,
+                    // so the burst has to end before anything counts again.
+                    if (restartOnReject) lastAt = atMillis
+                    return false
+                }
             }
         }
 
-        lastAccepted = switch
-        lastAcceptedAt = atMillis
+        lastSwitch = switch
+        lastAt = atMillis
         return true
     }
 

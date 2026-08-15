@@ -46,6 +46,15 @@ class MainActivity : ComponentActivity() {
     /** Turns a bouncing physical switch into single presses. */
     private lateinit var switches: SwitchFilter
 
+    /** The key codes bound to each action. Editable from settings. */
+    private var writeKeys: Set<Int> = DEFAULT_WRITE_KEYS
+    private var undoKeys: Set<Int> = DEFAULT_UNDO_KEYS
+
+    private fun buildFilter() = SwitchFilter(
+        debounceMs = controller.debounceMs,
+        restartOnReject = controller.antiTremor,
+    )
+
     /** Speaks phrases aloud. Null until it has finished starting up. */
     private var tts: TextToSpeech? = null
 
@@ -77,6 +86,7 @@ class MainActivity : ComponentActivity() {
                 KEY_FIRST_CELL_EXTRA,
                 ScanController.DEFAULT_FIRST_CELL_EXTRA_MS
             ),
+            initialAntiTremor = settings.getBoolean(KEY_ANTI_TREMOR, false),
         )
         controller.onTouchInputChanged = { on ->
             settings.edit { putBoolean(KEY_TOUCH_INPUT, on) }
@@ -102,12 +112,26 @@ class MainActivity : ComponentActivity() {
                 tts?.setLanguage(Locale("es"))
             }
         }
-        switches = SwitchFilter(debounceMs = controller.debounceMs)
+        // Which button drives each action. A single bound button once a helper
+        // has set one, otherwise the built-in defaults so a keyboard or game
+        // controller works out of the box.
+        writeKeys = settings.getInt(KEY_WRITE_KEY, 0).let {
+            if (it != 0) setOf(it) else DEFAULT_WRITE_KEYS
+        }
+        undoKeys = settings.getInt(KEY_UNDO_KEY, 0).let {
+            if (it != 0) setOf(it) else DEFAULT_UNDO_KEYS
+        }
+
+        switches = buildFilter()
         controller.onDebounceChanged = { millis ->
             settings.edit { putLong(KEY_DEBOUNCE, millis) }
             // Rebuilt rather than mutated, so the filter itself stays a plain
             // value with no settings to keep in step.
-            switches = SwitchFilter(debounceMs = millis)
+            switches = buildFilter()
+        }
+        controller.onAntiTremorChanged = { on ->
+            settings.edit { putBoolean(KEY_ANTI_TREMOR, on) }
+            switches = buildFilter()
         }
         // apply() writes on a background thread, so tuning the speed never
         // blocks the cursor.
@@ -184,6 +208,22 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 
+    /** Saves the captured button as this action's button, and confirms it. */
+    private fun bindButton(role: SwitchRole, keyCode: Int) {
+        when (role) {
+            SwitchRole.Write -> {
+                writeKeys = setOf(keyCode)
+                settings.edit { putInt(KEY_WRITE_KEY, keyCode) }
+            }
+            SwitchRole.Undo -> {
+                undoKeys = setOf(keyCode)
+                settings.edit { putInt(KEY_UNDO_KEY, keyCode) }
+            }
+        }
+        val name = KeyEvent.keyCodeToString(keyCode).removePrefix("KEYCODE_")
+        controller.completeBinding(name)
+    }
+
     private fun rememberWord(previous: String, word: String) {
         val learning = predictor?.personal ?: return
         learning.learn(previous, word)
@@ -214,8 +254,18 @@ class MainActivity : ComponentActivity() {
      * can only ever do the one thing it is for.
      */
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        val write = event.keyCode in WRITE_KEYS
-        val undo = event.keyCode in UNDO_KEYS
+        // Binding a button takes priority: the next press is captured and saved
+        // as this action's button, rather than doing anything.
+        val role = controller.bindingRole
+        if (role != null) {
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                bindButton(role, event.keyCode)
+            }
+            return true
+        }
+
+        val write = event.keyCode in writeKeys
+        val undo = event.keyCode in undoKeys
 
         // On the diagnostics screen every key is swallowed and reported,
         // including ones the app does not use. Finding out what an unknown
@@ -275,6 +325,9 @@ class MainActivity : ComponentActivity() {
         const val KEY_DEBOUNCE = "debounce_ms"
         const val KEY_TOUCH_INPUT = "touch_input"
         const val KEY_FIRST_CELL_EXTRA = "first_cell_extra_ms"
+        const val KEY_ANTI_TREMOR = "anti_tremor"
+        const val KEY_WRITE_KEY = "write_key"
+        const val KEY_UNDO_KEY = "undo_key"
         const val PHRASES_FILE = "phrases.txt"
         const val MODEL_ASSET = "ca-model.txt"
 
@@ -294,7 +347,7 @@ class MainActivity : ComponentActivity() {
          *    d-pad-left undo, following Android's confirm/back convention;
          *  - a generic switch box: the number keys 1 and 2.
          */
-        val WRITE_KEYS = setOf(
+        val DEFAULT_WRITE_KEYS = setOf(
             KeyEvent.KEYCODE_SPACE,
             KeyEvent.KEYCODE_1,
             KeyEvent.KEYCODE_BUTTON_A,
@@ -303,7 +356,7 @@ class MainActivity : ComponentActivity() {
             KeyEvent.KEYCODE_DPAD_CENTER,
         )
 
-        val UNDO_KEYS = setOf(
+        val DEFAULT_UNDO_KEYS = setOf(
             KeyEvent.KEYCODE_ENTER,
             KeyEvent.KEYCODE_NUMPAD_ENTER,
             KeyEvent.KEYCODE_2,

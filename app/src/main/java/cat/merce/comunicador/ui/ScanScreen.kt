@@ -85,6 +85,7 @@ fun ScanScreen(controller: ScanController) {
 
     Box(modifier = Modifier.fillMaxSize().background(Background)) {
         when {
+            controller.bindingRole != null -> BindingPanel(controller)
             controller.inDiagnostics -> DiagnosticsPanel(controller)
             controller.inSettings -> SettingsPanel(controller)
             controller.inPhrases -> {
@@ -95,6 +96,7 @@ fun ScanScreen(controller: ScanController) {
                         onWrite = controller::press,
                         onUndo = controller::undo,
                         debounceMs = controller.debounceMs,
+                        antiTremor = controller.antiTremor,
                     )
                 }
             }
@@ -108,6 +110,7 @@ fun ScanScreen(controller: ScanController) {
                         onWrite = controller::press,
                         onUndo = controller::undo,
                         debounceMs = controller.debounceMs,
+                        antiTremor = controller.antiTremor,
                     )
                 }
                 SettingsCornerButton(
@@ -228,11 +231,18 @@ private fun DiagnosticsPanel(controller: ScanController) {
  * are not.
  */
 @Composable
-private fun TouchZones(onWrite: () -> Unit, onUndo: () -> Unit, debounceMs: Long) {
+private fun TouchZones(
+    onWrite: () -> Unit,
+    onUndo: () -> Unit,
+    debounceMs: Long,
+    antiTremor: Boolean,
+) {
     // The same debounce as the physical switches, so a tremor that taps twice
-    // counts once here too. Rebuilt when the setting changes. Without this, the
-    // touch path skipped the filter entirely and every double tap registered.
-    val filter = remember(debounceMs) { SwitchFilter(debounceMs = debounceMs) }
+    // counts once here too. Rebuilt when either setting changes. Without this,
+    // the touch path skipped the filter entirely and every double tap counted.
+    val filter = remember(debounceMs, antiTremor) {
+        SwitchFilter(debounceMs = debounceMs, restartOnReject = antiTremor)
+    }
 
     Row(modifier = Modifier.fillMaxSize()) {
         Box(
@@ -463,6 +473,65 @@ private fun SettingsPanel(controller: ScanController) {
             )
         }
 
+        Spacer(Modifier.height(28.dp))
+
+        // Tremor mode: a burst of taps counts once.
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Ignora els tremolors",
+                    color = Ink,
+                    fontFamily = Hyperlegible,
+                    fontSize = 30.sp
+                )
+                Text(
+                    text = "Una ràfega de tocs seguits compta una sola vegada.",
+                    color = DimInk,
+                    fontFamily = Hyperlegible,
+                    fontSize = 20.sp
+                )
+            }
+            Switch(
+                checked = controller.antiTremor,
+                onCheckedChange = { controller.useAntiTremor(it) },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Ink,
+                    checkedTrackColor = CellLit,
+                    uncheckedTrackColor = CellIdle,
+                ),
+            )
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        // Bind a specific controller / switch button to each action.
+        Text(
+            text = "Botons",
+            color = Ink,
+            fontFamily = Hyperlegible,
+            fontSize = 30.sp
+        )
+        controller.lastBoundLabel?.let {
+            Text(
+                text = "Assignat: $it",
+                color = CellLit,
+                fontFamily = Hyperlegible,
+                fontSize = 20.sp
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+        Row {
+            TouchButton(
+                text = "ASSIGNA ESCRIURE",
+                onTap = { controller.startBinding(SwitchRole.Write) },
+            )
+            Spacer(Modifier.width(20.dp))
+            TouchButton(
+                text = "ASSIGNA DESFER",
+                onTap = { controller.startBinding(SwitchRole.Undo) },
+            )
+        }
+
         Spacer(Modifier.height(40.dp))
 
         Row {
@@ -488,6 +557,44 @@ private fun SettingsPanel(controller: ScanController) {
             fontFamily = Hyperlegible,
             fontSize = 18.sp
         )
+    }
+}
+
+/**
+ * Waits for a helper to press the button they want bound to an action. The key
+ * itself is captured in MainActivity; this is only the prompt and a way out.
+ */
+@Composable
+private fun BindingPanel(controller: ScanController) {
+    val role = controller.bindingRole
+    val what = if (role == SwitchRole.Write) "ESCRIURE" else "DESFER"
+
+    Column(
+        modifier = Modifier.fillMaxSize().padding(48.dp),
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Prem el botó per a",
+            color = DimInk,
+            fontFamily = Hyperlegible,
+            fontSize = 28.sp
+        )
+        Text(
+            text = what,
+            color = Ink,
+            fontFamily = Hyperlegible,
+            fontWeight = FontWeight.Bold,
+            fontSize = 64.sp
+        )
+        Spacer(Modifier.height(20.dp))
+        Text(
+            text = "Prem ara, al comandament o al polsador, el botó que vulguis fer servir.",
+            color = DimInk,
+            fontFamily = Hyperlegible,
+            fontSize = 22.sp
+        )
+        Spacer(Modifier.height(40.dp))
+        TouchButton(text = "CANCEL·LA", onTap = controller::cancelBinding)
     }
 }
 
