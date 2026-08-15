@@ -11,6 +11,22 @@ two buttons to it; pressing one makes it send *space*, the other *enter*. The
 phone sees a keyboard, the app sees its two switches, and nothing in the app has
 to know a switch was involved at all.
 
+Nothing plugs into the phone. It connects to the ESP32 over Bluetooth, through
+the air, like any wireless keyboard. The 3.5mm jack is only between each switch
+and the box:
+
+```
+  [ button ] --plug--> [ 3.5mm socket on the box ] --wires--> [ ESP32 ]
+                                                                  |
+                                                          Bluetooth (no wire)
+                                                                  v
+                                                          [ phone / tablet ]
+```
+
+The jack is there so a switch can be unplugged and swapped for a different one —
+a hand button today, a head switch later — without opening the box or soldering.
+There are two sockets because there are two switches.
+
 ## Which ESP32, exactly
 
 There are many. You want the **original ESP32** — the module marked
