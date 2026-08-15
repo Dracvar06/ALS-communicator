@@ -150,7 +150,7 @@ private fun DiagnosticsPanel(controller: ScanController) {
             .padding(40.dp)
     ) {
         Text(
-            text = "Comprovació dels polsadors",
+            text = controller.language.checkTitle,
             color = Ink,
             fontFamily = Hyperlegible,
             fontWeight = FontWeight.Bold,
@@ -158,7 +158,7 @@ private fun DiagnosticsPanel(controller: ScanController) {
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "Prem cada polsador. Aquesta pantalla es tanca sola.",
+            text = controller.language.checkHint,
             color = DimInk,
             fontFamily = Hyperlegible,
             fontSize = 22.sp
@@ -168,7 +168,7 @@ private fun DiagnosticsPanel(controller: ScanController) {
 
         if (controller.recentKeys.isEmpty()) {
             Text(
-                text = "Esperant…",
+                text = controller.language.checkWaiting,
                 color = DimInk,
                 fontFamily = Hyperlegible,
                 fontSize = 28.sp
@@ -190,7 +190,7 @@ private fun DiagnosticsPanel(controller: ScanController) {
                     modifier = Modifier.weight(3f)
                 )
                 Text(
-                    text = "codi ${key.keyCode}",
+                    text = "${controller.language.checkCode} ${key.keyCode}",
                     color = DimInk,
                     fontFamily = Hyperlegible,
                     fontSize = 26.sp,
@@ -215,7 +215,7 @@ private fun DiagnosticsPanel(controller: ScanController) {
 
         Spacer(Modifier.weight(1f))
 
-        TouchButton(text = "TANCA", onTap = controller::closeSettings)
+        TouchButton(text = controller.language.settingsClose, onTap = controller::closeSettings)
     }
 }
 
@@ -264,6 +264,28 @@ private fun TouchZones(
                         if (filter.accept(Switch.Write, SystemClock.elapsedRealtime())) onWrite()
                     }
                 }
+        )
+    }
+}
+
+/** One language to choose, lit when it is the one in use. */
+@Composable
+private fun LanguageButton(language: Language, selected: Boolean, onTap: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .background(
+                color = if (selected) CellLit else CellIdle,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .pointerInput(language.code) { detectTapGestures { onTap() } }
+            .padding(horizontal = 40.dp, vertical = 18.dp)
+    ) {
+        Text(
+            text = language.displayName,
+            color = Ink,
+            fontFamily = Hyperlegible,
+            fontWeight = FontWeight.Bold,
+            fontSize = 28.sp
         )
     }
 }
@@ -350,14 +372,14 @@ private fun SettingsPanel(controller: ScanController) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Velocitat de l'escaneig",
+            text = controller.language.settingsSpeed,
             color = DimInk,
             fontFamily = Hyperlegible,
             fontSize = 28.sp
         )
         Spacer(Modifier.height(12.dp))
         Text(
-            text = "${formatSeconds(chosenMs.roundToLong())} segons per pas",
+            text = "${formatSeconds(chosenMs.roundToLong())} ${controller.language.settingsSecondsPerStep}",
             color = Ink,
             fontFamily = Hyperlegible,
             fontWeight = FontWeight.Bold,
@@ -384,9 +406,9 @@ private fun SettingsPanel(controller: ScanController) {
         )
 
         Row(modifier = Modifier.fillMaxWidth()) {
-            Text("més ràpid", color = DimInk, fontFamily = Hyperlegible, fontSize = 22.sp)
+            Text(controller.language.settingsFaster, color = DimInk, fontFamily = Hyperlegible, fontSize = 22.sp)
             Spacer(Modifier.weight(1f))
-            Text("més lent", color = DimInk, fontFamily = Hyperlegible, fontSize = 22.sp)
+            Text(controller.language.settingsSlower, color = DimInk, fontFamily = Hyperlegible, fontSize = 22.sp)
         }
 
         Spacer(Modifier.height(44.dp))
@@ -396,8 +418,7 @@ private fun SettingsPanel(controller: ScanController) {
         var chosenFirst by remember { mutableFloatStateOf(controller.firstCellExtraMs.toFloat()) }
 
         Text(
-            text = "Temps extra a la primera lletra: " +
-                "+${formatSeconds(chosenFirst.roundToLong())} s",
+            text = controller.language.settingsFirstLetterExtra + ": +${formatSeconds(chosenFirst.roundToLong())} s",
             color = Ink,
             fontFamily = Hyperlegible,
             fontSize = 30.sp
@@ -424,7 +445,7 @@ private fun SettingsPanel(controller: ScanController) {
         var chosenDebounce by remember { mutableFloatStateOf(controller.debounceMs.toFloat()) }
 
         Text(
-            text = "Temps mínim entre polsacions: ${chosenDebounce.roundToLong()} ms",
+            text = controller.language.settingsMinBetweenPresses + ": ${chosenDebounce.roundToLong()} ms",
             color = Ink,
             fontFamily = Hyperlegible,
             fontSize = 30.sp
@@ -450,13 +471,13 @@ private fun SettingsPanel(controller: ScanController) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Tocar la pantalla per escriure",
+                    text = controller.language.settingsTouchTitle,
                     color = Ink,
                     fontFamily = Hyperlegible,
                     fontSize = 30.sp
                 )
                 Text(
-                    text = "Dreta: escriu. Esquerra: desfà.",
+                    text = controller.language.settingsTouchDetail,
                     color = DimInk,
                     fontFamily = Hyperlegible,
                     fontSize = 20.sp
@@ -479,13 +500,13 @@ private fun SettingsPanel(controller: ScanController) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Ignora els tremolors",
+                    text = controller.language.settingsTremorTitle,
                     color = Ink,
                     fontFamily = Hyperlegible,
                     fontSize = 30.sp
                 )
                 Text(
-                    text = "Una ràfega de tocs seguits compta una sola vegada.",
+                    text = controller.language.settingsTremorDetail,
                     color = DimInk,
                     fontFamily = Hyperlegible,
                     fontSize = 20.sp
@@ -506,19 +527,19 @@ private fun SettingsPanel(controller: ScanController) {
 
         // Bind one or more controller / switch buttons to each action.
         Text(
-            text = "Botons",
+            text = controller.language.settingsButtons,
             color = Ink,
             fontFamily = Hyperlegible,
             fontSize = 30.sp
         )
         Text(
-            text = "Escriure: " + boundOrDefault(controller.writeButtonLabels),
+            text = controller.language.settingsWrite + ": " + boundOrDefault(controller.writeButtonLabels),
             color = DimInk,
             fontFamily = Hyperlegible,
             fontSize = 20.sp
         )
         Text(
-            text = "Desfer: " + boundOrDefault(controller.undoButtonLabels),
+            text = controller.language.settingsUndo + ": " + boundOrDefault(controller.undoButtonLabels),
             color = DimInk,
             fontFamily = Hyperlegible,
             fontSize = 20.sp
@@ -526,28 +547,50 @@ private fun SettingsPanel(controller: ScanController) {
         Spacer(Modifier.height(10.dp))
         Row {
             TouchButton(
-                text = "ASSIGNA ESCRIURE",
+                text = controller.language.settingsAssignWrite,
                 onTap = { controller.startBinding(SwitchRole.Write) },
             )
             Spacer(Modifier.width(20.dp))
             TouchButton(
-                text = "ASSIGNA DESFER",
+                text = controller.language.settingsAssignUndo,
                 onTap = { controller.startBinding(SwitchRole.Undo) },
             )
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        // Language. Changing it swaps the letters and their order, the words on
+        // the keys, the prediction and the voice, all together.
+        Text(
+            text = controller.language.settingsLanguage,
+            color = Ink,
+            fontFamily = Hyperlegible,
+            fontSize = 30.sp
+        )
+        Spacer(Modifier.height(10.dp))
+        Row {
+            LANGUAGES.forEachIndexed { index, language ->
+                if (index > 0) Spacer(Modifier.width(20.dp))
+                LanguageButton(
+                    language = language,
+                    selected = language.code == controller.language.code,
+                    onTap = { controller.changeLanguage(language) },
+                )
+            }
         }
 
         Spacer(Modifier.height(40.dp))
 
         Row {
-            TouchButton(text = "TANCA", onTap = controller::closeSettings)
+            TouchButton(text = controller.language.settingsClose, onTap = controller::closeSettings)
             Spacer(Modifier.width(20.dp))
-            TouchButton(text = "COMPROVA ELS POLSADORS", onTap = controller::openDiagnostics)
+            TouchButton(text = controller.language.settingsCheckButtons, onTap = controller::openDiagnostics)
         }
 
         Spacer(Modifier.height(20.dp))
         Text(
             // She is never stuck here even if nobody is holding the tablet.
-            text = "Qualsevol dels dos polsadors també tanca aquesta pantalla.",
+            text = controller.language.settingsEitherCloses,
             color = DimInk,
             fontFamily = Hyperlegible,
             fontSize = 20.sp
@@ -577,14 +620,14 @@ private fun BindingPanel(controller: ScanController) {
     val waitingRole = controller.bindingRole
     val moreRole = controller.bindingMoreRole
     val role = waitingRole ?: moreRole
-    val what = if (role == SwitchRole.Write) "ESCRIURE" else "DESFER"
+    val what = if (role == SwitchRole.Write) controller.language.bindWrite else controller.language.bindUndo
 
     Column(
         modifier = Modifier.fillMaxSize().padding(48.dp),
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = if (waitingRole != null) "Prem el botó per a" else "Botó per a",
+            text = if (waitingRole != null) controller.language.bindPressFor else controller.language.bindButtonFor,
             color = DimInk,
             fontFamily = Hyperlegible,
             fontSize = 28.sp
@@ -600,7 +643,7 @@ private fun BindingPanel(controller: ScanController) {
         if (controller.boundThisSession.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "Assignats: " + controller.boundThisSession.joinToString(", "),
+                text = controller.language.bindAssigned + ": " + controller.boundThisSession.joinToString(", "),
                 color = CellLit,
                 fontFamily = Hyperlegible,
                 fontSize = 22.sp
@@ -612,26 +655,26 @@ private fun BindingPanel(controller: ScanController) {
         if (waitingRole != null) {
             // Waiting for the press.
             Text(
-                text = "Prem ara, al comandament o al polsador, el botó que vulguis fer servir.",
+                text = controller.language.bindPressNow,
                 color = DimInk,
                 fontFamily = Hyperlegible,
                 fontSize = 22.sp
             )
             Spacer(Modifier.height(40.dp))
-            TouchButton(text = "CANCEL·LA", onTap = controller::cancelBinding)
+            TouchButton(text = controller.language.bindCancel, onTap = controller::cancelBinding)
         } else {
             // Just captured one; offer to add more or finish.
             Text(
-                text = "Vols afegir un altre botó per a la mateixa acció?",
+                text = controller.language.bindAnother,
                 color = DimInk,
                 fontFamily = Hyperlegible,
                 fontSize = 22.sp
             )
             Spacer(Modifier.height(40.dp))
             Row {
-                TouchButton(text = "AFEGEIX UN ALTRE", onTap = controller::bindMore)
+                TouchButton(text = controller.language.bindAddAnother, onTap = controller::bindMore)
                 Spacer(Modifier.width(20.dp))
-                TouchButton(text = "FET", onTap = controller::finishBinding)
+                TouchButton(text = controller.language.bindDone, onTap = controller::finishBinding)
             }
         }
     }

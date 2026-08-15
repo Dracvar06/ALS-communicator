@@ -41,7 +41,15 @@ class ScanController(
     initialTouchInput: Boolean = true,
     initialFirstCellExtraMs: Long = DEFAULT_FIRST_CELL_EXTRA_MS,
     initialAntiTremor: Boolean = false,
+    initialLanguage: Language = CATALAN,
 ) {
+
+    /** Everything that differs by language: letters, words, phrases, voice. */
+    var language: Language by mutableStateOf(initialLanguage)
+        private set
+
+    /** Called when the language changes, so it can be saved and reloaded. */
+    var onLanguageChanged: ((Language) -> Unit)? = null
 
     /**
      * Starts as the small built-in list and is replaced by the full Catalan
@@ -60,7 +68,9 @@ class ScanController(
     var onIntervalChanged: ((Long) -> Unit)? = null
 
     /** The grid currently on screen: the phrases when in that screen, else writing. */
-    val rows: List<List<Key>> get() = if (inPhrases) phrasesGrid else CATALAN_KEYBOARD
+    val rows: List<List<Key>> get() = if (inPhrases) phrasesGrid else writingGrid
+
+    private var writingGrid: List<List<Key>> = keyboardFor(initialLanguage)
 
     /** Where the highlight is. */
     var state: ScanState by mutableStateOf(ScanState.Row(0))
@@ -187,14 +197,14 @@ class ScanController(
         private set
 
     /** The saved phrases, editable by a helper. */
-    private var phrases: List<String> = DEFAULT_PHRASES
+    private var phrases: List<String> = initialLanguage.defaultPhrases
     private var phrasesGrid: List<List<Key>> = phrasesKeyboard(phrases)
 
     /** True when the undo button would do something. */
     var canUndo: Boolean by mutableStateOf(false)
         private set
 
-    private var scanner = Scanner(ScanLayout(CATALAN_KEYBOARD.map { it.size }))
+    private var scanner = Scanner(ScanLayout(keyboardFor(initialLanguage).map { it.size }))
 
     /**
      * What undo walks back through, oldest first.
@@ -349,6 +359,33 @@ class ScanController(
         refreshCanUndo()
     }
 
+    /**
+     * Yes and no have their own keys, so a suggestion slot spent on them would
+     * waste one of the three most valuable cells. Folded, and per language.
+     */
+    private fun alreadyOnGrid(): Set<String> =
+        setOf(Words.fold(language.yesLabel), Words.fold(language.noLabel))
+
+    /**
+     * Switches language. The letters, their order, the words on the keys and
+     * the phrases all change together, so the grid is rebuilt and the scan
+     * starts again from the top.
+     */
+    fun changeLanguage(newLanguage: Language) {
+        if (newLanguage.code == language.code) return
+        language = newLanguage
+        writingGrid = keyboardFor(newLanguage)
+        setPhrases(newLanguage.defaultPhrases)
+        inPhrases = false
+        rescan(writingGrid)
+        justEnteredRow = false
+        restartTiming()
+        history.clear()
+        refreshCanUndo()
+        refreshSuggestions()
+        onLanguageChanged?.invoke(newLanguage)
+    }
+
     /** Replaces the saved phrases, e.g. after a helper edits them. */
     fun setPhrases(newPhrases: List<String>) {
         phrases = newPhrases
@@ -371,7 +408,7 @@ class ScanController(
     fun closePhrases() {
         if (!inPhrases) return
         inPhrases = false
-        rescan(CATALAN_KEYBOARD)
+        rescan(writingGrid)
         justEnteredRow = false
         restartTiming()
         // Leave no phrase-screen steps behind to undo once back at writing.
@@ -523,10 +560,17 @@ class ScanController(
         refreshSuggestions()
     }
 
-    /** The word shown on a cell right now. */
+    /** The word shown on a cell right now, in the current language. */
     fun label(key: Key): String = when (key) {
         is Key.Suggestion -> suggestions.getOrElse(key.slot) { "" }
-        else -> key.label
+        is Key.Letter -> key.char
+        is Key.Phrase -> key.text
+        Key.Space -> language.spaceLabel
+        Key.Yes -> language.yesLabel
+        Key.No -> language.noLabel
+        Key.OpenPhrases -> language.phrasesLabel
+        Key.Back -> language.backLabel
+        Key.Clear -> "\u00d7"
     }
 
     /** Should the cell at this position be highlighted right now? */
@@ -540,10 +584,9 @@ class ScanController(
         when (key) {
             is Key.Letter -> text += key.char
             is Key.Suggestion -> applySuggestion(key.slot)
-            Key.Yes -> text += "SÍ "
-            Key.No -> text += "NO "
+            Key.Yes -> text += language.yesLabel + " "
+            Key.No -> text += language.noLabel + " "
             Key.Space -> text += " "
-            Key.Delete -> text = text.dropLast(1)
             Key.Clear -> text = ""
 
             // Handled in press(), never routed through here.
@@ -601,11 +644,11 @@ class ScanController(
 
     private fun refreshSuggestions() {
         // A few more than needed, because some get dropped just below.
-        val offered = predictor.predict(text, SUGGESTION_SLOTS + ALREADY_ON_GRID.size)
+        val offered = predictor.predict(text, SUGGESTION_SLOTS + 2)
         suggestions = offered
             // Sí and no have their own keys, so spending a suggestion slot on
             // them would waste one of the three most valuable cells.
-            .filterNot { Words.fold(it) in ALREADY_ON_GRID }
+            .filterNot { Words.fold(it) in alreadyOnGrid() }
             // Upper case throughout, to match the letter keys.
             .map { it.uppercase() }
             .take(SUGGESTION_SLOTS)
@@ -641,7 +684,6 @@ class ScanController(
         /** Diagnostics closes this long after the carer's last touch. */
         const val DIAGNOSTICS_IDLE_MS = 30_000L
 
-        /** Folded words that already have a dedicated key of their own. */
-        private val ALREADY_ON_GRID = setOf("si", "no")
+
     }
 }

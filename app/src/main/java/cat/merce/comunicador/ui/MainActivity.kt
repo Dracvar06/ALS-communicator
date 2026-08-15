@@ -108,7 +108,16 @@ class MainActivity : ComponentActivity() {
                 ScanController.DEFAULT_FIRST_CELL_EXTRA_MS
             ),
             initialAntiTremor = settings.getBoolean(KEY_ANTI_TREMOR, false),
+            initialLanguage = languageForCode(settings.getString(KEY_LANGUAGE, null)),
         )
+        controller.onLanguageChanged = { language ->
+            settings.edit { putString(KEY_LANGUAGE, language.code) }
+            // The phrase file belongs to the old language, so start the new
+            // one from its own defaults and load its model and voice.
+            runCatching { phrasesFile.delete() }
+            applyVoice(language)
+            loadPrediction()
+        }
         controller.onTouchInputChanged = { on ->
             settings.edit { putBoolean(KEY_TOUCH_INPUT, on) }
         }
@@ -123,15 +132,7 @@ class MainActivity : ComponentActivity() {
             tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "phrase")
         }
         tts = TextToSpeech(this) { status ->
-            if (status != TextToSpeech.SUCCESS) return@TextToSpeech
-            val catalan = tts?.setLanguage(Locale("ca"))
-            if (catalan == TextToSpeech.LANG_MISSING_DATA ||
-                catalan == TextToSpeech.LANG_NOT_SUPPORTED
-            ) {
-                // Spanish is closer to Catalan than the engine default, if the
-                // Catalan voice is not installed on this device.
-                tts?.setLanguage(Locale("es"))
-            }
+            if (status == TextToSpeech.SUCCESS) applyVoice(controller.language)
         }
         // What drives each action: the helper's bound buttons if they have set
         // any, otherwise the built-in defaults so a keyboard or game controller
@@ -187,14 +188,15 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             val loaded = withContext(Dispatchers.IO) {
                 runCatching {
-                    val model = assets.open(MODEL_ASSET).bufferedReader()
+                    val language = controller.language
+                    val model = assets.open(language.modelAsset).bufferedReader()
                         .use { NgramModel.load(it) }
                     val personal = if (personalFile.exists()) {
                         PersonalModel.fromLines(personalFile.readLines())
                     } else {
                         PersonalModel()
                     }
-                    NgramPredictor(model, personal)
+                    NgramPredictor(model, personal, language.openers)
                 }.getOrNull()
             }
             // A missing or damaged asset leaves the built-in list in place.
@@ -211,14 +213,31 @@ class MainActivity : ComponentActivity() {
      * first time so a helper has something to edit rather than a blank file.
      */
     private fun loadPhrases(): List<String> {
+        val fallback = controller.language.defaultPhrases
         if (!phrasesFile.exists()) {
-            runCatching { phrasesFile.writeText(DEFAULT_PHRASES.joinToString("\n")) }
-            return DEFAULT_PHRASES
+            runCatching { phrasesFile.writeText(fallback.joinToString("\n")) }
+            return fallback
         }
         val lines = runCatching { phrasesFile.readLines() }.getOrNull()
             ?.map { it.trim() }
             ?.filter { it.isNotEmpty() }
-        return if (lines.isNullOrEmpty()) DEFAULT_PHRASES else lines
+        return if (lines.isNullOrEmpty()) fallback else lines
+    }
+
+    /**
+     * Asks the speech engine for this language's voice. Falls back to the
+     * device default rather than failing: a phrase that selects but does not
+     * speak is survivable, and the voice may simply not be installed.
+     */
+    private fun applyVoice(language: Language) {
+        val engine = tts ?: return
+        val result = engine.setLanguage(Locale(language.ttsLocale))
+        if (result == TextToSpeech.LANG_MISSING_DATA ||
+            result == TextToSpeech.LANG_NOT_SUPPORTED
+        ) {
+            // Spanish is the closest widely installed voice to Catalan.
+            if (language.code == "ca") engine.setLanguage(Locale("es"))
+        }
     }
 
     override fun onDestroy() {
@@ -410,9 +429,9 @@ class MainActivity : ComponentActivity() {
                 keyCode = tokenCode(token),
                 name = name,
                 role = when (which) {
-                    Switch.Write -> "escriu"
-                    Switch.Undo -> "desfà"
-                    null -> "sense assignar"
+                    Switch.Write -> controller.language.checkRoleWrite
+                    Switch.Undo -> controller.language.checkRoleUndo
+                    null -> controller.language.checkRoleUnassigned
                 },
                 sinceLastMs = gap,
                 // Shown so a carer can see the debounce doing its job rather
@@ -429,6 +448,7 @@ class MainActivity : ComponentActivity() {
         const val KEY_TOUCH_INPUT = "touch_input"
         const val KEY_FIRST_CELL_EXTRA = "first_cell_extra_ms"
         const val KEY_ANTI_TREMOR = "anti_tremor"
+        const val KEY_LANGUAGE = "language"
         const val KEY_WRITE_TOKENS = "write_tokens"
         const val KEY_UNDO_TOKENS = "undo_tokens"
         const val PHRASES_FILE = "phrases.txt"
@@ -438,7 +458,6 @@ class MainActivity : ComponentActivity() {
 
         /** ...and is not treated as released until it falls back below this. */
         const val AXIS_RELEASE = 0.3f
-        const val MODEL_ASSET = "ca-model.txt"
 
         /** Her own writing. Stays in the app's private storage, never leaves. */
         const val PERSONAL_FILE = "personal-model.txt"
