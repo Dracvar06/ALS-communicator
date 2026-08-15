@@ -36,6 +36,7 @@ class ScanController(
     initialIntervalMs: Long = DEFAULT_SCAN_INTERVAL_MS,
     initialDebounceMs: Long = SwitchFilter.DEFAULT_DEBOUNCE_MS,
     initialTouchInput: Boolean = true,
+    initialFirstCellExtraMs: Long = DEFAULT_FIRST_CELL_EXTRA_MS,
 ) {
 
     /**
@@ -71,6 +72,33 @@ class ScanController(
     /** How long each step of the cursor lasts. */
     var scanIntervalMs: Long by mutableStateOf(initialIntervalMs)
         private set
+
+    /**
+     * Extra time given to the very first letter of a row, on top of the normal
+     * step. Pressing to enter a row and then reacting to the first letter are
+     * two things in quick succession; this gives her a moment to catch up
+     * before the cursor moves on. Only the first letter after entering gets it.
+     */
+    var firstCellExtraMs: Long by mutableStateOf(initialFirstCellExtraMs)
+        private set
+
+    /** Called when the first-letter extra time changes, so it can be saved. */
+    var onFirstCellExtraChanged: ((Long) -> Unit)? = null
+
+    /**
+     * Bumped whenever a press changes where the cursor is, so the timing loop
+     * on screen restarts its wait from now. Without this, pressing just before
+     * a scheduled step would give the first letter almost no time at all.
+     */
+    var timingEpoch: Int by mutableStateOf(0)
+        private set
+
+    /**
+     * True only while the cursor sits on the first letter of a freshly entered
+     * row, before any step has moved it on. This is the one letter that gets
+     * the extra time.
+     */
+    private var justEnteredRow: Boolean = false
 
     var inSettings: Boolean by mutableStateOf(false)
         private set
@@ -144,6 +172,8 @@ class ScanController(
         val before = state
         scanner.tick()
         state = scanner.state
+        // The cursor has moved off the first letter, so it is no longer special.
+        justEnteredRow = false
 
         if (before is ScanState.Cell && state is ScanState.Row) {
             // The row ran out of passes and let go by itself. She is already
@@ -168,6 +198,8 @@ class ScanController(
         when (val result = scanner.select()) {
             SelectResult.EnteredRow -> {
                 if (before is ScanState.Row) push(Step.OpenedRow(before.row))
+                // She has just landed on the first letter of the row.
+                justEnteredRow = true
             }
 
             is SelectResult.SelectedCell -> {
@@ -180,11 +212,14 @@ class ScanController(
                 if (history.lastOrNull() is Step.OpenedRow) history.removeLast()
                 push(Step.ChangedText(textBefore, row))
 
+                justEnteredRow = false
                 noticeFinishedWord(textBefore, text)
                 refreshSuggestions()
             }
         }
         state = scanner.state
+        // Start the wait afresh, so the letter she lands on gets its full time.
+        restartTiming()
     }
 
     /**
@@ -207,6 +242,8 @@ class ScanController(
             is Step.OpenedRow -> {
                 scanner.goToRow(step.row)
                 state = scanner.state
+                justEnteredRow = false
+                restartTiming()
             }
 
             is Step.ChangedText -> {
@@ -214,6 +251,11 @@ class ScanController(
                 text = step.before
                 scanner.goIntoRow(step.row)
                 state = scanner.state
+
+                // She is back on the first letter of the row, so it earns the
+                // extra time again just as if she had entered it herself.
+                justEnteredRow = true
+                restartTiming()
 
                 // She is inside the row again, so one more undo should take her
                 // out of it, exactly as if she had just opened it.
@@ -274,8 +316,34 @@ class ScanController(
         // Back to the top, so the rhythm after settings is always the same.
         scanner.goToRow(0)
         state = scanner.state
+        justEnteredRow = false
+        restartTiming()
         history.clear()
         refreshCanUndo()
+    }
+
+    /**
+     * How long the cursor should sit on the current step before moving on. The
+     * timing loop on screen reads this each step. The first letter of a row
+     * lasts longer; everything else lasts one normal interval.
+     */
+    fun currentStepDurationMs(): Long =
+        if (justEnteredRow && state is ScanState.Cell) {
+            scanIntervalMs + firstCellExtraMs
+        } else {
+            scanIntervalMs
+        }
+
+    private fun restartTiming() {
+        timingEpoch++
+    }
+
+    /** Set by the settings slider, under a carer's finger. */
+    fun changeFirstCellExtra(millis: Long) {
+        val clamped = millis.coerceIn(0L, MAX_FIRST_CELL_EXTRA_MS)
+        if (clamped == firstCellExtraMs) return
+        firstCellExtraMs = clamped
+        onFirstCellExtraChanged?.invoke(clamped)
     }
 
     /** Set by the settings slider, under a carer's finger. */
@@ -392,6 +460,12 @@ class ScanController(
 
         /** The slider moves in tenths of a second. */
         const val INTERVAL_STEP_MS = 100L
+
+        /** Extra time on the first letter of a row, on a fresh install. */
+        const val DEFAULT_FIRST_CELL_EXTRA_MS = 500L
+
+        /** Beyond this the first letter feels stuck rather than generous. */
+        const val MAX_FIRST_CELL_EXTRA_MS = 3000L
 
         private const val MAX_HISTORY = 100
 

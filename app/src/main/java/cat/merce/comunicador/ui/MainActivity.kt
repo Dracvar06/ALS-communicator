@@ -65,9 +65,16 @@ class MainActivity : ComponentActivity() {
                 SwitchFilter.DEFAULT_DEBOUNCE_MS
             ),
             initialTouchInput = settings.getBoolean(KEY_TOUCH_INPUT, true),
+            initialFirstCellExtraMs = settings.getLong(
+                KEY_FIRST_CELL_EXTRA,
+                ScanController.DEFAULT_FIRST_CELL_EXTRA_MS
+            ),
         )
         controller.onTouchInputChanged = { on ->
             settings.edit { putBoolean(KEY_TOUCH_INPUT, on) }
+        }
+        controller.onFirstCellExtraChanged = { millis ->
+            settings.edit { putLong(KEY_FIRST_CELL_EXTRA, millis) }
         }
         switches = SwitchFilter(debounceMs = controller.debounceMs)
         controller.onDebounceChanged = { millis ->
@@ -219,6 +226,7 @@ class MainActivity : ComponentActivity() {
         const val KEY_SCAN_INTERVAL = "scan_interval_ms"
         const val KEY_DEBOUNCE = "debounce_ms"
         const val KEY_TOUCH_INPUT = "touch_input"
+        const val KEY_FIRST_CELL_EXTRA = "first_cell_extra_ms"
         const val MODEL_ASSET = "ca-model.txt"
 
         /** Her own writing. Stays in the app's private storage, never leaves. */

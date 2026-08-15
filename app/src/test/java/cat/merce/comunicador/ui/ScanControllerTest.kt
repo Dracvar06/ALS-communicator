@@ -222,6 +222,81 @@ class ScanControllerTest {
     }
 
     // ---------------------------------------------------------------
+    // Extra time on the first letter of a row
+    // ---------------------------------------------------------------
+
+    @Test
+    fun `the first letter of a row lasts the interval plus the extra`() {
+        val c = ScanController(initialIntervalMs = 1000, initialFirstCellExtraMs = 500)
+        c.press() // enter row 0, now on its first letter
+        assertEquals(1500L, c.currentStepDurationMs())
+    }
+
+    @Test
+    fun `letters after the first last the normal interval`() {
+        val c = ScanController(initialIntervalMs = 1000, initialFirstCellExtraMs = 500)
+        c.press() // enter row 0
+        c.tick()  // move to the second cell
+        assertEquals(1000L, c.currentStepDurationMs())
+    }
+
+    @Test
+    fun `row scanning is not given the extra time`() {
+        val c = ScanController(initialIntervalMs = 1000, initialFirstCellExtraMs = 500)
+        assertEquals(1000L, c.currentStepDurationMs())
+        c.tick()
+        assertEquals(1000L, c.currentStepDurationMs())
+    }
+
+    @Test
+    fun `wrapping back to the first cell later does not get the extra`() {
+        // The extra is for the moment she enters the row, not every time the
+        // cursor passes the start of it.
+        val c = ScanController(initialIntervalMs = 1000, initialFirstCellExtraMs = 500)
+        c.press()                 // enter row 0, six cells
+        repeat(6) { c.tick() }    // all the way round, back to the first cell
+        assertEquals(ScanState.Cell(row = 0, col = 0), c.state)
+        assertEquals(1000L, c.currentStepDurationMs())
+    }
+
+    @Test
+    fun `undoing a letter puts the extra time back on the first cell`() {
+        val c = ScanController(initialIntervalMs = 1000, initialFirstCellExtraMs = 500)
+        c.choose(row = 1, col = 1) // type a letter
+        c.undo()                   // back on the first cell of that row
+        assertEquals(1500L, c.currentStepDurationMs())
+    }
+
+    @Test
+    fun `every press restarts the timing`() {
+        val c = ScanController()
+        val start = c.timingEpoch
+        c.press()
+        assertTrue(c.timingEpoch > start)
+    }
+
+    @Test
+    fun `the extra time can be turned off`() {
+        val c = ScanController(initialIntervalMs = 1000, initialFirstCellExtraMs = 0)
+        c.press()
+        assertEquals(1000L, c.currentStepDurationMs())
+    }
+
+    @Test
+    fun `the extra time is clamped and reported so it can be saved`() {
+        val c = ScanController()
+        var saved: Long? = null
+        c.onFirstCellExtraChanged = { saved = it }
+
+        c.changeFirstCellExtra(800)
+        assertEquals(800L, c.firstCellExtraMs)
+        assertEquals(800L, saved)
+
+        c.changeFirstCellExtra(999_999)
+        assertEquals(ScanController.MAX_FIRST_CELL_EXTRA_MS, c.firstCellExtraMs)
+    }
+
+    // ---------------------------------------------------------------
     // Touch input, for trying it without a switch box
     // ---------------------------------------------------------------
 

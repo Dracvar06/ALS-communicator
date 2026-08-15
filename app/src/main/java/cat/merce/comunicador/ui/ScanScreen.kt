@@ -57,17 +57,26 @@ private val SettingsCornerInk = Color(0xFF6E6E6E)
 fun ScanScreen(controller: ScanController) {
 
     // The clock lives here and nowhere else. The scan machine itself never
-    // measures time; it only gets told that a step has passed.
+    // measures time; it only gets told that a step has passed. How long each
+    // step lasts comes from the controller, so the first letter of a row can be
+    // held longer than the rest.
     //
-    // Keyed on the interval as well, so dragging the speed slider restarts the
-    // loop at the new rate rather than waiting for the old one to come round.
-    LaunchedEffect(controller, controller.scanIntervalMs) {
+    // Restarts whenever the speed, the first-letter time, or the timing epoch
+    // changes. The epoch is bumped on every press, which resets the phase so
+    // the letter she just landed on gets its full time instead of whatever was
+    // left of a step already in progress.
+    LaunchedEffect(
+        controller,
+        controller.scanIntervalMs,
+        controller.firstCellExtraMs,
+        controller.timingEpoch,
+    ) {
         // Count from a fixed starting point rather than sleeping for the
         // interval each time. Plain repeated delays drift, and a scan that
         // slowly loses its rhythm is exactly what the brief forbids.
         var nextStepAt = SystemClock.elapsedRealtime()
         while (true) {
-            nextStepAt += controller.scanIntervalMs
+            nextStepAt += controller.currentStepDurationMs()
             delay((nextStepAt - SystemClock.elapsedRealtime()).coerceAtLeast(0L))
             controller.tick()
         }
@@ -340,6 +349,34 @@ private fun SettingsPanel(controller: ScanController) {
             Spacer(Modifier.weight(1f))
             Text("més lent", color = DimInk, fontFamily = Hyperlegible, fontSize = 22.sp)
         }
+
+        Spacer(Modifier.height(44.dp))
+
+        // Extra time on the first letter of each row, so entering a row and
+        // reacting to its first letter are not crammed into one interval.
+        var chosenFirst by remember { mutableFloatStateOf(controller.firstCellExtraMs.toFloat()) }
+
+        Text(
+            text = "Temps extra a la primera lletra: " +
+                "+${formatSeconds(chosenFirst.roundToLong())} s",
+            color = Ink,
+            fontFamily = Hyperlegible,
+            fontSize = 30.sp
+        )
+        Slider(
+            value = chosenFirst,
+            onValueChange = { chosenFirst = it },
+            onValueChangeFinished = { controller.changeFirstCellExtra(chosenFirst.roundToLong()) },
+            valueRange = 0f..ScanController.MAX_FIRST_CELL_EXTRA_MS.toFloat(),
+            steps = (ScanController.MAX_FIRST_CELL_EXTRA_MS /
+                ScanController.INTERVAL_STEP_MS).toInt() - 1,
+            colors = SliderDefaults.colors(
+                thumbColor = CellLit,
+                activeTrackColor = CellLit,
+                inactiveTrackColor = CellIdle,
+            ),
+            modifier = Modifier.fillMaxWidth().height(56.dp)
+        )
 
         Spacer(Modifier.height(44.dp))
 
