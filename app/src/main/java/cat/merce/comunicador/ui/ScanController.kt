@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import cat.merce.comunicador.prediction.Predictor
 import cat.merce.comunicador.prediction.WordListPredictor
 import cat.merce.comunicador.prediction.Words
+import cat.merce.comunicador.input.SwitchFilter
 import cat.merce.comunicador.scan.ScanLayout
 import cat.merce.comunicador.scan.ScanState
 import cat.merce.comunicador.scan.Scanner
@@ -18,8 +19,22 @@ import cat.merce.comunicador.scan.SelectResult
  * position into a letter or a word, keeps the history that [undo] walks back
  * through, and holds the state the screen draws from.
  */
+/** One key event as the diagnostics screen shows it. */
+data class KeyReport(
+    val keyCode: Int,
+    /** Android's own name for the key, such as SPACE or ENTER. */
+    val name: String,
+    /** What the app currently does with it, in Catalan, for the carer to read. */
+    val role: String,
+    /** Milliseconds since the previous key, to make bounce visible. */
+    val sinceLastMs: Long?,
+    /** False when the debounce filter threw it away. */
+    val accepted: Boolean,
+)
+
 class ScanController(
     initialIntervalMs: Long = DEFAULT_SCAN_INTERVAL_MS,
+    initialDebounceMs: Long = SwitchFilter.DEFAULT_DEBOUNCE_MS,
 ) {
 
     /**
@@ -58,6 +73,29 @@ class ScanController(
 
     var inSettings: Boolean by mutableStateOf(false)
         private set
+
+    /** The carer's screen for finding out what a switch interface sends. */
+    var inDiagnostics: Boolean by mutableStateOf(false)
+        private set
+
+    /** Newest first. Only filled while [inDiagnostics]. */
+    var recentKeys: List<KeyReport> by mutableStateOf(emptyList())
+        private set
+
+    /**
+     * Bumped whenever a carer touches the diagnostics screen, so the idle
+     * timeout can start again. She has no way to leave that screen herself, so
+     * it must let itself go when nobody is holding the tablet.
+     */
+    var diagnosticsTouch: Int by mutableStateOf(0)
+        private set
+
+    /** How close together two presses of one switch may be. */
+    var debounceMs: Long by mutableStateOf(initialDebounceMs)
+        private set
+
+    /** Called when the debounce changes, so it can be saved. */
+    var onDebounceChanged: ((Long) -> Unit)? = null
 
     /** True when the undo button would do something. */
     var canUndo: Boolean by mutableStateOf(false)
@@ -187,7 +225,31 @@ class ScanController(
         inSettings = true
     }
 
+    /** Opened from settings, by touch. Every key press is captured and shown. */
+    fun openDiagnostics() {
+        recentKeys = emptyList()
+        inDiagnostics = true
+        noteDiagnosticsTouch()
+    }
+
+    fun noteDiagnosticsTouch() {
+        diagnosticsTouch++
+    }
+
+    fun reportKey(report: KeyReport) {
+        if (!inDiagnostics) return
+        recentKeys = (listOf(report) + recentKeys).take(MAX_REPORTED_KEYS)
+    }
+
+    fun changeDebounce(millis: Long) {
+        val clamped = millis.coerceIn(0L, SwitchFilter.MAX_DEBOUNCE_MS)
+        if (clamped == debounceMs) return
+        debounceMs = clamped
+        onDebounceChanged?.invoke(clamped)
+    }
+
     fun closeSettings() {
+        inDiagnostics = false
         if (!inSettings) return
         inSettings = false
         // Back to the top, so the rhythm after settings is always the same.
@@ -313,6 +375,16 @@ class ScanController(
         const val INTERVAL_STEP_MS = 100L
 
         private const val MAX_HISTORY = 100
+
+        /** Enough lines to see a bounce burst, few enough to read at a glance. */
+        private const val MAX_REPORTED_KEYS = 10
+
+        /**
+         * Diagnostics closes itself after this long without a carer touching
+         * it. Key presses deliberately do not count: she would be pressing
+         * switches, and that is exactly when she is stranded.
+         */
+        const val DIAGNOSTICS_IDLE_MS = 90_000L
 
         /** Folded words that already have a dedicated key of their own. */
         private val ALREADY_ON_GRID = setOf("si", "no")

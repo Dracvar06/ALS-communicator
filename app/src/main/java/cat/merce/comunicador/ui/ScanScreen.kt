@@ -14,6 +14,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import cat.merce.comunicador.input.SwitchFilter
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -65,15 +69,133 @@ fun ScanScreen(controller: ScanController) {
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Background)) {
-        if (controller.inSettings) {
-            SettingsPanel(controller)
-        } else {
-            WritingGrid(controller)
-            SettingsCornerButton(
-                onOpen = controller::openSettings,
-                modifier = Modifier.align(Alignment.TopEnd)
+        when {
+            controller.inDiagnostics -> DiagnosticsPanel(controller)
+            controller.inSettings -> SettingsPanel(controller)
+            else -> {
+                WritingGrid(controller)
+                SettingsCornerButton(
+                    onOpen = controller::openSettings,
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Shows the raw key behind every press, so a carer can find out what a switch
+ * interface actually sends rather than anyone guessing.
+ *
+ * Plug the interface in, open this, press each switch. The name is what to put
+ * into WRITE_KEYS and UNDO_KEYS in MainActivity. The gap column makes contact
+ * bounce visible: a burst of presses milliseconds apart is one press of a
+ * bouncing switch, and the debounce setting is what to raise.
+ */
+@Composable
+private fun DiagnosticsPanel(controller: ScanController) {
+
+    // She cannot leave this screen: every key is swallowed to be reported, so
+    // neither switch does anything. It therefore has to let go by itself if
+    // the carer walks away. Only touch resets the clock, because she would be
+    // pressing switches the whole time and that is precisely the stranded case.
+    LaunchedEffect(controller.diagnosticsTouch) {
+        delay(ScanController.DIAGNOSTICS_IDLE_MS)
+        controller.closeSettings()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) { detectTapGestures { controller.noteDiagnosticsTouch() } }
+            .padding(40.dp)
+    ) {
+        Text(
+            text = "Comprovació dels polsadors",
+            color = Ink,
+            fontFamily = Hyperlegible,
+            fontWeight = FontWeight.Bold,
+            fontSize = 40.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "Prem cada polsador. Aquesta pantalla es tanca sola.",
+            color = DimInk,
+            fontFamily = Hyperlegible,
+            fontSize = 22.sp
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        if (controller.recentKeys.isEmpty()) {
+            Text(
+                text = "Esperant…",
+                color = DimInk,
+                fontFamily = Hyperlegible,
+                fontSize = 28.sp
             )
         }
+
+        for (key in controller.recentKeys) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+            ) {
+                Text(
+                    text = key.name,
+                    color = if (key.accepted) Ink else DimInk,
+                    fontFamily = Hyperlegible,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 30.sp,
+                    modifier = Modifier.weight(3f)
+                )
+                Text(
+                    text = "codi ${key.keyCode}",
+                    color = DimInk,
+                    fontFamily = Hyperlegible,
+                    fontSize = 26.sp,
+                    modifier = Modifier.weight(2f)
+                )
+                Text(
+                    text = key.role,
+                    color = if (key.accepted) CellLit else DimInk,
+                    fontFamily = Hyperlegible,
+                    fontSize = 26.sp,
+                    modifier = Modifier.weight(3f)
+                )
+                Text(
+                    text = key.sinceLastMs?.let { "+$it ms" } ?: "",
+                    color = DimInk,
+                    fontFamily = Hyperlegible,
+                    fontSize = 26.sp,
+                    modifier = Modifier.weight(2f)
+                )
+            }
+        }
+
+        Spacer(Modifier.weight(1f))
+
+        TouchButton(text = "TANCA", onTap = controller::closeSettings)
+    }
+}
+
+/** A plain touch button. Never focusable, so no switch can ever press it. */
+@Composable
+private fun TouchButton(text: String, onTap: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .background(CellIdle, RoundedCornerShape(12.dp))
+            .pointerInput(Unit) { detectTapGestures { onTap() } }
+            .padding(horizontal = 48.dp, vertical = 20.dp)
+    ) {
+        Text(
+            text = text,
+            color = Ink,
+            fontFamily = Hyperlegible,
+            fontWeight = FontWeight.Bold,
+            fontSize = 30.sp
+        )
     }
 }
 
@@ -128,7 +250,12 @@ private fun SettingsPanel(controller: ScanController) {
     var chosenMs by remember { mutableFloatStateOf(controller.scanIntervalMs.toFloat()) }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(48.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            // Scrolls, so this still works on a tablet shorter than the one it
+            // was laid out on.
+            .verticalScroll(rememberScrollState())
+            .padding(48.dp),
         verticalArrangement = Arrangement.Center
     ) {
         Text(
@@ -171,21 +298,38 @@ private fun SettingsPanel(controller: ScanController) {
             Text("més lent", color = DimInk, fontFamily = Hyperlegible, fontSize = 22.sp)
         }
 
-        Spacer(Modifier.height(56.dp))
+        Spacer(Modifier.height(44.dp))
 
-        Box(
-            modifier = Modifier
-                .background(CellIdle, RoundedCornerShape(12.dp))
-                .pointerInput(Unit) { detectTapGestures { controller.closeSettings() } }
-                .padding(horizontal = 48.dp, vertical = 20.dp)
-        ) {
-            Text(
-                text = "TANCA",
-                color = Ink,
-                fontFamily = Hyperlegible,
-                fontWeight = FontWeight.Bold,
-                fontSize = 30.sp
-            )
+        // How close together two presses of one switch may be. Raise it if a
+        // single press is producing several letters.
+        var chosenDebounce by remember { mutableFloatStateOf(controller.debounceMs.toFloat()) }
+
+        Text(
+            text = "Temps mínim entre polsacions: ${chosenDebounce.roundToLong()} ms",
+            color = Ink,
+            fontFamily = Hyperlegible,
+            fontSize = 30.sp
+        )
+        Slider(
+            value = chosenDebounce,
+            onValueChange = { chosenDebounce = it },
+            onValueChangeFinished = { controller.changeDebounce(chosenDebounce.roundToLong()) },
+            valueRange = 0f..SwitchFilter.MAX_DEBOUNCE_MS.toFloat(),
+            steps = (SwitchFilter.MAX_DEBOUNCE_MS / 25L).toInt() - 1,
+            colors = SliderDefaults.colors(
+                thumbColor = CellLit,
+                activeTrackColor = CellLit,
+                inactiveTrackColor = CellIdle,
+            ),
+            modifier = Modifier.fillMaxWidth().height(56.dp)
+        )
+
+        Spacer(Modifier.height(40.dp))
+
+        Row {
+            TouchButton(text = "TANCA", onTap = controller::closeSettings)
+            Spacer(Modifier.width(20.dp))
+            TouchButton(text = "COMPROVA ELS POLSADORS", onTap = controller::openDiagnostics)
         }
 
         Spacer(Modifier.height(20.dp))

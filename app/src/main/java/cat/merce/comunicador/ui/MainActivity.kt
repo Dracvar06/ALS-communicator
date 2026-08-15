@@ -2,6 +2,7 @@ package cat.merce.comunicador.ui
 
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -11,6 +12,8 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import cat.merce.comunicador.input.Switch
+import cat.merce.comunicador.input.SwitchFilter
 import cat.merce.comunicador.prediction.NgramModel
 import cat.merce.comunicador.prediction.NgramPredictor
 import cat.merce.comunicador.prediction.PersonalModel
@@ -20,14 +23,15 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
- * The only screen.
+ * The only activity.
  *
- * A Bluetooth switch interface presents itself as a keyboard, so the switch
- * arrives here as an ordinary key event. Space is the usual key; the others are
- * accepted so a plain keyboard can stand in during development.
+ * A Bluetooth switch interface presents itself as a keyboard, so each switch
+ * arrives here as an ordinary key event. Which key each switch sends depends on
+ * the box: see [WRITE_KEYS] and [UNDO_KEYS], and the diagnostics screen for
+ * finding out what a particular one actually sends.
  *
- * There is no debounce yet. A twitchy switch will register twice, and that
- * belongs in the input/ layer, which does not exist.
+ * Presses pass through [SwitchFilter] before they count, because a physical
+ * switch bounces and a hand that cannot be held still repeats.
  */
 class MainActivity : ComponentActivity() {
 
@@ -36,6 +40,14 @@ class MainActivity : ComponentActivity() {
 
     /** Null until the shipped Catalan model has finished loading. */
     private var predictor: NgramPredictor? = null
+
+    /** Turns a bouncing physical switch into single presses. */
+    private lateinit var switches: SwitchFilter
+
+    /** A separate copy, so testing switches cannot disturb the real one. */
+    private val diagnosticFilter by lazy { SwitchFilter(debounceMs = controller.debounceMs) }
+
+    private var lastDiagnosticKeyAt: Long? = null
 
     private val personalFile: File by lazy { File(filesDir, PERSONAL_FILE) }
 
@@ -47,8 +59,19 @@ class MainActivity : ComponentActivity() {
             initialIntervalMs = settings.getLong(
                 KEY_SCAN_INTERVAL,
                 ScanController.DEFAULT_SCAN_INTERVAL_MS
-            )
+            ),
+            initialDebounceMs = settings.getLong(
+                KEY_DEBOUNCE,
+                SwitchFilter.DEFAULT_DEBOUNCE_MS
+            ),
         )
+        switches = SwitchFilter(debounceMs = controller.debounceMs)
+        controller.onDebounceChanged = { millis ->
+            settings.edit { putLong(KEY_DEBOUNCE, millis) }
+            // Rebuilt rather than mutated, so the filter itself stays a plain
+            // value with no settings to keep in step.
+            switches = SwitchFilter(debounceMs = millis)
+        }
         // apply() writes on a background thread, so tuning the speed never
         // blocks the cursor.
         controller.onIntervalChanged = { millis ->
@@ -134,20 +157,63 @@ class MainActivity : ComponentActivity() {
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val write = event.keyCode in WRITE_KEYS
         val undo = event.keyCode in UNDO_KEYS
+
+        // On the diagnostics screen every key is swallowed and reported,
+        // including ones the app does not use. Finding out what an unknown
+        // switch box sends is the entire point of that screen.
+        if (controller.inDiagnostics) {
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                reportKey(event, write, undo)
+            }
+            return true
+        }
+
         if (!write && !undo) return super.dispatchKeyEvent(event)
 
         // Act on the press, and swallow the matching release so nothing else
         // sees it. repeatCount filters the auto-repeat that arrives when a
         // switch is held down, which would otherwise pour selections in.
         if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-            if (write) controller.press() else controller.undo()
+            val which = if (write) Switch.Write else Switch.Undo
+            // A physical switch bounces; this is what turns that into one press.
+            if (switches.accept(which, SystemClock.elapsedRealtime())) {
+                if (write) controller.press() else controller.undo()
+            }
         }
         return true
+    }
+
+    private fun reportKey(event: KeyEvent, write: Boolean, undo: Boolean) {
+        val now = SystemClock.elapsedRealtime()
+        val gap = lastDiagnosticKeyAt?.let { now - it }
+        lastDiagnosticKeyAt = now
+
+        val which = when {
+            write -> Switch.Write
+            undo -> Switch.Undo
+            else -> null
+        }
+        controller.reportKey(
+            KeyReport(
+                keyCode = event.keyCode,
+                name = KeyEvent.keyCodeToString(event.keyCode).removePrefix("KEYCODE_"),
+                role = when (which) {
+                    Switch.Write -> "escriu"
+                    Switch.Undo -> "desfà"
+                    null -> "sense assignar"
+                },
+                sinceLastMs = gap,
+                // Shown so a carer can see the debounce doing its job rather
+                // than wonder why a press did nothing.
+                accepted = which != null && diagnosticFilter.accept(which, now),
+            )
+        )
     }
 
     private companion object {
         const val SETTINGS_FILE = "comunicador"
         const val KEY_SCAN_INTERVAL = "scan_interval_ms"
+        const val KEY_DEBOUNCE = "debounce_ms"
         const val MODEL_ASSET = "ca-model.txt"
 
         /** Her own writing. Stays in the app's private storage, never leaves. */
