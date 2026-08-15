@@ -3,6 +3,7 @@ package cat.merce.comunicador.ui
 import android.os.SystemClock
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,25 +11,35 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlin.math.roundToLong
 
 private val Background = Color(0xFF000000)
 private val CellIdle = Color(0xFF1F1F1F)
 private val CellLit = Color(0xFFD32F2F)
 private val Ink = Color(0xFFFFFFFF)
+private val DimInk = Color(0xFF9E9E9E)
 private val TextAreaBackground = Color(0xFF121212)
 private val SettingsCorner = Color(0xFF2A2A2A)
 private val SettingsCornerInk = Color(0xFF6E6E6E)
@@ -39,9 +50,8 @@ fun ScanScreen(controller: ScanController) {
     // The clock lives here and nowhere else. The scan machine itself never
     // measures time; it only gets told that a step has passed.
     //
-    // Keyed on the interval as well, so changing the speed in settings restarts
-    // the loop at the new rate rather than waiting for the old one to come
-    // round.
+    // Keyed on the interval as well, so dragging the speed slider restarts the
+    // loop at the new rate rather than waiting for the old one to come round.
     LaunchedEffect(controller, controller.scanIntervalMs) {
         // Count from a fixed starting point rather than sleeping for the
         // interval each time. Plain repeated delays drift, and a scan that
@@ -55,39 +65,10 @@ fun ScanScreen(controller: ScanController) {
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Background)) {
-
-        Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
-
-            Banner(
-                text = if (controller.inSettings) {
-                    "VELOCITAT: ${formatSeconds(controller.scanIntervalMs)} s"
-                } else {
-                    controller.text + "|"
-                },
-                modifier = Modifier.fillMaxWidth().weight(1f)
-            )
-
-            // Every row gets the same number of slots so the columns line up
-            // even when a row is short.
-            val columns = controller.rows.maxOf { it.size }
-
-            for ((rowIndex, row) in controller.rows.withIndex()) {
-                Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                    for ((colIndex, key) in row.withIndex()) {
-                        KeyCell(
-                            label = controller.label(key),
-                            lit = controller.isLit(rowIndex, colIndex),
-                            modifier = Modifier.weight(1f).fillMaxHeight()
-                        )
-                    }
-                    if (row.size < columns) {
-                        Spacer(modifier = Modifier.weight((columns - row.size).toFloat()))
-                    }
-                }
-            }
-        }
-
-        if (!controller.inSettings) {
+        if (controller.inSettings) {
+            SettingsPanel(controller)
+        } else {
+            WritingGrid(controller)
             SettingsCornerButton(
                 onOpen = controller::openSettings,
                 modifier = Modifier.align(Alignment.TopEnd)
@@ -96,10 +77,132 @@ fun ScanScreen(controller: ScanController) {
     }
 }
 
+@Composable
+private fun WritingGrid(controller: ScanController) {
+    Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
+
+        ComposedText(
+            text = controller.text,
+            modifier = Modifier.fillMaxWidth().weight(1f)
+        )
+
+        // Every row gets the same number of slots so the columns line up even
+        // when a row is short.
+        val columns = controller.rows.maxOf { it.size }
+
+        for ((rowIndex, row) in controller.rows.withIndex()) {
+            Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                for ((colIndex, key) in row.withIndex()) {
+                    KeyCell(
+                        label = controller.label(key),
+                        lit = controller.isLit(rowIndex, colIndex),
+                        modifier = Modifier.weight(1f).fillMaxHeight()
+                    )
+                }
+                if (row.size < columns) {
+                    Spacer(modifier = Modifier.weight((columns - row.size).toFloat()))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The speed control, for a carer's finger rather than for the switch.
+ *
+ * Scanning this would be absurd: it is touched a handful of times by someone
+ * with working hands, and every control the grid has to carry costs her time on
+ * every letter for the rest of the day.
+ */
+@Composable
+private fun SettingsPanel(controller: ScanController) {
+
+    // The slider drives a local value and only commits when the finger lifts.
+    //
+    // Feeding it straight into the controller was a real bug: Slider emits a
+    // change while it is being laid out, before anyone has touched it, so
+    // merely opening this screen silently rewrote her saved speed by 1.7
+    // seconds. Committing on release means an event nobody caused cannot
+    // change anything. Re-read each time the panel opens, since it is only
+    // composed while settings are showing.
+    var chosenMs by remember { mutableFloatStateOf(controller.scanIntervalMs.toFloat()) }
+
+    Column(
+        modifier = Modifier.fillMaxSize().padding(48.dp),
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Velocitat de l'escaneig",
+            color = DimInk,
+            fontFamily = Hyperlegible,
+            fontSize = 28.sp
+        )
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = "${formatSeconds(chosenMs.roundToLong())} segons per pas",
+            color = Ink,
+            fontFamily = Hyperlegible,
+            fontWeight = FontWeight.Bold,
+            fontSize = 64.sp
+        )
+
+        Spacer(Modifier.height(40.dp))
+
+        Slider(
+            value = chosenMs,
+            onValueChange = { chosenMs = it },
+            onValueChangeFinished = { controller.changeInterval(chosenMs.roundToLong()) },
+            valueRange = ScanController.MIN_INTERVAL_MS.toFloat()..
+                ScanController.MAX_INTERVAL_MS.toFloat(),
+            // One stop per tenth of a second, so it cannot land somewhere odd.
+            steps = ((ScanController.MAX_INTERVAL_MS - ScanController.MIN_INTERVAL_MS) /
+                ScanController.INTERVAL_STEP_MS).toInt() - 1,
+            colors = SliderDefaults.colors(
+                thumbColor = CellLit,
+                activeTrackColor = CellLit,
+                inactiveTrackColor = CellIdle,
+            ),
+            modifier = Modifier.fillMaxWidth().height(64.dp)
+        )
+
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Text("més ràpid", color = DimInk, fontFamily = Hyperlegible, fontSize = 22.sp)
+            Spacer(Modifier.weight(1f))
+            Text("més lent", color = DimInk, fontFamily = Hyperlegible, fontSize = 22.sp)
+        }
+
+        Spacer(Modifier.height(56.dp))
+
+        Box(
+            modifier = Modifier
+                .background(CellIdle, RoundedCornerShape(12.dp))
+                .pointerInput(Unit) { detectTapGestures { controller.closeSettings() } }
+                .padding(horizontal = 48.dp, vertical = 20.dp)
+        ) {
+            Text(
+                text = "TANCA",
+                color = Ink,
+                fontFamily = Hyperlegible,
+                fontWeight = FontWeight.Bold,
+                fontSize = 30.sp
+            )
+        }
+
+        Spacer(Modifier.height(20.dp))
+        Text(
+            // She is never stuck here even if nobody is holding the tablet.
+            text = "Qualsevol dels dos polsadors també tanca aquesta pantalla.",
+            color = DimInk,
+            fontFamily = Hyperlegible,
+            fontSize = 20.sp
+        )
+    }
+}
+
 /**
  * A small, dim touch target for a carer.
  *
- * It is not part of the grid and cannot be reached by the switch, so she can
+ * It is not part of the grid and cannot be reached by either switch, so she can
  * never land in settings by mistake. It stays deliberately unobtrusive: it is
  * pressed a few times a month, and every pixel of attention it takes is taken
  * from the letters.
@@ -117,9 +220,7 @@ private fun SettingsCornerButton(onOpen: () -> Unit, modifier: Modifier = Modifi
             .padding(6.dp)
             .size(44.dp)
             .background(SettingsCorner, RoundedCornerShape(8.dp))
-            .pointerInput(Unit) {
-                detectTapGestures(onTap = { onOpen() })
-            },
+            .pointerInput(Unit) { detectTapGestures(onTap = { onOpen() }) },
         contentAlignment = Alignment.Center
     ) {
         Text(text = "⚙", color = SettingsCornerInk, fontSize = 22.sp)
@@ -127,7 +228,7 @@ private fun SettingsCornerButton(onOpen: () -> Unit, modifier: Modifier = Modifi
 }
 
 @Composable
-private fun Banner(text: String, modifier: Modifier = Modifier) {
+private fun ComposedText(text: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .padding(4.dp)
@@ -135,7 +236,14 @@ private fun Banner(text: String, modifier: Modifier = Modifier) {
             .padding(horizontal = 20.dp, vertical = 12.dp),
         contentAlignment = Alignment.CenterStart
     ) {
-        Text(text = text, color = Ink, fontSize = 40.sp)
+        Text(
+            // A trailing bar so the end of the sentence is visible, and so a
+            // typed space is not an invisible event.
+            text = "$text|",
+            color = Ink,
+            fontFamily = Hyperlegible,
+            fontSize = 52.sp
+        )
     }
 }
 
@@ -153,18 +261,20 @@ private fun KeyCell(label: String, lit: Boolean, modifier: Modifier = Modifier) 
         Text(
             text = label,
             color = Ink,
-            // Words need to be smaller than single characters to fit.
+            fontFamily = Hyperlegible,
+            fontWeight = FontWeight.Bold,
+            // Whole words have to be smaller than single characters to fit.
             fontSize = when {
-                label.length > 6 -> 16.sp
-                label.length > 1 -> 22.sp
-                else -> 36.sp
+                label.length > 7 -> 22.sp
+                label.length > 1 -> 30.sp
+                else -> 60.sp
             },
             textAlign = TextAlign.Center
         )
     }
 }
 
-/** 1000 becomes "1,0", using the comma Catalan writes decimals with. */
+/** 1300 becomes "1,3", using the comma Catalan writes decimals with. */
 private fun formatSeconds(millis: Long): String {
     val tenths = (millis + 50) / 100
     return "${tenths / 10},${tenths % 10}"

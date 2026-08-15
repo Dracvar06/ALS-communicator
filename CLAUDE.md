@@ -24,12 +24,17 @@ These are not preferences. Violating any of them is a bug.
    prediction work, disk I/O, or allocation-heavy code may run on the thread
    that drives it. If something might take longer than a few milliseconds, it
    runs elsewhere and its result is picked up on the next cycle.
-2. **One input.** The entire app must be operable with a single key event.
-   Never require a second button, a swipe, a long press, or a timed double
-   press.
+2. **Two switches, nothing else.** One writes, one undoes. Never require a
+   swipe, a long press, or a timed double press, and never a third switch.
+   Undo must always be available: from inside a row it leaves the row, and
+   after a letter it removes the letter and returns to choosing within that
+   row. Changed from one switch on 2026-08-15, after trying the app: with
+   limited mobility a mis-press is frequent enough that waiting for the row to
+   time out is too slow a way to recover.
 3. **No dead ends.** Every screen, menu, and dialog must be exitable with the
-   switch alone. If the app can reach a state where she cannot get out, it has
-   failed completely.
+   switches alone. If the app can reach a state where she cannot get out, it has
+   failed completely. Settings is the one screen the scan cannot reach, opened
+   by a carer's touch; either switch closes it.
 4. **No network.** Version one works fully offline. No analytics, no crash
    reporting to a server, no cloud calls.
 5. **Screen stays on.** Wake lock held while the app is in the foreground.
@@ -104,9 +109,11 @@ and any form of syncing.
 ## Input hardware
 
 A commercial or DIY Bluetooth switch interface presents itself as a keyboard and
-sends a single key (assume Space) when the switch closes. The app listens for
-that key. Keep a 3.5mm mono jack on the switch side so the physical switch itself
-can be swapped as her movement changes, without touching the app.
+sends a key when a switch closes. Two switches are needed: assume Space to write
+and Enter to undo. The keys accepted are listed in `MainActivity`; most
+interfaces can be reconfigured, so check what the hardware actually sends. Keep a
+3.5mm mono jack per switch so the physical switches themselves can be swapped as
+her movement changes, without touching the app.
 
 ## Things to check before building, not after
 

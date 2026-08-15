@@ -72,6 +72,30 @@ class Scanner(
         }
     }
 
+    /**
+     * Go back to scanning rows, sitting on [row].
+     *
+     * Used by undo to step out of a row that was entered by mistake. The next
+     * tick carries on to the row below, so she resumes where she was rather
+     * than at the top.
+     */
+    fun goToRow(row: Int) {
+        require(row in 0 until layout.rowCount) { "no row $row in this layout" }
+        state = ScanState.Row(row)
+    }
+
+    /**
+     * Enter [row] again from its first cell, as though it had just been chosen.
+     *
+     * Used by undo after removing a letter: she is put back inside the row the
+     * letter came from, with a full set of passes, so she can pick again.
+     */
+    fun goIntoRow(row: Int) {
+        require(row in 0 until layout.rowCount) { "no row $row in this layout" }
+        passesCompleted = 0
+        state = ScanState.Cell(row = row, col = 0)
+    }
+
     /** The switch was pressed. */
     fun select(): SelectResult = when (val current = state) {
         is ScanState.Row -> {

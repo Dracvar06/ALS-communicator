@@ -165,6 +165,47 @@ class ScannerTest {
     }
 
     // ---------------------------------------------------------------
+    // Being put back, which is what undo needs
+    // ---------------------------------------------------------------
+
+    @Test
+    fun `it can be sent back out to row scanning`() {
+        val s = scanner()
+        s.tick()   // row 1
+        s.select() // inside row 1
+        s.goToRow(1)
+        assertEquals(ScanState.Row(1), s.state)
+        s.tick()
+        assertEquals(ScanState.Row(2), s.state)
+    }
+
+    @Test
+    fun `it can be sent back into a row at the first cell`() {
+        val s = scanner()
+        s.goIntoRow(2)
+        assertEquals(ScanState.Cell(row = 2, col = 0), s.state)
+    }
+
+    @Test
+    fun `being sent back into a row gives a fresh set of passes`() {
+        // Otherwise undoing into a row she had nearly used up would drop her
+        // straight back out of it.
+        val s = scanner(passLimit = 2)
+        s.select()             // enter row 0, four cells
+        repeat(4) { s.tick() } // one pass gone
+        s.goIntoRow(0)
+
+        repeat(4) { s.tick() } // this is pass one again, not pass two
+        assertEquals(ScanState.Cell(row = 0, col = 0), s.state)
+    }
+
+    @Test
+    fun `a row that does not exist is rejected`() {
+        assertThrows(IllegalArgumentException::class.java) { scanner().goToRow(3) }
+        assertThrows(IllegalArgumentException::class.java) { scanner().goIntoRow(-1) }
+    }
+
+    // ---------------------------------------------------------------
     // Rows of different lengths
     // ---------------------------------------------------------------
 

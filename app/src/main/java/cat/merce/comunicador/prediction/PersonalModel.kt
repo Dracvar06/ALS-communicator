@@ -37,6 +37,24 @@ class PersonalModel {
         }
     }
 
+    /** Takes back what [learn] recorded, when undo removes a finished word. */
+    fun unlearn(previous: String, word: String) {
+        val learned = word.lowercase()
+
+        wordCounts[learned]?.let { count ->
+            if (count <= 1) wordCounts.remove(learned) else wordCounts[learned] = count - 1
+            rankedWords = null
+        }
+
+        val head = Words.fold(previous)
+        val followers = followCounts[head] ?: return
+        followers[learned]?.let { count ->
+            if (count <= 1) followers.remove(learned) else followers[learned] = count - 1
+            if (followers.isEmpty()) followCounts.remove(head)
+            rankedFollowers.remove(head)
+        }
+    }
+
     /** Her own words, most used first. */
     fun words(): List<String> =
         rankedWords ?: rank(wordCounts).also { rankedWords = it }

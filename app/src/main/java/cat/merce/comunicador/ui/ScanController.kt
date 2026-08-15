@@ -15,8 +15,8 @@ import cat.merce.comunicador.scan.SelectResult
  * Joins the scan machine to the screen.
  *
  * The [Scanner] deals only in row and column numbers. This class turns a chosen
- * position into a letter, a word or a setting, and holds the state the screen
- * draws from.
+ * position into a letter or a word, keeps the history that [undo] walks back
+ * through, and holds the state the screen draws from.
  */
 class ScanController(
     initialIntervalMs: Long = DEFAULT_SCAN_INTERVAL_MS,
@@ -32,9 +32,13 @@ class ScanController(
     /** Called when she finishes a word, so it can be remembered. */
     var onWordFinished: ((previous: String, word: String) -> Unit)? = null
 
-    /** The grid on screen. Swaps when settings open. */
-    var rows: List<List<Key>> by mutableStateOf(CATALAN_KEYBOARD)
-        private set
+    /** Called when undo takes a finished word back, so it can be forgotten. */
+    var onWordUndone: ((previous: String, word: String) -> Unit)? = null
+
+    /** Called when the speed changes, so it can be saved. */
+    var onIntervalChanged: ((Long) -> Unit)? = null
+
+    val rows: List<List<Key>> get() = CATALAN_KEYBOARD
 
     /** Where the highlight is. */
     var state: ScanState by mutableStateOf(ScanState.Row(0))
@@ -55,10 +59,27 @@ class ScanController(
     var inSettings: Boolean by mutableStateOf(false)
         private set
 
-    /** Called when the speed changes, so it can be saved. */
-    var onIntervalChanged: ((Long) -> Unit)? = null
+    /** True when the undo button would do something. */
+    var canUndo: Boolean by mutableStateOf(false)
+        private set
 
-    private var scanner = Scanner(layoutOf(CATALAN_KEYBOARD))
+    private val scanner = Scanner(ScanLayout(CATALAN_KEYBOARD.map { it.size }))
+
+    /**
+     * What undo walks back through, oldest first.
+     *
+     * Only two things ever need reversing: opening a row, and changing the
+     * text. Everything the grid can do is one of those.
+     */
+    private sealed interface Step {
+        /** She opened [row]. Undoing leaves it again. */
+        data class OpenedRow(val row: Int) : Step
+
+        /** She changed the text from [before], while inside [row]. */
+        data class ChangedText(val before: String, val row: Int) : Step
+    }
+
+    private val history = ArrayDeque<Step>()
 
     init {
         refreshSuggestions()
@@ -66,29 +87,96 @@ class ScanController(
 
     /** The scan interval elapsed. */
     fun tick() {
+        // Nothing is scanning while a carer has settings open.
+        if (inSettings) return
+
+        val before = state
         scanner.tick()
         state = scanner.state
-    }
 
-    /** The switch was pressed. */
-    fun press() {
-        when (val result = scanner.select()) {
-            // Opening a row does nothing on its own.
-            SelectResult.EnteredRow -> Unit
-            is SelectResult.SelectedCell -> {
-                val position = result.position
-                apply(rows[position.row][position.col])
+        if (before is ScanState.Cell && state is ScanState.Row) {
+            // The row ran out of passes and let go by itself. She is already
+            // back where undo would have put her, so that step is spent.
+            if (history.lastOrNull() is Step.OpenedRow) {
+                history.removeLast()
+                refreshCanUndo()
             }
         }
-        // Read back afterwards: choosing a settings key can replace the
-        // scanner entirely.
+    }
+
+    /** The writing switch was pressed. */
+    fun press() {
+        if (inSettings) {
+            // Any press gets a carer out of settings. Settings is the one place
+            // the grid cannot reach, so it must not need the grid to leave.
+            closeSettings()
+            return
+        }
+
+        val before = state
+        when (val result = scanner.select()) {
+            SelectResult.EnteredRow -> {
+                if (before is ScanState.Row) push(Step.OpenedRow(before.row))
+            }
+
+            is SelectResult.SelectedCell -> {
+                val row = result.position.row
+                val textBefore = text
+                apply(rows[row][result.position.col])
+
+                // Opening the row and choosing from it are one action to undo,
+                // not two, so the row-opening step is folded into this one.
+                if (history.lastOrNull() is Step.OpenedRow) history.removeLast()
+                push(Step.ChangedText(textBefore, row))
+
+                noticeFinishedWord(textBefore, text)
+                refreshSuggestions()
+            }
+        }
         state = scanner.state
     }
 
-    /** Swaps in the full model once it has finished loading. */
-    fun usePredictor(replacement: Predictor) {
-        predictor = replacement
-        refreshSuggestions()
+    /**
+     * The undo switch was pressed. Steps back exactly one action.
+     *
+     * Inside a row, it leaves the row. After a letter, it removes the letter
+     * and puts her back inside the row that letter came from, so she can choose
+     * again without waiting for the scan to come round. Pressing it repeatedly
+     * keeps walking back.
+     */
+    fun undo() {
+        if (inSettings) {
+            closeSettings()
+            return
+        }
+
+        when (val step = history.removeLastOrNull()) {
+            null -> Unit // Nothing to undo. Doing nothing is the right answer.
+
+            is Step.OpenedRow -> {
+                scanner.goToRow(step.row)
+                state = scanner.state
+            }
+
+            is Step.ChangedText -> {
+                val undoneText = text
+                text = step.before
+                scanner.goIntoRow(step.row)
+                state = scanner.state
+
+                // She is inside the row again, so one more undo should take her
+                // out of it, exactly as if she had just opened it.
+                push(Step.OpenedRow(step.row))
+
+                // A word taken back is not a word she meant, so it must not
+                // stay in what the app has learned about her.
+                finishedWord(step.before, undoneText)?.let { (previous, word) ->
+                    onWordUndone?.invoke(previous, word)
+                }
+                refreshSuggestions()
+            }
+        }
+        refreshCanUndo()
     }
 
     /**
@@ -96,9 +184,31 @@ class ScanController(
      * land here by mistake; a carer opens it by touch.
      */
     fun openSettings() {
-        if (inSettings) return
         inSettings = true
-        switchTo(SETTINGS_KEYBOARD)
+    }
+
+    fun closeSettings() {
+        if (!inSettings) return
+        inSettings = false
+        // Back to the top, so the rhythm after settings is always the same.
+        scanner.goToRow(0)
+        state = scanner.state
+        history.clear()
+        refreshCanUndo()
+    }
+
+    /** Set by the settings slider, under a carer's finger. */
+    fun changeInterval(millis: Long) {
+        val clamped = millis.coerceIn(MIN_INTERVAL_MS, MAX_INTERVAL_MS)
+        if (clamped == scanIntervalMs) return
+        scanIntervalMs = clamped
+        onIntervalChanged?.invoke(clamped)
+    }
+
+    /** Swaps in the full model once it has finished loading. */
+    fun usePredictor(replacement: Predictor) {
+        predictor = replacement
+        refreshSuggestions()
     }
 
     /** The word shown on a cell right now. */
@@ -115,7 +225,6 @@ class ScanController(
     }
 
     private fun apply(key: Key) {
-        val before = text
         when (key) {
             is Key.Letter -> text += key.char
             is Key.Suggestion -> applySuggestion(key.slot)
@@ -124,30 +233,7 @@ class ScanController(
             Key.Space -> text += " "
             Key.Delete -> text = text.dropLast(1)
             Key.Clear -> text = ""
-
-            Key.Slower -> setInterval(scanIntervalMs + INTERVAL_STEP_MS)
-            Key.Faster -> setInterval(scanIntervalMs - INTERVAL_STEP_MS)
-            Key.CloseSettings -> {
-                inSettings = false
-                switchTo(CATALAN_KEYBOARD)
-            }
         }
-        noticeFinishedWord(before, text)
-        refreshSuggestions()
-    }
-
-    /**
-     * A word counts as finished the moment a space appears after it, whether
-     * she spelled it out or took a suggestion. Deletions are not learned from:
-     * a word she removed is the opposite of a word she meant.
-     */
-    private fun noticeFinishedWord(before: String, after: String) {
-        if (after.length <= before.length) return
-        if (!after.endsWith(" ") || before.endsWith(" ")) return
-
-        val written = after.trim().split(' ').filter { it.isNotEmpty() }
-        val word = written.lastOrNull() ?: return
-        onWordFinished?.invoke(written.getOrElse(written.size - 2) { "" }, word)
     }
 
     /**
@@ -164,6 +250,40 @@ class ScanController(
         text = if (finished.isEmpty()) "$word " else "$finished $word "
     }
 
+    private fun push(step: Step) {
+        history.addLast(step)
+        // Undoing back to the start of the day is not a thing anyone needs, and
+        // the list must not grow without limit.
+        while (history.size > MAX_HISTORY) history.removeFirst()
+        refreshCanUndo()
+    }
+
+    private fun refreshCanUndo() {
+        canUndo = history.isNotEmpty()
+    }
+
+    private fun noticeFinishedWord(before: String, after: String) {
+        finishedWord(before, after)?.let { (previous, word) ->
+            onWordFinished?.invoke(previous, word)
+        }
+    }
+
+    /**
+     * The word completed by going from [before] to [after], if any.
+     *
+     * A word counts as finished the moment a space appears after it, whether
+     * she spelled it out or took a suggestion. Deletions finish nothing: a word
+     * she removed is the opposite of a word she meant.
+     */
+    private fun finishedWord(before: String, after: String): Pair<String, String>? {
+        if (after.length <= before.length) return null
+        if (!after.endsWith(" ") || before.endsWith(" ")) return null
+
+        val written = after.trim().split(' ').filter { it.isNotEmpty() }
+        val word = written.lastOrNull() ?: return null
+        return written.getOrElse(written.size - 2) { "" } to word
+    }
+
     private fun refreshSuggestions() {
         // A few more than needed, because some get dropped just below.
         val offered = predictor.predict(text, SUGGESTION_SLOTS + ALREADY_ON_GRID.size)
@@ -174,20 +294,6 @@ class ScanController(
             // Upper case throughout, to match the letter keys.
             .map { it.uppercase() }
             .take(SUGGESTION_SLOTS)
-    }
-
-    private fun setInterval(millis: Long) {
-        val clamped = millis.coerceIn(MIN_INTERVAL_MS, MAX_INTERVAL_MS)
-        if (clamped == scanIntervalMs) return
-        scanIntervalMs = clamped
-        onIntervalChanged?.invoke(clamped)
-    }
-
-    /** Starts a fresh scan over a different grid, from the top. */
-    private fun switchTo(keyboard: List<List<Key>>) {
-        rows = keyboard
-        scanner = Scanner(layoutOf(keyboard))
-        state = scanner.state
     }
 
     companion object {
@@ -203,12 +309,12 @@ class ScanController(
         /** Above this a short sentence takes minutes. */
         const val MAX_INTERVAL_MS = 5000L
 
+        /** The slider moves in tenths of a second. */
         const val INTERVAL_STEP_MS = 100L
+
+        private const val MAX_HISTORY = 100
 
         /** Folded words that already have a dedicated key of their own. */
         private val ALREADY_ON_GRID = setOf("si", "no")
-
-        private fun layoutOf(keyboard: List<List<Key>>) =
-            ScanLayout(keyboard.map { it.size })
     }
 }

@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
             settings.edit { putLong(KEY_SCAN_INTERVAL, millis) }
         }
         controller.onWordFinished = ::rememberWord
+        controller.onWordUndone = ::forgetWord
 
         loadPrediction()
 
@@ -104,7 +105,17 @@ class MainActivity : ComponentActivity() {
     private fun rememberWord(previous: String, word: String) {
         val learning = predictor?.personal ?: return
         learning.learn(previous, word)
+        savePersonal(learning)
+    }
 
+    /** Undo took the word back, so it was never something she meant to say. */
+    private fun forgetWord(previous: String, word: String) {
+        val learning = predictor?.personal ?: return
+        learning.unlearn(previous, word)
+        savePersonal(learning)
+    }
+
+    private fun savePersonal(learning: PersonalModel) {
         // Written out on every word rather than at shutdown, because the app
         // being killed is exactly the case where the history must survive.
         lifecycleScope.launch(Dispatchers.IO) {
@@ -113,21 +124,23 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * The switch is taken here, before the key reaches anything on screen.
+     * Both switches are taken here, before the key reaches anything on screen.
      *
      * onKeyDown is too late: a focused view gets first refusal, and Compose
-     * treats space on a focused clickable as a click. That let the switch press
-     * the settings button. Claiming the key at the window means one switch can
-     * only ever do one thing, which is what the brief asks for.
+     * treats space on a focused clickable as a click. That let a switch press
+     * the settings button. Claiming the keys at the window means each switch
+     * can only ever do the one thing it is for.
      */
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (event.keyCode !in SWITCH_KEYS) return super.dispatchKeyEvent(event)
+        val write = event.keyCode in WRITE_KEYS
+        val undo = event.keyCode in UNDO_KEYS
+        if (!write && !undo) return super.dispatchKeyEvent(event)
 
         // Act on the press, and swallow the matching release so nothing else
         // sees it. repeatCount filters the auto-repeat that arrives when a
         // switch is held down, which would otherwise pour selections in.
         if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-            controller.press()
+            if (write) controller.press() else controller.undo()
         }
         return true
     }
@@ -140,11 +153,23 @@ class MainActivity : ComponentActivity() {
         /** Her own writing. Stays in the app's private storage, never leaves. */
         const val PERSONAL_FILE = "personal-model.txt"
 
-        val SWITCH_KEYS = setOf(
+        /**
+         * A two switch interface sends a different key for each switch. Which
+         * key each one sends depends on the box, and most can be reconfigured,
+         * so these two lists are where to look when the hardware arrives.
+         *
+         * On a plain keyboard: space writes, enter undoes.
+         */
+        val WRITE_KEYS = setOf(
             KeyEvent.KEYCODE_SPACE,
+            KeyEvent.KEYCODE_DPAD_CENTER,
+            KeyEvent.KEYCODE_1,
+        )
+
+        val UNDO_KEYS = setOf(
             KeyEvent.KEYCODE_ENTER,
             KeyEvent.KEYCODE_NUMPAD_ENTER,
-            KeyEvent.KEYCODE_DPAD_CENTER,
+            KeyEvent.KEYCODE_2,
         )
     }
 }

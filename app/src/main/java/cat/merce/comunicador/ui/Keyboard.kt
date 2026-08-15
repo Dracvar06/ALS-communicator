@@ -37,20 +37,6 @@ sealed interface Key {
     data object Clear : Key {
         override val label: String get() = "×"
     }
-
-    // Settings. These never appear on the writing grid.
-
-    data object Slower : Key {
-        override val label: String get() = "MÉS LENT"
-    }
-
-    data object Faster : Key {
-        override val label: String get() = "MÉS RÀPID"
-    }
-
-    data object CloseSettings : Key {
-        override val label: String get() = "TANCA"
-    }
 }
 
 private fun l(char: String) = Key.Letter(char)
@@ -88,14 +74,4 @@ val CATALAN_KEYBOARD: List<List<Key>> = listOf(
     listOf(l("D"), l("M"), l("P"), l("Q"), l("B"), l("G")),
     listOf(l("F"), l("V"), l("H"), l("X"), l("J"), l("Z")),
     listOf(l("Ç"), l("Y"), l("K"), l("W"), Key.Clear),
-)
-
-/**
- * The settings grid.
- *
- * One row, so it is quick to cross, and it carries its own way out. A screen
- * she could enter but not leave would be the worst failure the app has.
- */
-val SETTINGS_KEYBOARD: List<List<Key>> = listOf(
-    listOf(Key.Slower, Key.Faster, Key.CloseSettings),
 )
