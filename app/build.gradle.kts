@@ -12,8 +12,8 @@ android {
         // 26 = Android 8.0. Set by the project brief.
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1"
+        versionCode = 2
+        versionName = "0.2"
     }
 
     buildTypes {
@@ -29,6 +29,9 @@ android {
 
     buildFeatures {
         compose = true
+        // So the version can be shown on screen. Without a cable it is the
+        // only way to tell which build is on the tablet.
+        buildConfig = true
     }
 }
 

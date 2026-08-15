@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import cat.merce.comunicador.BuildConfig
 import cat.merce.comunicador.input.SwitchFilter
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Slider
@@ -339,6 +340,15 @@ private fun SettingsPanel(controller: ScanController) {
             color = DimInk,
             fontFamily = Hyperlegible,
             fontSize = 20.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            // Printed because there is no cable to ask the tablet with.
+            text = "Comunicador ${BuildConfig.VERSION_NAME} " +
+                "(build ${BuildConfig.VERSION_CODE})",
+            color = DimInk,
+            fontFamily = Hyperlegible,
+            fontSize = 18.sp
         )
     }
 }
