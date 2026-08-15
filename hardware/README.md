@@ -11,11 +11,44 @@ two buttons to it; pressing one makes it send *space*, the other *enter*. The
 phone sees a keyboard, the app sees its two switches, and nothing in the app has
 to know a switch was involved at all.
 
+## Which ESP32, exactly
+
+There are many. You want the **original ESP32** — the module marked
+**ESP32-WROOM-32** — on a dev board with a USB port. That chip has the older
+"Bluetooth Classic + BLE" radio the keyboard library is best tested against, so
+it just works.
+
+Boards that are the right chip, sold under different names — any of these is fine:
+
+- **ESP32 DevKitC** (V4)
+- **NodeMCU-32S**
+- **ESP32 DevKit v1** (the common 30- or 38-pin board)
+- **WEMOS / LOLIN D32**
+
+When reading a listing, check three things:
+
+- It says **ESP32-WROOM-32** (the suffixes 32D / 32E / 32U are all fine).
+- It has a **USB port** (micro-USB or USB-C) and a **CP2102 or CH340** chip on
+  board — that is what lets you flash it over the cable. A bare module with no
+  USB is the wrong thing.
+- It does **not** say S2, S3, C3, C6, or H2 (see below).
+
+**Put it back if the name contains:**
+
+| Says | Why not |
+| --- | --- |
+| ESP32-**S2** | No Bluetooth at all. Will never work. |
+| ESP32-**S3** | BLE works but needs extra library setup; avoid the hassle. |
+| ESP32-**C3** / **C6** / **H2** | Newer BLE-only chips; fiddlier with this library. |
+| "bare module", "no USB" | Nothing to plug the cable into to flash it. |
+
+Buy **two** — they cost a few euros and it is good to have a spare.
+
 ## Shopping list
 
 | Part | Notes | Rough cost |
 | --- | --- | --- |
-| ESP32-WROOM-32 dev board | Sold as "ESP32 Dev Module". The plain classic ESP32 — not an S2 (no Bluetooth), and simpler than S3/C3 for this. | €5–8 |
+| ESP32-WROOM-32 dev board | The board picked above. | €5–8 |
 | 2 × accessibility switches | The big round buttons, each ending in a 3.5mm mono jack. This is the AAC standard. | varies |
 | 2 × panel-mount 3.5mm mono jack sockets | So a switch can be unplugged and swapped without touching the board. | ~€2 |
 | A small box, and USB power | A phone power bank runs it for days; a LiPo makes it tidy later. | — |
