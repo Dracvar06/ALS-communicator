@@ -55,7 +55,8 @@ class ScanController(
     /** Called when the speed changes, so it can be saved. */
     var onIntervalChanged: ((Long) -> Unit)? = null
 
-    val rows: List<List<Key>> get() = CATALAN_KEYBOARD
+    /** The grid currently on screen: the phrases when in that screen, else writing. */
+    val rows: List<List<Key>> get() = if (inPhrases) phrasesGrid else CATALAN_KEYBOARD
 
     /** Where the highlight is. */
     var state: ScanState by mutableStateOf(ScanState.Row(0))
@@ -138,11 +139,22 @@ class ScanController(
     /** Called when touch input is turned on or off, so it can be saved. */
     var onTouchInputChanged: ((Boolean) -> Unit)? = null
 
+    /** Called with a phrase to say out loud. */
+    var onSpeak: ((String) -> Unit)? = null
+
+    /** True while the phrases screen is showing instead of the writing grid. */
+    var inPhrases: Boolean by mutableStateOf(false)
+        private set
+
+    /** The saved phrases, editable by a helper. */
+    private var phrases: List<String> = DEFAULT_PHRASES
+    private var phrasesGrid: List<List<Key>> = phrasesKeyboard(phrases)
+
     /** True when the undo button would do something. */
     var canUndo: Boolean by mutableStateOf(false)
         private set
 
-    private val scanner = Scanner(ScanLayout(CATALAN_KEYBOARD.map { it.size }))
+    private var scanner = Scanner(ScanLayout(CATALAN_KEYBOARD.map { it.size }))
 
     /**
      * What undo walks back through, oldest first.
@@ -204,17 +216,27 @@ class ScanController(
 
             is SelectResult.SelectedCell -> {
                 val row = result.position.row
-                val textBefore = text
-                apply(rows[row][result.position.col])
+                when (val key = rows[row][result.position.col]) {
+                    // The phrases screen and back out of it rebuild the scanner,
+                    // so they are handled apart from anything that changes text.
+                    Key.OpenPhrases -> { openPhrases(); return }
+                    Key.Back -> { closePhrases(); return }
+                    is Key.Phrase -> onSpeak?.invoke(key.text)
 
-                // Opening the row and choosing from it are one action to undo,
-                // not two, so the row-opening step is folded into this one.
-                if (history.lastOrNull() is Step.OpenedRow) history.removeLast()
-                push(Step.ChangedText(textBefore, row))
+                    else -> {
+                        val textBefore = text
+                        apply(key)
 
-                justEnteredRow = false
-                noticeFinishedWord(textBefore, text)
-                refreshSuggestions()
+                        // Opening the row and choosing from it are one action to
+                        // undo, not two, so the row-opening step folds into this.
+                        if (history.lastOrNull() is Step.OpenedRow) history.removeLast()
+                        push(Step.ChangedText(textBefore, row))
+
+                        justEnteredRow = false
+                        noticeFinishedWord(textBefore, text)
+                        refreshSuggestions()
+                    }
+                }
             }
         }
         state = scanner.state
@@ -235,9 +257,24 @@ class ScanController(
             closeSettings()
             return
         }
+        if (inPhrases) {
+            // On the phrases screen the undo switch is the way back to writing,
+            // a guaranteed physical exit even if the TORNA cell is missed.
+            closePhrases()
+            return
+        }
 
         when (val step = history.removeLastOrNull()) {
-            null -> Unit // Nothing to undo. Doing nothing is the right answer.
+            null -> {
+                // Nothing left in the history, so fall back to a plain backspace.
+                // This is what replaces the delete key the writing grid used to
+                // have: the undo switch removes a letter when there is no larger
+                // action to take back.
+                if (text.isNotEmpty()) {
+                    text = text.dropLast(1)
+                    refreshSuggestions()
+                }
+            }
 
             is Step.OpenedRow -> {
                 scanner.goToRow(step.row)
@@ -270,6 +307,42 @@ class ScanController(
             }
         }
         refreshCanUndo()
+    }
+
+    /** Replaces the saved phrases, e.g. after a helper edits them. */
+    fun setPhrases(newPhrases: List<String>) {
+        phrases = newPhrases
+        phrasesGrid = phrasesKeyboard(newPhrases)
+        if (inPhrases) rescan(phrasesGrid)
+    }
+
+    /** Switches to the phrases screen, which scans like the writing grid. */
+    fun openPhrases() {
+        if (inPhrases) return
+        inPhrases = true
+        history.clear()
+        rescan(phrasesGrid)
+        justEnteredRow = false
+        restartTiming()
+        refreshCanUndo()
+    }
+
+    /** Returns from the phrases screen to writing. */
+    fun closePhrases() {
+        if (!inPhrases) return
+        inPhrases = false
+        rescan(CATALAN_KEYBOARD)
+        justEnteredRow = false
+        restartTiming()
+        // Leave no phrase-screen steps behind to undo once back at writing.
+        history.clear()
+        refreshCanUndo()
+    }
+
+    /** Starts a fresh scan over a new layout, from the top row. */
+    private fun rescan(layout: List<List<Key>>) {
+        scanner = Scanner(ScanLayout(layout.map { it.size }))
+        state = scanner.state
     }
 
     /**
@@ -382,6 +455,9 @@ class ScanController(
             Key.Space -> text += " "
             Key.Delete -> text = text.dropLast(1)
             Key.Clear -> text = ""
+
+            // Handled in press(), never routed through here.
+            Key.OpenPhrases, Key.Back, is Key.Phrase -> Unit
         }
     }
 

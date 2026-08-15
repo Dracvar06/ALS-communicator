@@ -3,6 +3,7 @@ package cat.merce.comunicador.ui
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.SystemClock
+import android.speech.tts.TextToSpeech
 import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -21,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.Locale
 
 /**
  * The only activity.
@@ -43,6 +45,12 @@ class MainActivity : ComponentActivity() {
 
     /** Turns a bouncing physical switch into single presses. */
     private lateinit var switches: SwitchFilter
+
+    /** Speaks phrases aloud. Null until it has finished starting up. */
+    private var tts: TextToSpeech? = null
+
+    /** The editable phrase list. A helper can change this file. */
+    private val phrasesFile: File by lazy { File(filesDir, PHRASES_FILE) }
 
     /** A separate copy, so testing switches cannot disturb the real one. */
     private val diagnosticFilter by lazy { SwitchFilter(debounceMs = controller.debounceMs) }
@@ -75,6 +83,24 @@ class MainActivity : ComponentActivity() {
         }
         controller.onFirstCellExtraChanged = { millis ->
             settings.edit { putLong(KEY_FIRST_CELL_EXTRA, millis) }
+        }
+
+        controller.setPhrases(loadPhrases())
+        controller.onSpeak = { text ->
+            // Fails quietly if no voice is installed: the phrase still selects,
+            // it just does not speak. Flush, so a new phrase interrupts the last.
+            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "phrase")
+        }
+        tts = TextToSpeech(this) { status ->
+            if (status != TextToSpeech.SUCCESS) return@TextToSpeech
+            val catalan = tts?.setLanguage(Locale("ca"))
+            if (catalan == TextToSpeech.LANG_MISSING_DATA ||
+                catalan == TextToSpeech.LANG_NOT_SUPPORTED
+            ) {
+                // Spanish is closer to Catalan than the engine default, if the
+                // Catalan voice is not installed on this device.
+                tts?.setLanguage(Locale("es"))
+            }
         }
         switches = SwitchFilter(debounceMs = controller.debounceMs)
         controller.onDebounceChanged = { millis ->
@@ -134,6 +160,28 @@ class MainActivity : ComponentActivity() {
                 controller.usePredictor(loaded)
             }
         }
+    }
+
+    /**
+     * Reads the phrases from the editable file, seeding it with the defaults the
+     * first time so a helper has something to edit rather than a blank file.
+     */
+    private fun loadPhrases(): List<String> {
+        if (!phrasesFile.exists()) {
+            runCatching { phrasesFile.writeText(DEFAULT_PHRASES.joinToString("\n")) }
+            return DEFAULT_PHRASES
+        }
+        val lines = runCatching { phrasesFile.readLines() }.getOrNull()
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+        return if (lines.isNullOrEmpty()) DEFAULT_PHRASES else lines
+    }
+
+    override fun onDestroy() {
+        tts?.stop()
+        tts?.shutdown()
+        tts = null
+        super.onDestroy()
     }
 
     private fun rememberWord(previous: String, word: String) {
@@ -227,6 +275,7 @@ class MainActivity : ComponentActivity() {
         const val KEY_DEBOUNCE = "debounce_ms"
         const val KEY_TOUCH_INPUT = "touch_input"
         const val KEY_FIRST_CELL_EXTRA = "first_cell_extra_ms"
+        const val PHRASES_FILE = "phrases.txt"
         const val MODEL_ASSET = "ca-model.txt"
 
         /** Her own writing. Stays in the app's private storage, never leaves. */

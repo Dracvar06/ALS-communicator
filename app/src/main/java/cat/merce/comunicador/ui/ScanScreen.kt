@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -85,6 +86,16 @@ fun ScanScreen(controller: ScanController) {
         when {
             controller.inDiagnostics -> DiagnosticsPanel(controller)
             controller.inSettings -> SettingsPanel(controller)
+            controller.inPhrases -> {
+                PhrasesGrid(controller)
+                // Same halves as writing: right selects, left goes back.
+                if (controller.touchInput) {
+                    TouchZones(
+                        onWrite = controller::press,
+                        onUndo = controller::undo,
+                    )
+                }
+            }
             else -> {
                 WritingGrid(controller)
                 // Sits above the grid but below the gear, so the gear corner
@@ -526,6 +537,56 @@ private fun ComposedText(text: String, modifier: Modifier = Modifier) {
                 lineHeight = 58.sp
             )
         }
+    }
+}
+
+/**
+ * The phrases screen: no text box, just the scannable grid of whole phrases,
+ * with a full-width TORNA across the top to leave. Selecting a phrase speaks it.
+ */
+@Composable
+private fun PhrasesGrid(controller: ScanController) {
+    Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
+        for ((rowIndex, row) in controller.rows.withIndex()) {
+            Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                for ((colIndex, key) in row.withIndex()) {
+                    PhraseCell(
+                        label = controller.label(key),
+                        lit = controller.isLit(rowIndex, colIndex),
+                        modifier = Modifier.weight(1f).fillMaxHeight()
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PhraseCell(label: String, lit: Boolean, modifier: Modifier = Modifier) {
+    BoxWithConstraints(
+        modifier = modifier
+            .padding(5.dp)
+            .background(
+                color = if (lit) CellLit else CellIdle,
+                shape = RoundedCornerShape(10.dp)
+            )
+            .padding(8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // Whole sentences, so they wrap and are sized from the cell rather than
+        // squeezed onto one line. Capped so a short phrase is not enormous.
+        val size = (maxHeight.value * 0.24f).coerceIn(15f, 30f)
+        Text(
+            text = label,
+            color = Ink,
+            fontFamily = Hyperlegible,
+            fontWeight = FontWeight.Bold,
+            fontSize = size.sp,
+            lineHeight = (size * 1.2f).sp,
+            textAlign = TextAlign.Center,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
