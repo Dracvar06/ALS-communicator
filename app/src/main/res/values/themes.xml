@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- A platform theme rather than a Material one, so the app pulls in no
+         extra library just to have a window. Black background so there is no
+         white flash while the app starts. -->
+    <style name="Theme.Comunicador" parent="@android:style/Theme.Material.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>

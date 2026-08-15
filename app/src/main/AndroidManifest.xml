@@ -1,12 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Deliberately has no activity yet. The ui/ layer is not built. This app
-         currently exists only so the pure Kotlin layers have somewhere to live
-         and be unit tested. -->
     <application
         android:allowBackup="false"
         android:label="Comunicador"
-        android:supportsRtl="false" />
+        android:supportsRtl="false"
+        android:theme="@style/Theme.Comunicador">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|keyboardHidden|keyboard"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
 
 </manifest>
