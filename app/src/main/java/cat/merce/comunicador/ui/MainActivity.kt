@@ -303,13 +303,13 @@ class MainActivity : ComponentActivity() {
      */
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val down = event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0
-        val token = keyToken(event.keyCode)
+        val token = eventToken(event)
 
         // While binding or on diagnostics, every key is swallowed: one to be
         // captured, the other to be shown. repeatCount filters the auto-repeat
         // of a held button, which would otherwise pour presses in.
         if (controller.bindingRole != null || controller.inDiagnostics) {
-            if (down) handlePress(token, keyName(event.keyCode))
+            if (down) handlePress(token, eventName(event))
             return true
         }
 
@@ -318,9 +318,32 @@ class MainActivity : ComponentActivity() {
         if (token !in writeTokens && token !in undoTokens) {
             return super.dispatchKeyEvent(event)
         }
-        if (down) handlePress(token, keyName(event.keyCode))
+        if (down) handlePress(token, eventName(event))
         return true
     }
+
+    /**
+     * How a key event is identified.
+     *
+     * Normally the key code, but a controller can send buttons Android has no
+     * name for: the Stadia pad's triggers arrive as KEYCODE_UNKNOWN, code 0,
+     * so every one of them looked identical and none could be bound. The scan
+     * code is the raw code from the device and stays distinct per button, so it
+     * identifies exactly the buttons the key code cannot.
+     */
+    private fun eventToken(event: KeyEvent): String =
+        if (event.keyCode != KeyEvent.KEYCODE_UNKNOWN || event.scanCode == 0) {
+            keyToken(event.keyCode)
+        } else {
+            scanToken(event.scanCode)
+        }
+
+    private fun eventName(event: KeyEvent): String =
+        if (event.keyCode != KeyEvent.KEYCODE_UNKNOWN || event.scanCode == 0) {
+            keyName(event.keyCode)
+        } else {
+            scanName(event.scanCode)
+        }
 
     /**
      * A controller's triggers and d-pad arrive here as analog axes, not keys.
@@ -464,13 +487,31 @@ class MainActivity : ComponentActivity() {
         fun keyName(code: Int) =
             KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_")
 
+        fun scanToken(code: Int) = "s:$code"
+
+        /**
+         * Linux input codes for the gamepad buttons Android often leaves
+         * unnamed, so the helper sees "R2" rather than a bare number. Anything
+         * not listed still works; it is just shown by its number.
+         */
+        val SCAN_NAMES = mapOf(
+            304 to "A", 305 to "B", 307 to "X", 308 to "Y",
+            310 to "L1", 311 to "R1",
+            312 to "L2", 313 to "R2",
+            314 to "SELECT", 315 to "START", 316 to "LOGO",
+            317 to "STICK ESQ.", 318 to "STICK DRET",
+        )
+
+        fun scanName(code: Int) = SCAN_NAMES[code] ?: "BOTÓ $code"
+
         /** A readable name for a bound token, for showing the helper. */
         fun labelForToken(token: String): String = when {
             token.startsWith("k:") -> keyName(token.removePrefix("k:").toIntOrNull() ?: 0)
+            token.startsWith("s:") -> scanName(token.removePrefix("s:").toIntOrNull() ?: 0)
             else -> AXIS_CHANNELS.firstOrNull { it.token == token }?.label ?: "EIX"
         }
 
-        /** A number to show beside a reported input; the axis or key code. */
+        /** A number to show beside a reported input; the axis, key or scan code. */
         fun tokenCode(token: String): Int =
             token.substringAfter(':').substringBefore(':').toIntOrNull() ?: 0
     }
