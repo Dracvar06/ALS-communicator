@@ -32,6 +32,18 @@ android {
     }
 }
 
+// Prints the scan walkthrough: ./gradlew walkthrough
+// A reading aid. It runs the class from the test sources, so nothing it needs
+// is ever packaged into the app.
+tasks.register<JavaExec>("walkthrough") {
+    group = "documentation"
+    description = "Prints a step by step walkthrough of the scan state machine."
+    val unitTests = tasks.named<Test>("testDebugUnitTest")
+    dependsOn("compileDebugUnitTestKotlin")
+    classpath = files({ unitTests.get().classpath })
+    mainClass.set("cat.merce.comunicador.scan.ScanWalkthroughKt")
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
