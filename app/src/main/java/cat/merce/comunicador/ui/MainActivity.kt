@@ -64,7 +64,11 @@ class MainActivity : ComponentActivity() {
                 KEY_DEBOUNCE,
                 SwitchFilter.DEFAULT_DEBOUNCE_MS
             ),
+            initialTouchInput = settings.getBoolean(KEY_TOUCH_INPUT, true),
         )
+        controller.onTouchInputChanged = { on ->
+            settings.edit { putBoolean(KEY_TOUCH_INPUT, on) }
+        }
         switches = SwitchFilter(debounceMs = controller.debounceMs)
         controller.onDebounceChanged = { millis ->
             settings.edit { putLong(KEY_DEBOUNCE, millis) }
@@ -214,6 +218,7 @@ class MainActivity : ComponentActivity() {
         const val SETTINGS_FILE = "comunicador"
         const val KEY_SCAN_INTERVAL = "scan_interval_ms"
         const val KEY_DEBOUNCE = "debounce_ms"
+        const val KEY_TOUCH_INPUT = "touch_input"
         const val MODEL_ASSET = "ca-model.txt"
 
         /** Her own writing. Stays in the app's private storage, never leaves. */

@@ -220,4 +220,42 @@ class ScanControllerTest {
         c.changeInterval(1500)
         assertEquals(1500L, saved)
     }
+
+    // ---------------------------------------------------------------
+    // Touch input, for trying it without a switch box
+    // ---------------------------------------------------------------
+
+    @Test
+    fun `turning touch input off is reported so it can be saved`() {
+        val c = ScanController(initialTouchInput = true)
+        var saved: Boolean? = null
+        c.onTouchInputChanged = { saved = it }
+
+        c.useTouchInput(false)
+        assertFalse(c.touchInput)
+        assertEquals(false, saved)
+    }
+
+    @Test
+    fun `setting touch input to what it already is changes nothing`() {
+        val c = ScanController(initialTouchInput = false)
+        var reported = false
+        c.onTouchInputChanged = { reported = true }
+
+        c.useTouchInput(false)
+        assertFalse(reported)
+    }
+
+    @Test
+    fun `the tap halves drive the same writing and undo as the switches`() {
+        // The screen taps call exactly press and undo, so touch and switches
+        // are the same two actions and cannot drift apart.
+        val c = ScanController()
+        c.press() // right half: open row 0
+        c.press() // right half: choose its first cell
+        assertTrue(c.text.isNotEmpty())
+
+        c.undo()  // left half
+        assertEquals("", c.text)
+    }
 }

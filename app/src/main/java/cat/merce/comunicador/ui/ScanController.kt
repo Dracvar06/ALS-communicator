@@ -35,6 +35,7 @@ data class KeyReport(
 class ScanController(
     initialIntervalMs: Long = DEFAULT_SCAN_INTERVAL_MS,
     initialDebounceMs: Long = SwitchFilter.DEFAULT_DEBOUNCE_MS,
+    initialTouchInput: Boolean = true,
 ) {
 
     /**
@@ -96,6 +97,18 @@ class ScanController(
 
     /** Called when the debounce changes, so it can be saved. */
     var onDebounceChanged: ((Long) -> Unit)? = null
+
+    /**
+     * When on, tapping the screen stands in for the two switches: the right
+     * half writes, the left half undoes. For trying the app on a phone with no
+     * switch box plugged in. A carer turns it off once real switches arrive, so
+     * a stray touch cannot type.
+     */
+    var touchInput: Boolean by mutableStateOf(initialTouchInput)
+        private set
+
+    /** Called when touch input is turned on or off, so it can be saved. */
+    var onTouchInputChanged: ((Boolean) -> Unit)? = null
 
     /** True when the undo button would do something. */
     var canUndo: Boolean by mutableStateOf(false)
@@ -239,6 +252,12 @@ class ScanController(
     fun reportKey(report: KeyReport) {
         if (!inDiagnostics) return
         recentKeys = (listOf(report) + recentKeys).take(MAX_REPORTED_KEYS)
+    }
+
+    fun useTouchInput(enabled: Boolean) {
+        if (enabled == touchInput) return
+        touchInput = enabled
+        onTouchInputChanged?.invoke(enabled)
     }
 
     fun changeDebounce(millis: Long) {

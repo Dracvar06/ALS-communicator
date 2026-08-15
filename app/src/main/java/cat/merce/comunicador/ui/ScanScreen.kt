@@ -24,6 +24,8 @@ import cat.merce.comunicador.input.SwitchFilter
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -77,6 +79,15 @@ fun ScanScreen(controller: ScanController) {
             controller.inSettings -> SettingsPanel(controller)
             else -> {
                 WritingGrid(controller)
+                // Sits above the grid but below the gear, so the gear corner
+                // still opens settings. Only present when a carer has left
+                // touch input on.
+                if (controller.touchInput) {
+                    TouchZones(
+                        onWrite = controller::press,
+                        onUndo = controller::undo,
+                    )
+                }
                 SettingsCornerButton(
                     onOpen = controller::openSettings,
                     modifier = Modifier.align(Alignment.TopEnd)
@@ -180,6 +191,35 @@ private fun DiagnosticsPanel(controller: ScanController) {
         Spacer(Modifier.weight(1f))
 
         TouchButton(text = "TANCA", onTap = controller::closeSettings)
+    }
+}
+
+/**
+ * Two invisible tap targets over the grid, so the screen itself can stand in
+ * for the two switches while there is no switch box: right half writes, left
+ * half undoes. The halves match the switches, not the reading order, because
+ * the writing switch is the one used far more often and the right is the
+ * easier reach for most people.
+ *
+ * Transparent on purpose. The grid is what she reads; a visible split would
+ * only add clutter and imply the letters themselves are buttons, which they
+ * are not.
+ */
+@Composable
+private fun TouchZones(onWrite: () -> Unit, onUndo: () -> Unit) {
+    Row(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .pointerInput(Unit) { detectTapGestures { onUndo() } }
+        )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .pointerInput(Unit) { detectTapGestures { onWrite() } }
+        )
     }
 }
 
@@ -326,6 +366,36 @@ private fun SettingsPanel(controller: ScanController) {
             ),
             modifier = Modifier.fillMaxWidth().height(56.dp)
         )
+
+        Spacer(Modifier.height(40.dp))
+
+        // Turn touch input off once real switches arrive, so a stray touch on
+        // the screen cannot type.
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Tocar la pantalla per escriure",
+                    color = Ink,
+                    fontFamily = Hyperlegible,
+                    fontSize = 30.sp
+                )
+                Text(
+                    text = "Dreta: escriu. Esquerra: desfà.",
+                    color = DimInk,
+                    fontFamily = Hyperlegible,
+                    fontSize = 20.sp
+                )
+            }
+            Switch(
+                checked = controller.touchInput,
+                onCheckedChange = { controller.useTouchInput(it) },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Ink,
+                    checkedTrackColor = CellLit,
+                    uncheckedTrackColor = CellIdle,
+                ),
+            )
+        }
 
         Spacer(Modifier.height(40.dp))
 
