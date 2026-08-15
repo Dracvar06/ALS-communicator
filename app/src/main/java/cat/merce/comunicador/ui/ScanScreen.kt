@@ -254,9 +254,12 @@ private fun TouchButton(text: String, onTap: () -> Unit) {
 private fun WritingGrid(controller: ScanController) {
     Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
 
+        // The text box gets close to two rows' worth of height, so a sentence
+        // is easy to read at a glance. It is the thing being said, so it earns
+        // the room.
         ComposedText(
             text = controller.text,
-            modifier = Modifier.fillMaxWidth().weight(1f)
+            modifier = Modifier.fillMaxWidth().weight(1.9f)
         )
 
         // Every row gets the same number of slots so the columns line up even
@@ -504,20 +507,23 @@ private fun ComposedText(text: String, modifier: Modifier = Modifier) {
         modifier = modifier
             .padding(4.dp)
             .background(TextAreaBackground, RoundedCornerShape(10.dp))
-            .padding(horizontal = 20.dp, vertical = 10.dp)
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+        // A short sentence sits centred in the box; a long one fills it and
+        // scrolls, so it never floats awkwardly at the top of a tall panel.
+        contentAlignment = Alignment.CenterStart
     ) {
         // The reader can drag this to scroll back through everything she has
         // written. On her own device the switches do the writing, so a touch
         // here only ever scrolls; it never types.
-        Column(modifier = Modifier.fillMaxSize().verticalScroll(scroll)) {
+        Column(modifier = Modifier.fillMaxWidth().verticalScroll(scroll)) {
             Text(
                 // A trailing bar so the end of the sentence is visible, and so
                 // a typed space is not an invisible event.
                 text = "$text|",
                 color = Ink,
                 fontFamily = Hyperlegible,
-                fontSize = 40.sp,
-                lineHeight = 48.sp
+                fontSize = 48.sp,
+                lineHeight = 58.sp
             )
         }
     }
