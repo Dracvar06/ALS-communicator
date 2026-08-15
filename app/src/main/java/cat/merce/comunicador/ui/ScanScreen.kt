@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import cat.merce.comunicador.BuildConfig
+import cat.merce.comunicador.input.Switch
 import cat.merce.comunicador.input.SwitchFilter
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Slider
@@ -93,6 +94,7 @@ fun ScanScreen(controller: ScanController) {
                     TouchZones(
                         onWrite = controller::press,
                         onUndo = controller::undo,
+                        debounceMs = controller.debounceMs,
                     )
                 }
             }
@@ -105,6 +107,7 @@ fun ScanScreen(controller: ScanController) {
                     TouchZones(
                         onWrite = controller::press,
                         onUndo = controller::undo,
+                        debounceMs = controller.debounceMs,
                     )
                 }
                 SettingsCornerButton(
@@ -225,19 +228,32 @@ private fun DiagnosticsPanel(controller: ScanController) {
  * are not.
  */
 @Composable
-private fun TouchZones(onWrite: () -> Unit, onUndo: () -> Unit) {
+private fun TouchZones(onWrite: () -> Unit, onUndo: () -> Unit, debounceMs: Long) {
+    // The same debounce as the physical switches, so a tremor that taps twice
+    // counts once here too. Rebuilt when the setting changes. Without this, the
+    // touch path skipped the filter entirely and every double tap registered.
+    val filter = remember(debounceMs) { SwitchFilter(debounceMs = debounceMs) }
+
     Row(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
-                .pointerInput(Unit) { detectTapGestures { onUndo() } }
+                .pointerInput(Unit) {
+                    detectTapGestures {
+                        if (filter.accept(Switch.Undo, SystemClock.elapsedRealtime())) onUndo()
+                    }
+                }
         )
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
-                .pointerInput(Unit) { detectTapGestures { onWrite() } }
+                .pointerInput(Unit) {
+                    detectTapGestures {
+                        if (filter.accept(Switch.Write, SystemClock.elapsedRealtime())) onWrite()
+                    }
+                }
         )
     }
 }
