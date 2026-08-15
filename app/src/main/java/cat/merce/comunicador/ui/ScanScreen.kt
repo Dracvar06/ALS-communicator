@@ -3,7 +3,6 @@ package cat.merce.comunicador.ui
 import android.os.SystemClock
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -494,28 +493,31 @@ private fun SettingsCornerButton(onOpen: () -> Unit, modifier: Modifier = Modifi
 private fun ComposedText(text: String, modifier: Modifier = Modifier) {
     val scroll = rememberScrollState()
 
-    // Keep the end of the sentence in view. What she just wrote is the part
-    // she needs to see; the beginning can slide off to the left.
-    LaunchedEffect(text) { scroll.scrollTo(scroll.maxValue) }
+    // Always keep the newest words in view. A long sentence wraps onto more
+    // lines than the box can show, so the end is what matters; the beginning
+    // scrolls up out of sight. Keyed on maxValue as well as the text, so once
+    // the new line has been laid out we scroll to the true bottom rather than
+    // wherever the old bottom was.
+    LaunchedEffect(text, scroll.maxValue) { scroll.scrollTo(scroll.maxValue) }
 
-    BoxWithConstraints(
+    Box(
         modifier = modifier
             .padding(4.dp)
             .background(TextAreaBackground, RoundedCornerShape(10.dp))
-            .padding(horizontal = 20.dp, vertical = 10.dp),
-        contentAlignment = Alignment.CenterStart
+            .padding(horizontal = 20.dp, vertical = 10.dp)
     ) {
-        val size = minOf(maxHeight.value * 0.52f, 52f)
-        Row(modifier = Modifier.horizontalScroll(scroll)) {
+        // The reader can drag this to scroll back through everything she has
+        // written. On her own device the switches do the writing, so a touch
+        // here only ever scrolls; it never types.
+        Column(modifier = Modifier.fillMaxSize().verticalScroll(scroll)) {
             Text(
                 // A trailing bar so the end of the sentence is visible, and so
                 // a typed space is not an invisible event.
                 text = "$text|",
                 color = Ink,
                 fontFamily = Hyperlegible,
-                fontSize = size.sp,
-                maxLines = 1,
-                softWrap = false
+                fontSize = 40.sp,
+                lineHeight = 48.sp
             )
         }
     }
