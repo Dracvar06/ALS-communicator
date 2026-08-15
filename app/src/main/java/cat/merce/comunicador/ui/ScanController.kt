@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import cat.merce.comunicador.prediction.Predictor
 import cat.merce.comunicador.prediction.WordListPredictor
+import cat.merce.comunicador.prediction.Words
 import cat.merce.comunicador.scan.ScanLayout
 import cat.merce.comunicador.scan.ScanState
 import cat.merce.comunicador.scan.Scanner
@@ -18,9 +19,18 @@ import cat.merce.comunicador.scan.SelectResult
  * draws from.
  */
 class ScanController(
-    private val predictor: Predictor = WordListPredictor(),
     initialIntervalMs: Long = DEFAULT_SCAN_INTERVAL_MS,
 ) {
+
+    /**
+     * Starts as the small built-in list and is replaced by the full Catalan
+     * model once it has been read from disk. Swapping rather than waiting means
+     * the grid is usable the instant the app opens.
+     */
+    private var predictor: Predictor = WordListPredictor()
+
+    /** Called when she finishes a word, so it can be remembered. */
+    var onWordFinished: ((previous: String, word: String) -> Unit)? = null
 
     /** The grid on screen. Swaps when settings open. */
     var rows: List<List<Key>> by mutableStateOf(CATALAN_KEYBOARD)
@@ -75,6 +85,12 @@ class ScanController(
         state = scanner.state
     }
 
+    /** Swaps in the full model once it has finished loading. */
+    fun usePredictor(replacement: Predictor) {
+        predictor = replacement
+        refreshSuggestions()
+    }
+
     /**
      * Opens settings. Deliberately not reachable by scanning, so she cannot
      * land here by mistake; a carer opens it by touch.
@@ -99,6 +115,7 @@ class ScanController(
     }
 
     private fun apply(key: Key) {
+        val before = text
         when (key) {
             is Key.Letter -> text += key.char
             is Key.Suggestion -> applySuggestion(key.slot)
@@ -115,7 +132,22 @@ class ScanController(
                 switchTo(CATALAN_KEYBOARD)
             }
         }
+        noticeFinishedWord(before, text)
         refreshSuggestions()
+    }
+
+    /**
+     * A word counts as finished the moment a space appears after it, whether
+     * she spelled it out or took a suggestion. Deletions are not learned from:
+     * a word she removed is the opposite of a word she meant.
+     */
+    private fun noticeFinishedWord(before: String, after: String) {
+        if (after.length <= before.length) return
+        if (!after.endsWith(" ") || before.endsWith(" ")) return
+
+        val written = after.trim().split(' ').filter { it.isNotEmpty() }
+        val word = written.lastOrNull() ?: return
+        onWordFinished?.invoke(written.getOrElse(written.size - 2) { "" }, word)
     }
 
     /**
@@ -133,8 +165,15 @@ class ScanController(
     }
 
     private fun refreshSuggestions() {
-        // Upper case throughout, to match the letter keys.
-        suggestions = predictor.predict(text, SUGGESTION_SLOTS).map { it.uppercase() }
+        // A few more than needed, because some get dropped just below.
+        val offered = predictor.predict(text, SUGGESTION_SLOTS + ALREADY_ON_GRID.size)
+        suggestions = offered
+            // Sí and no have their own keys, so spending a suggestion slot on
+            // them would waste one of the three most valuable cells.
+            .filterNot { Words.fold(it) in ALREADY_ON_GRID }
+            // Upper case throughout, to match the letter keys.
+            .map { it.uppercase() }
+            .take(SUGGESTION_SLOTS)
     }
 
     private fun setInterval(millis: Long) {
@@ -165,6 +204,9 @@ class ScanController(
         const val MAX_INTERVAL_MS = 5000L
 
         const val INTERVAL_STEP_MS = 100L
+
+        /** Folded words that already have a dedicated key of their own. */
+        private val ALREADY_ON_GRID = setOf("si", "no")
 
         private fun layoutOf(keyboard: List<List<Key>>) =
             ScanLayout(keyboard.map { it.size })

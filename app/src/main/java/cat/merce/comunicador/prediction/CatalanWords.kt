@@ -18,6 +18,23 @@ package cat.merce.comunicador.prediction
  * raw frequency. Words further down exist mainly to be reached by their first
  * few letters.
  */
+/**
+ * What to offer when she has typed nothing at all.
+ *
+ * Raw corpus frequency is the wrong answer here. The commonest Catalan words
+ * are *no*, *que* and *de*, and nobody opens a sentence with *de*. On a blank
+ * screen the useful thing is a way in: asking, naming a need, greeting someone.
+ *
+ * These are chosen, not measured, and they are worth arguing about with someone
+ * who knows her.
+ */
+val CATALAN_OPENERS: List<String> = listOf(
+    "vull", "necessito", "ajuda", "gràcies", "si us plau",
+    "aigua", "dolor", "lavabo", "menjar", "fred",
+    "calor", "cansada", "espera", "para", "hola",
+    "estic", "tinc", "puc", "on", "què",
+)
+
 val CATALAN_WORDS: List<String> = listOf(
     // Asking for things, first because they open a sentence.
     "vull", "necessito", "ajuda", "si us plau", "gràcies",

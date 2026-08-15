@@ -47,6 +47,8 @@ tasks.register<JavaExec>("walkthrough") {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
+    // lifecycleScope, for loading the model off the main thread.
+    implementation(libs.androidx.lifecycle.runtime.ktx)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

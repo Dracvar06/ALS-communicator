@@ -10,6 +10,14 @@ import androidx.core.content.edit
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.lifecycleScope
+import cat.merce.comunicador.prediction.NgramModel
+import cat.merce.comunicador.prediction.NgramPredictor
+import cat.merce.comunicador.prediction.PersonalModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
 /**
  * The only screen.
@@ -26,6 +34,11 @@ class MainActivity : ComponentActivity() {
     private lateinit var settings: SharedPreferences
     private lateinit var controller: ScanController
 
+    /** Null until the shipped Catalan model has finished loading. */
+    private var predictor: NgramPredictor? = null
+
+    private val personalFile: File by lazy { File(filesDir, PERSONAL_FILE) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -41,6 +54,9 @@ class MainActivity : ComponentActivity() {
         controller.onIntervalChanged = { millis ->
             settings.edit { putLong(KEY_SCAN_INTERVAL, millis) }
         }
+        controller.onWordFinished = ::rememberWord
+
+        loadPrediction()
 
         // She cannot wake a sleeping tablet, so it must not sleep.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -54,6 +70,45 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             ScanScreen(controller)
+        }
+    }
+
+    /**
+     * Reads the model and her own history off the main thread, then swaps them
+     * in. The grid works from the first frame with the small built-in list; a
+     * megabyte of Catalan is not worth a blank screen.
+     */
+    private fun loadPrediction() {
+        lifecycleScope.launch {
+            val loaded = withContext(Dispatchers.IO) {
+                runCatching {
+                    val model = assets.open(MODEL_ASSET).bufferedReader()
+                        .use { NgramModel.load(it) }
+                    val personal = if (personalFile.exists()) {
+                        PersonalModel.fromLines(personalFile.readLines())
+                    } else {
+                        PersonalModel()
+                    }
+                    NgramPredictor(model, personal)
+                }.getOrNull()
+            }
+            // A missing or damaged asset leaves the built-in list in place.
+            // Worse suggestions are survivable; a crash on startup is not.
+            if (loaded != null) {
+                predictor = loaded
+                controller.usePredictor(loaded)
+            }
+        }
+    }
+
+    private fun rememberWord(previous: String, word: String) {
+        val learning = predictor?.personal ?: return
+        learning.learn(previous, word)
+
+        // Written out on every word rather than at shutdown, because the app
+        // being killed is exactly the case where the history must survive.
+        lifecycleScope.launch(Dispatchers.IO) {
+            runCatching { personalFile.writeText(learning.toLines().joinToString("\n")) }
         }
     }
 
@@ -80,6 +135,10 @@ class MainActivity : ComponentActivity() {
     private companion object {
         const val SETTINGS_FILE = "comunicador"
         const val KEY_SCAN_INTERVAL = "scan_interval_ms"
+        const val MODEL_ASSET = "ca-model.txt"
+
+        /** Her own writing. Stays in the app's private storage, never leaves. */
+        const val PERSONAL_FILE = "personal-model.txt"
 
         val SWITCH_KEYS = setOf(
             KeyEvent.KEYCODE_SPACE,
