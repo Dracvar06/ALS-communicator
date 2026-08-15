@@ -134,11 +134,10 @@ fun ScanScreen(controller: ScanController) {
 @Composable
 private fun DiagnosticsPanel(controller: ScanController) {
 
-    // She cannot leave this screen: every key is swallowed to be reported, so
-    // neither switch does anything. It therefore has to let go by itself if
-    // the carer walks away. Only touch resets the clock, because she would be
-    // pressing switches the whole time and that is precisely the stranded case.
-    LaunchedEffect(controller.diagnosticsTouch) {
+    // This screen swallows every key to report it, so a switch cannot leave it.
+    // It closes itself a short while after the carer's last touch. Button
+    // presses do not extend it, so a drifting controller cannot pin it open.
+    LaunchedEffect(controller.diagnosticsActivity) {
         delay(ScanController.DIAGNOSTICS_IDLE_MS)
         controller.closeSettings()
     }
@@ -146,7 +145,7 @@ private fun DiagnosticsPanel(controller: ScanController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(Unit) { detectTapGestures { controller.noteDiagnosticsTouch() } }
+            .pointerInput(Unit) { detectTapGestures { controller.noteDiagnosticsActivity() } }
             .padding(40.dp)
     ) {
         Text(

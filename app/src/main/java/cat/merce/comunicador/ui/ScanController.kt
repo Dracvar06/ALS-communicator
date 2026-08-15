@@ -117,11 +117,11 @@ class ScanController(
         private set
 
     /**
-     * Bumped whenever a carer touches the diagnostics screen, so the idle
-     * timeout can start again. She has no way to leave that screen herself, so
-     * it must let itself go when nobody is holding the tablet.
+     * Bumped when a carer touches the diagnostics screen, so the idle timeout
+     * starts again. Only a touch counts, not a button press, so a drifting
+     * controller cannot hold the screen open. It closes on its own otherwise.
      */
-    var diagnosticsTouch: Int by mutableStateOf(0)
+    var diagnosticsActivity: Int by mutableStateOf(0)
         private set
 
     /** How close together two presses of one switch may be. */
@@ -384,16 +384,20 @@ class ScanController(
     fun openDiagnostics() {
         recentKeys = emptyList()
         inDiagnostics = true
-        noteDiagnosticsTouch()
+        noteDiagnosticsActivity()
     }
 
-    fun noteDiagnosticsTouch() {
-        diagnosticsTouch++
+    fun noteDiagnosticsActivity() {
+        diagnosticsActivity++
     }
 
     fun reportKey(report: KeyReport) {
         if (!inDiagnostics) return
         recentKeys = (listOf(report) + recentKeys).take(MAX_REPORTED_KEYS)
+        // Button presses deliberately do NOT keep the screen open. A drifting
+        // controller sends a steady trickle of phantom presses, and letting
+        // those reset the timer would hold the screen open for good. Only a
+        // touch resets it; otherwise it closes on its own on the timer below.
     }
 
     fun useTouchInput(enabled: Boolean) {
@@ -597,12 +601,8 @@ class ScanController(
         /** Enough lines to see a bounce burst, few enough to read at a glance. */
         private const val MAX_REPORTED_KEYS = 10
 
-        /**
-         * Diagnostics closes itself after this long without a carer touching
-         * it. Key presses deliberately do not count: she would be pressing
-         * switches, and that is exactly when she is stranded.
-         */
-        const val DIAGNOSTICS_IDLE_MS = 90_000L
+        /** Diagnostics closes this long after the carer's last touch. */
+        const val DIAGNOSTICS_IDLE_MS = 30_000L
 
         /** Folded words that already have a dedicated key of their own. */
         private val ALREADY_ON_GRID = setOf("si", "no")

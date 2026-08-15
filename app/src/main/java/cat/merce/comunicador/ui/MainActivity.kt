@@ -347,13 +347,16 @@ class MainActivity : ComponentActivity() {
          *    d-pad-left undo, following Android's confirm/back convention;
          *  - a generic switch box: the number keys 1 and 2.
          */
+        // The d-pad and stick are deliberately not here: on many controllers a
+        // resting stick drifts and reports as d-pad, a steady trickle of
+        // phantom presses that would type on their own. A helper who wants the
+        // d-pad can still bind it explicitly. These defaults are the real
+        // buttons that stay quiet at rest, plus a keyboard's keys.
         val DEFAULT_WRITE_KEYS = setOf(
             KeyEvent.KEYCODE_SPACE,
             KeyEvent.KEYCODE_1,
             KeyEvent.KEYCODE_BUTTON_A,
             KeyEvent.KEYCODE_BUTTON_R1,
-            KeyEvent.KEYCODE_DPAD_RIGHT,
-            KeyEvent.KEYCODE_DPAD_CENTER,
         )
 
         val DEFAULT_UNDO_KEYS = setOf(
@@ -362,7 +365,6 @@ class MainActivity : ComponentActivity() {
             KeyEvent.KEYCODE_2,
             KeyEvent.KEYCODE_BUTTON_B,
             KeyEvent.KEYCODE_BUTTON_L1,
-            KeyEvent.KEYCODE_DPAD_LEFT,
         )
     }
 }
