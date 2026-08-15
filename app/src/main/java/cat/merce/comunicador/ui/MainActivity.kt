@@ -284,20 +284,32 @@ class MainActivity : ComponentActivity() {
         /**
          * A two switch interface sends a different key for each switch. Which
          * key each one sends depends on the box, and most can be reconfigured,
-         * so these two lists are where to look when the hardware arrives.
+         * so these two lists are where to look when the hardware arrives. The
+         * COMPROVA ELS POLSADORS screen shows what any given device sends.
          *
-         * On a plain keyboard: space writes, enter undoes.
+         * Several devices are covered at once, so a test rig works out of the box:
+         *  - a plain keyboard: space writes, enter undoes;
+         *  - a game controller (e.g. a Stadia pad over Bluetooth): A and the
+         *    right bumper / d-pad-right write, B and the left bumper /
+         *    d-pad-left undo, following Android's confirm/back convention;
+         *  - a generic switch box: the number keys 1 and 2.
          */
         val WRITE_KEYS = setOf(
             KeyEvent.KEYCODE_SPACE,
-            KeyEvent.KEYCODE_DPAD_CENTER,
             KeyEvent.KEYCODE_1,
+            KeyEvent.KEYCODE_BUTTON_A,
+            KeyEvent.KEYCODE_BUTTON_R1,
+            KeyEvent.KEYCODE_DPAD_RIGHT,
+            KeyEvent.KEYCODE_DPAD_CENTER,
         )
 
         val UNDO_KEYS = setOf(
             KeyEvent.KEYCODE_ENTER,
             KeyEvent.KEYCODE_NUMPAD_ENTER,
             KeyEvent.KEYCODE_2,
+            KeyEvent.KEYCODE_BUTTON_B,
+            KeyEvent.KEYCODE_BUTTON_L1,
+            KeyEvent.KEYCODE_DPAD_LEFT,
         )
     }
 }

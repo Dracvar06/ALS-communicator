@@ -107,6 +107,21 @@ In short: install the Arduino IDE and ESP32 board support, add the
    **ENTER**. If a single press shows two rows a few milliseconds apart, that is
    contact bounce — raise the debounce in the app, or in the firmware.
 
+## Testing with a game controller, before any switch exists
+
+Any Bluetooth game controller (a Stadia pad, for instance) is two big buttons you
+can use *today*, with no wiring. Pair it to the tablet like any Bluetooth device,
+and the app already listens for its buttons:
+
+- **A**, the right bumper, or the d-pad right → write
+- **B**, the left bumper, or the d-pad left → undo
+
+Use the face buttons, bumpers or d-pad — the analog sticks and triggers send a
+different kind of signal the app does not read. If a button does nothing, open
+**COMPROVA ELS POLSADORS** and press it to see what it sends, and tell me so I
+can add it. This is a good way to let her try the whole thing while the real
+switches are still being built.
+
 ## If you would rather not solder
 
 A commercial AAC switch interface (for example an AbleNet Blue2) does the same
