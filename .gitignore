@@ -13,3 +13,9 @@ local.properties
 # Leftovers from the earlier Python scaffolding
 .venv/
 __pycache__/
+
+# Signing key and its passwords. Losing these is unrecoverable; committing
+# them is worse. See docs/PUBLISHING.md
+*.jks
+*.keystore
+keystore.properties
