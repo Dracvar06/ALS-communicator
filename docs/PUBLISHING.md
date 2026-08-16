@@ -164,19 +164,18 @@ that derived work be shared alike. That may constrain which licence you can put
 on the project. This is not legal advice; it is a flag that the question is
 real and worth ten minutes before you publish, not after.
 
-Then choose a licence for your own code and add a `LICENSE` file. For something
-meant to be used and improved by others, **GPL-3.0** (changes must stay open) or
-**MIT** (do anything, just keep the credit) are the usual poles. A repository
-with no licence is, legally, "nobody may use this" — the opposite of what you
-want.
+**This is now done.** The project is GPL-3.0 (see `LICENSE`), and every piece of
+other people's work it carries is credited in `THIRD-PARTY-NOTICES.md`, with
+what each licence asks of you. Read that file once before you publish, so you
+know what you are agreeing to pass on.
 
 ---
 
 ## 5. Before you tell anyone it exists
 
 - [ ] A `README` saying what it is, who it is for, and how to install it.
-- [ ] A `LICENSE` file.
-- [ ] Credit for the font and the corpora.
+- [x] A `LICENSE` file. Done: GPL-3.0.
+- [x] Credit for the font and the corpora. Done: `THIRD-PARTY-NOTICES.md`.
 - [ ] A release build that you have **actually installed and used**, not just
       compiled. A release build differs from a debug build, and it is the first
       time some things are exercised.
@@ -192,7 +191,7 @@ The app's permanent identity is `cat.merce.comunicador`. Two things follow:
 - It cannot be changed later without the result being, to Android, **a
   different app**: no updates, and existing users start from nothing.
 
-If this is going to be a tool for many people, something neutral —
-`org.comunicador.switchboard`, say — is worth deciding **now**, while the only
-installs are yours. Keeping her name is a perfectly good choice too; it is
-simply a choice that gets expensive to revisit.
+Decided, 2026-08-17: **her name stays.** It is the name of the person the app
+was made for, and that is worth keeping. Noted here so the choice is on the
+record rather than an accident, and so anyone who later wants a neutral name
+knows it means a new app rather than a rename.
