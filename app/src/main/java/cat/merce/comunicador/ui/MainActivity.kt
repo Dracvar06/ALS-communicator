@@ -1,5 +1,6 @@
 package cat.merce.comunicador.ui
 
+import android.app.ActivityManager
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.SystemClock
@@ -109,9 +110,18 @@ class MainActivity : ComponentActivity() {
             ),
             initialAntiTremor = settings.getBoolean(KEY_ANTI_TREMOR, false),
             initialLanguage = languageForCode(settings.getString(KEY_LANGUAGE, null)),
+            initialLocked = settings.getBoolean(KEY_LOCKED, false),
+            initialOpenOnBoot = settings.getBoolean(KEY_OPEN_ON_BOOT, false),
         )
+        controller.onLockedChanged = { on ->
+            settings.edit(commit = true) { putBoolean(KEY_LOCKED, on) }
+            applyLock(on)
+        }
+        controller.onOpenOnBootChanged = { on ->
+            settings.edit(commit = true) { putBoolean(KEY_OPEN_ON_BOOT, on) }
+        }
         controller.onLanguageChanged = { language ->
-            settings.edit { putString(KEY_LANGUAGE, language.code) }
+            settings.edit(commit = true) { putString(KEY_LANGUAGE, language.code) }
             // The phrase file belongs to the old language, so start the new
             // one from its own defaults and load its model and voice.
             runCatching { phrasesFile.delete() }
@@ -119,10 +129,10 @@ class MainActivity : ComponentActivity() {
             loadPrediction()
         }
         controller.onTouchInputChanged = { on ->
-            settings.edit { putBoolean(KEY_TOUCH_INPUT, on) }
+            settings.edit(commit = true) { putBoolean(KEY_TOUCH_INPUT, on) }
         }
         controller.onFirstCellExtraChanged = { millis ->
-            settings.edit { putLong(KEY_FIRST_CELL_EXTRA, millis) }
+            settings.edit(commit = true) { putLong(KEY_FIRST_CELL_EXTRA, millis) }
         }
 
         controller.setPhrases(loadPhrases())
@@ -145,19 +155,17 @@ class MainActivity : ComponentActivity() {
 
         switches = buildFilter()
         controller.onDebounceChanged = { millis ->
-            settings.edit { putLong(KEY_DEBOUNCE, millis) }
+            settings.edit(commit = true) { putLong(KEY_DEBOUNCE, millis) }
             // Rebuilt rather than mutated, so the filter itself stays a plain
             // value with no settings to keep in step.
             switches = buildFilter()
         }
         controller.onAntiTremorChanged = { on ->
-            settings.edit { putBoolean(KEY_ANTI_TREMOR, on) }
+            settings.edit(commit = true) { putBoolean(KEY_ANTI_TREMOR, on) }
             switches = buildFilter()
         }
-        // apply() writes on a background thread, so tuning the speed never
-        // blocks the cursor.
         controller.onIntervalChanged = { millis ->
-            settings.edit { putLong(KEY_SCAN_INTERVAL, millis) }
+            settings.edit(commit = true) { putLong(KEY_SCAN_INTERVAL, millis) }
         }
         controller.onWordFinished = ::rememberWord
         controller.onWordUndone = ::forgetWord
@@ -225,6 +233,49 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
+     * Turns locked mode on or off.
+     *
+     * Locking asks Android to pin the app to the screen, so home and recents
+     * stop leading out of it. Unlocking releases it. Wrapped because a device
+     * can refuse to pin; failing to lock is survivable, and being unable to
+     * *un*lock would not be, so unlocking is always attempted.
+     */
+    /**
+     * True once pinning has been asked for, so it is never asked for twice.
+     *
+     * This guard is not tidiness. Asking again on every resume was an infinite
+     * loop: a device that refuses to pin shows its own screen, which pauses and
+     * resumes this activity, which asked again, thousands of times a second.
+     * One attempt per run, and the app carries on regardless of the answer.
+     */
+    private var lockRequested = false
+
+    private fun applyLock(on: Boolean) {
+        val manager = getSystemService(ActivityManager::class.java)
+        val alreadyPinned =
+            manager?.lockTaskModeState != ActivityManager.LOCK_TASK_MODE_NONE
+
+        if (on) {
+            if (alreadyPinned || lockRequested) return
+            lockRequested = true
+            // Pinning needs "App pinning" enabled in the device's own settings,
+            // and can simply be refused. It failing is survivable: being the
+            // home app is what really keeps her inside the app.
+            runCatching { startLockTask() }
+        } else {
+            lockRequested = false
+            // Always attempted, never guarded: failing to lock is a nuisance,
+            // failing to *unlock* would strand her.
+            runCatching { stopLockTask() }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (controller.locked) applyLock(true)
+    }
+
+    /**
      * Asks the speech engine for this language's voice. Falls back to the
      * device default rather than failing: a phrase that selects but does not
      * speak is survivable, and the voice may simply not be installed.
@@ -257,11 +308,11 @@ class MainActivity : ComponentActivity() {
         when (role) {
             SwitchRole.Write -> {
                 writeTokens = if (first) setOf(token) else writeTokens + token
-                settings.edit { putStringSet(KEY_WRITE_TOKENS, writeTokens) }
+                settings.edit(commit = true) { putStringSet(KEY_WRITE_TOKENS, writeTokens) }
             }
             SwitchRole.Undo -> {
                 undoTokens = if (first) setOf(token) else undoTokens + token
-                settings.edit { putStringSet(KEY_UNDO_TOKENS, undoTokens) }
+                settings.edit(commit = true) { putStringSet(KEY_UNDO_TOKENS, undoTokens) }
             }
         }
         pushButtonLabels()
@@ -441,7 +492,7 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private companion object {
+    companion object {
         const val SETTINGS_FILE = "comunicador"
         const val KEY_SCAN_INTERVAL = "scan_interval_ms"
         const val KEY_DEBOUNCE = "debounce_ms"
@@ -449,6 +500,8 @@ class MainActivity : ComponentActivity() {
         const val KEY_FIRST_CELL_EXTRA = "first_cell_extra_ms"
         const val KEY_ANTI_TREMOR = "anti_tremor"
         const val KEY_LANGUAGE = "language"
+        const val KEY_LOCKED = "locked"
+        const val KEY_OPEN_ON_BOOT = "open_on_boot"
         const val KEY_WRITE_TOKENS = "write_tokens"
         const val KEY_UNDO_TOKENS = "undo_tokens"
         const val PHRASES_FILE = "phrases.txt"

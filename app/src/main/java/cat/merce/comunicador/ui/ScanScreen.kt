@@ -330,6 +330,31 @@ private fun LanguageChooser(current: Language, onChoose: (Language) -> Unit) {
     }
 }
 
+/** A titled on/off row, as used by every switch in settings. */
+@Composable
+private fun SettingSwitch(
+    title: String,
+    detail: String,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, color = Ink, fontFamily = Hyperlegible, fontSize = 30.sp)
+            Text(text = detail, color = DimInk, fontFamily = Hyperlegible, fontSize = 20.sp)
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Ink,
+                checkedTrackColor = CellLit,
+                uncheckedTrackColor = CellIdle,
+            ),
+        )
+    }
+}
+
 /** A plain touch button. Never focusable, so no switch can ever press it. */
 @Composable
 private fun TouchButton(text: String, onTap: () -> Unit) {
@@ -596,6 +621,26 @@ private fun SettingsPanel(controller: ScanController) {
                 onTap = { controller.startBinding(SwitchRole.Undo) },
             )
         }
+
+        Spacer(Modifier.height(28.dp))
+
+        // Locked mode, and reopening after a restart. Both belong to her own
+        // device; on a helper's phone they stay off and it remains a phone.
+        SettingSwitch(
+            title = controller.language.settingsLockedTitle,
+            detail = controller.language.settingsLockedDetail,
+            checked = controller.locked,
+            onChange = { controller.useLocked(it) },
+        )
+
+        Spacer(Modifier.height(28.dp))
+
+        SettingSwitch(
+            title = controller.language.settingsBootTitle,
+            detail = controller.language.settingsBootDetail,
+            checked = controller.openOnBoot,
+            onChange = { controller.useOpenOnBoot(it) },
+        )
 
         Spacer(Modifier.height(32.dp))
 

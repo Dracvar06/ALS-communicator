@@ -42,7 +42,39 @@ class ScanController(
     initialFirstCellExtraMs: Long = DEFAULT_FIRST_CELL_EXTRA_MS,
     initialAntiTremor: Boolean = false,
     initialLanguage: Language = CATALAN,
+    initialLocked: Boolean = false,
+    initialOpenOnBoot: Boolean = false,
 ) {
+
+    /**
+     * Locked mode: the app holds the screen and cannot be left. For her own
+     * device, where wandering out of the app means losing her voice until
+     * somebody notices. Off on a helper's phone, which is also an ordinary
+     * phone. A helper can always unlock from settings, which is why locking is
+     * safe to offer at all.
+     */
+    var locked: Boolean by mutableStateOf(initialLocked)
+        private set
+
+    var onLockedChanged: ((Boolean) -> Unit)? = null
+
+    /** Reopen the app by itself after the device restarts. */
+    var openOnBoot: Boolean by mutableStateOf(initialOpenOnBoot)
+        private set
+
+    var onOpenOnBootChanged: ((Boolean) -> Unit)? = null
+
+    fun useLocked(enabled: Boolean) {
+        if (enabled == locked) return
+        locked = enabled
+        onLockedChanged?.invoke(enabled)
+    }
+
+    fun useOpenOnBoot(enabled: Boolean) {
+        if (enabled == openOnBoot) return
+        openOnBoot = enabled
+        onOpenOnBootChanged?.invoke(enabled)
+    }
 
     /** Everything that differs by language: letters, words, phrases, voice. */
     var language: Language by mutableStateOf(initialLanguage)
