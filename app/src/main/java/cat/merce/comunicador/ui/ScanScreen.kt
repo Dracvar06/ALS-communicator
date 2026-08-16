@@ -22,6 +22,9 @@ import cat.merce.comunicador.BuildConfig
 import cat.merce.comunicador.input.Switch
 import cat.merce.comunicador.input.SwitchFilter
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
@@ -31,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -268,25 +272,61 @@ private fun TouchZones(
     }
 }
 
-/** One language to choose, lit when it is the one in use. */
+/**
+ * A drop-down of the languages, rather than a row of buttons: the list is meant
+ * to grow, and a row of buttons stops fitting once there are more than a few.
+ * The open list scrolls, so it works with many languages on a short screen.
+ */
 @Composable
-private fun LanguageButton(language: Language, selected: Boolean, onTap: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .background(
-                color = if (selected) CellLit else CellIdle,
-                shape = RoundedCornerShape(12.dp)
+private fun LanguageChooser(current: Language, onChoose: (Language) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+
+    Box {
+        Row(
+            modifier = Modifier
+                .background(CellIdle, RoundedCornerShape(12.dp))
+                .pointerInput(Unit) { detectTapGestures { open = true } }
+                .padding(horizontal = 28.dp, vertical = 18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = current.displayName,
+                color = Ink,
+                fontFamily = Hyperlegible,
+                fontWeight = FontWeight.Bold,
+                fontSize = 28.sp
             )
-            .pointerInput(language.code) { detectTapGestures { onTap() } }
-            .padding(horizontal = 40.dp, vertical = 18.dp)
-    ) {
-        Text(
-            text = language.displayName,
-            color = Ink,
-            fontFamily = Hyperlegible,
-            fontWeight = FontWeight.Bold,
-            fontSize = 28.sp
-        )
+            Spacer(Modifier.width(14.dp))
+            Text(text = "▾", color = DimInk, fontSize = 24.sp)
+        }
+
+        DropdownMenu(
+            expanded = open,
+            onDismissRequest = { open = false },
+            modifier = Modifier
+                .background(CellIdle)
+                // Tall lists stay usable on a phone held sideways.
+                .heightIn(max = 320.dp)
+        ) {
+            for (language in LANGUAGES) {
+                val selected = language.code == current.code
+                DropdownMenuItem(
+                    onClick = {
+                        open = false
+                        onChoose(language)
+                    },
+                    text = {
+                        Text(
+                            text = language.displayName,
+                            color = if (selected) CellLit else Ink,
+                            fontFamily = Hyperlegible,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 26.sp
+                        )
+                    },
+                )
+            }
+        }
     }
 }
 
@@ -568,16 +608,10 @@ private fun SettingsPanel(controller: ScanController) {
             fontSize = 30.sp
         )
         Spacer(Modifier.height(10.dp))
-        Row {
-            LANGUAGES.forEachIndexed { index, language ->
-                if (index > 0) Spacer(Modifier.width(20.dp))
-                LanguageButton(
-                    language = language,
-                    selected = language.code == controller.language.code,
-                    onTap = { controller.changeLanguage(language) },
-                )
-            }
-        }
+        LanguageChooser(
+            current = controller.language,
+            onChoose = { controller.changeLanguage(it) },
+        )
 
         Spacer(Modifier.height(40.dp))
 

@@ -238,8 +238,88 @@ val ENGLISH = Language(
     checkRoleUnassigned = "unassigned",
 )
 
+/**
+ * Spanish letters in frequency order. Close to Catalan but not the same: E and
+ * A lead here as well, though O ranks far higher and the Ñ has to be on the
+ * grid. Accents are reached through the suggestions, as in the other languages.
+ */
+val SPANISH = Language(
+    code = "es",
+    displayName = "Español",
+    modelAsset = "es-model.txt",
+    ttsLocale = "es",
+    letterRows = listOf(
+        listOf("E", "A", "O", "S", "R"),
+        listOf("N", "I", "D", "L", "C", "T"),
+        listOf("U", "M", "P", "B", "G", "V"),
+        listOf("Y", "Q", "H", "F", "Z", "J"),
+        listOf("Ñ", "X", "K", "W"),
+    ),
+    openers = listOf(
+        "quiero", "necesito", "ayuda", "gracias", "por favor",
+        "agua", "dolor", "baño", "comer", "frío",
+        "calor", "cansada", "espera", "para", "hola",
+        "estoy", "tengo", "puedo", "dónde", "qué",
+    ),
+    defaultPhrases = listOf(
+        "Tengo dolor",
+        "Por favor, gírame",
+        "Tengo sed",
+        "Tengo hambre",
+        "Tengo frío",
+        "Tengo calor",
+        "Necesito ir al baño",
+        "Llama a la enfermera",
+        "Espera un momento",
+        "Estoy bien",
+        "Gracias",
+        "Te quiero",
+    ),
+    spaceLabel = "espacio",
+    yesLabel = "SÍ",
+    noLabel = "NO",
+    phrasesLabel = "FRASES",
+    backLabel = "VOLVER",
+    settingsSpeed = "Velocidad del barrido",
+    settingsSecondsPerStep = "segundos por paso",
+    settingsFaster = "más rápido",
+    settingsSlower = "más lento",
+    settingsFirstLetterExtra = "Tiempo extra en la primera letra",
+    settingsMinBetweenPresses = "Tiempo mínimo entre pulsaciones",
+    settingsTouchTitle = "Tocar la pantalla para escribir",
+    settingsTouchDetail = "Derecha: escribe. Izquierda: deshace.",
+    settingsTremorTitle = "Ignorar los temblores",
+    settingsTremorDetail = "Una ráfaga de toques seguidos cuenta una sola vez.",
+    settingsButtons = "Botones",
+    settingsWrite = "Escribir",
+    settingsUndo = "Deshacer",
+    settingsAssignWrite = "ASIGNAR ESCRIBIR",
+    settingsAssignUndo = "ASIGNAR DESHACER",
+    settingsClose = "CERRAR",
+    settingsCheckButtons = "COMPROBAR LOS PULSADORES",
+    settingsEitherCloses = "Cualquiera de los dos pulsadores también cierra esta pantalla.",
+    settingsLanguage = "Idioma",
+    bindPressFor = "Pulsa el botón para",
+    bindButtonFor = "Botón para",
+    bindWrite = "ESCRIBIR",
+    bindUndo = "DESHACER",
+    bindAssigned = "Asignados",
+    bindPressNow = "Pulsa ahora, en el mando o en el pulsador, el botón que quieras usar.",
+    bindAnother = "¿Quieres añadir otro botón para la misma acción?",
+    bindAddAnother = "AÑADIR OTRO",
+    bindDone = "HECHO",
+    bindCancel = "CANCELAR",
+    checkTitle = "Comprobación de los pulsadores",
+    checkHint = "Pulsa cada pulsador. Esta pantalla se cierra sola.",
+    checkWaiting = "Esperando…",
+    checkCode = "código",
+    checkRoleWrite = "escribe",
+    checkRoleUndo = "deshace",
+    checkRoleUnassigned = "sin asignar",
+)
+
 /** Every language the app ships with. Adding one means adding it here. */
-val LANGUAGES = listOf(CATALAN, ENGLISH)
+val LANGUAGES = listOf(CATALAN, SPANISH, ENGLISH)
 
 fun languageForCode(code: String?): Language =
     LANGUAGES.firstOrNull { it.code == code } ?: CATALAN
