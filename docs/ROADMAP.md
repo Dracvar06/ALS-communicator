@@ -47,6 +47,24 @@ yet — anything drawn over the grid covers letters, and the grid is what she
 reads all day. It is a cost paid forever to fix a misunderstanding that lasts a
 minute, so it should only be paid if teaching genuinely fails.
 
+### Unexplained: the input mode resetting to scanning
+
+Seen three times on 2026-08-25, on the Lenovo tablet: the app was found back in
+scanning mode when it had been left in arrows. The other settings — speed,
+first-letter extra, minimum time between presses, tremors, locked mode, bound
+buttons — survived every time, so it is not the settings file being lost.
+
+**Not reproduced deliberately.** Setting arrows, force-stopping and restarting
+keeps it, tested repeatedly. Setting arrows and reinstalling the same APK keeps
+it too. Each occurrence followed a session of blind `adb input tap` commands
+against a layout that had shifted underneath them, so a stray tap on the
+"Escaneig automàtic" pill is the likeliest explanation — but that was asserted
+too confidently once already and then it happened again with no taps in
+between, so it is written down here rather than closed.
+
+Worth watching. If a helper ever reports the app "going back to the old way by
+itself", this is the note.
+
 ### Still open in arrow mode
 
 - **Press and hold to repeat.** Left out deliberately: both axes wrap, so

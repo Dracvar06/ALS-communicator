@@ -120,13 +120,13 @@ class MainActivity : ComponentActivity() {
             initialLocked = settings.getBoolean(KEY_LOCKED, false),
             initialOpenOnBoot = settings.getBoolean(KEY_OPEN_ON_BOOT, false),
             initialInputMode = InputMode.fromCode(settings.getString(KEY_INPUT_MODE, null)),
-            initialArrowsOnLeft = settings.getBoolean(KEY_ARROWS_ON_LEFT, false),
+            initialArrowPlacement = savedArrowPlacement(settings),
         )
         controller.onInputModeChanged = { mode ->
             settings.edit(commit = true) { putString(KEY_INPUT_MODE, mode.name) }
         }
-        controller.onArrowsOnLeftChanged = { on ->
-            settings.edit(commit = true) { putBoolean(KEY_ARROWS_ON_LEFT, on) }
+        controller.onArrowPlacementChanged = { placement ->
+            settings.edit(commit = true) { putString(KEY_ARROW_PLACEMENT, placement.name) }
         }
         controller.onLockedChanged = { on ->
             settings.edit(commit = true) { putBoolean(KEY_LOCKED, on) }
@@ -637,7 +637,27 @@ class MainActivity : ComponentActivity() {
         const val KEY_LOCKED = "locked"
         const val KEY_OPEN_ON_BOOT = "open_on_boot"
         const val KEY_INPUT_MODE = "input_mode"
+        const val KEY_ARROW_PLACEMENT = "arrow_placement"
+
+        /** Replaced by [KEY_ARROW_PLACEMENT]; still read once, then ignored. */
         const val KEY_ARROWS_ON_LEFT = "arrows_on_left"
+
+        /**
+         * Where the arrow pad goes, carrying forward the older left/right
+         * setting for anyone who had already chosen one. Nobody should have to
+         * set a preference twice because the setting behind it grew a third
+         * option.
+         */
+        fun savedArrowPlacement(settings: SharedPreferences): ArrowPlacement {
+            settings.getString(KEY_ARROW_PLACEMENT, null)?.let {
+                return ArrowPlacement.fromCode(it)
+            }
+            return if (settings.getBoolean(KEY_ARROWS_ON_LEFT, false)) {
+                ArrowPlacement.Left
+            } else {
+                ArrowPlacement.Right
+            }
+        }
         const val KEY_TUTORIAL_SEEN = "tutorial_seen"
         const val KEY_WRITE_TOKENS = "write_tokens"
         const val KEY_UNDO_TOKENS = "undo_tokens"

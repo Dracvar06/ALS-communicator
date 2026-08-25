@@ -6,7 +6,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -90,6 +92,18 @@ private const val ARROW_BUTTONS = 5
  */
 private const val CHOOSE_WEIGHT = 0.7f
 
+/**
+ * How tall the bottom strip is, against the grid's 1.
+ *
+ * This one number is the whole compromise of the bottom placement. The arrows
+ * are bounded by a square that cannot be taller than the strip, so it is the
+ * only way to make them bigger — and every pixel it gains is a pixel off the
+ * height of the grid she reads all day. Raised from a third to two fifths once
+ * the arrows turned out to be too small to aim at; going much beyond this
+ * starts to squeeze the letters.
+ */
+private const val ARROW_BAR_WEIGHT = 0.7f
+
 /** How far the base of each arrow sits back from the middle, as a fraction. */
 private const val ARROW_HUB = 0.23f
 
@@ -151,52 +165,44 @@ fun ScanScreen(controller: ScanController) {
             controller.inSettings -> SettingsPanel(controller)
             else -> {
                 val arrows = controller.inputMode == InputMode.Arrows
+                val placement = controller.arrowPlacement
 
-                Row(modifier = Modifier.fillMaxSize()) {
-                    // The pad takes a slice off one side and the grid gets the
-                    // rest, rather than floating over the letters: something
-                    // she has to hit must never sit on top of something she has
-                    // to read.
-                    if (arrows && controller.arrowsOnLeft) {
-                        ArrowPad(controller, Modifier.weight(ARROW_PAD_WEIGHT).fillMaxHeight())
-                    }
-
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                        if (controller.inPhrases) {
-                            PhrasesGrid(controller)
-                        } else {
-                            WritingGrid(controller)
+                if (arrows && placement.alongTheBottom) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                            GridContent(controller, arrows)
                         }
-
-                        // The two touch halves belong to scanning only. In
-                        // arrow mode the pad is the input, and a tap that
-                        // landed on the grid would type something she was
-                        // only looking at.
-                        if (controller.touchInput && !arrows) {
-                            TouchZones(
-                                onWrite = controller::press,
-                                onUndo = controller::undo,
-                                debounceMs = controller.debounceMs,
-                                antiTremor = controller.antiTremor,
+                        ArrowPad(
+                            controller = controller,
+                            placement = placement,
+                            modifier = Modifier.fillMaxWidth().weight(ARROW_BAR_WEIGHT),
+                        )
+                    }
+                } else {
+                    Row(modifier = Modifier.fillMaxSize()) {
+                        // The pad takes a slice off one side and the grid gets
+                        // the rest, rather than floating over the letters:
+                        // something she has to hit must never sit on top of
+                        // something she has to read.
+                        if (arrows && placement == ArrowPlacement.Left) {
+                            ArrowPad(
+                                controller = controller,
+                                placement = placement,
+                                modifier = Modifier.weight(ARROW_PAD_WEIGHT).fillMaxHeight(),
                             )
                         }
 
-                        Row(
-                            modifier = Modifier.align(Alignment.TopEnd),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            BatteryReadout(controller)
-                            // Settings is reached from the writing grid only,
-                            // as before; the phrases screen keeps its corner
-                            // clear for the phrase in it.
-                            if (!controller.inPhrases) {
-                                SettingsCornerButton(onOpen = controller::openSettings)
-                            }
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                            GridContent(controller, arrows)
                         }
-                    }
 
-                    if (arrows && !controller.arrowsOnLeft) {
-                        ArrowPad(controller, Modifier.weight(ARROW_PAD_WEIGHT).fillMaxHeight())
+                        if (arrows && placement == ArrowPlacement.Right) {
+                            ArrowPad(
+                                controller = controller,
+                                placement = placement,
+                                modifier = Modifier.weight(ARROW_PAD_WEIGHT).fillMaxHeight(),
+                            )
+                        }
                     }
                 }
             }
@@ -297,6 +303,47 @@ private fun DiagnosticsPanel(controller: ScanController) {
         Spacer(Modifier.weight(1f))
 
         TouchButton(text = controller.language.settingsClose, onTap = controller::closeSettings)
+    }
+}
+
+/**
+ * Everything that is not the arrow pad: the grid she reads, the touch halves
+ * when scanning, and the battery and gear in the corner.
+ *
+ * Pulled out because the pad can sit on three different sides of it, and this
+ * part is identical in all three. It has to be inside a Box, since the corner
+ * readouts are aligned against it.
+ */
+@Composable
+private fun BoxScope.GridContent(controller: ScanController, arrows: Boolean) {
+    if (controller.inPhrases) {
+        PhrasesGrid(controller)
+    } else {
+        WritingGrid(controller)
+    }
+
+    // The two touch halves belong to scanning only. In arrow mode the pad is
+    // the input, and a tap that landed on the grid would type something she was
+    // only looking at.
+    if (controller.touchInput && !arrows) {
+        TouchZones(
+            onWrite = controller::press,
+            onUndo = controller::undo,
+            debounceMs = controller.debounceMs,
+            antiTremor = controller.antiTremor,
+        )
+    }
+
+    Row(
+        modifier = Modifier.align(Alignment.TopEnd),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        BatteryReadout(controller)
+        // Settings is reached from the writing grid only, as before; the
+        // phrases screen keeps its corner clear for the phrase in it.
+        if (!controller.inPhrases) {
+            SettingsCornerButton(onOpen = controller::openSettings)
+        }
     }
 }
 
@@ -659,7 +706,11 @@ private const val DEMO_COLS = 4
  * little, and a hand that rests too long on a button would pay for it.
  */
 @Composable
-private fun ArrowPad(controller: ScanController, modifier: Modifier = Modifier) {
+private fun ArrowPad(
+    controller: ScanController,
+    placement: ArrowPlacement,
+    modifier: Modifier = Modifier,
+) {
 
     // One filter per button rather than one for the pad. A tremor repeating the
     // same arrow has to be swallowed, but moving and then choosing is two real
@@ -680,24 +731,65 @@ private fun ArrowPad(controller: ScanController, modifier: Modifier = Modifier) 
         if (filters[index].accept(Switch.Write, SystemClock.elapsedRealtime())) move()
     }
 
-    Column(modifier = modifier.padding(8.dp)) {
+    val cross: @Composable (Modifier) -> Unit = { crossModifier ->
         ArrowCross(
-            modifier = Modifier.fillMaxWidth().weight(1f),
+            modifier = crossModifier,
             onUp = guarded(0, controller::moveUp),
             onLeft = guarded(1, controller::moveLeft),
             onRight = guarded(2, controller::moveRight),
             onDown = guarded(3, controller::moveDown),
         )
+    }
 
+    val choose: @Composable (Modifier) -> Unit = { chooseModifier ->
         ArrowKey(
             label = controller.language.arrowChoose,
             filter = filters[4],
-            modifier = Modifier.fillMaxWidth().weight(CHOOSE_WEIGHT),
+            modifier = chooseModifier,
             onPress = controller::press,
             // A lighter fill, so the one button that commits a letter does not
             // read as a fifth arrow.
             highlight = true,
         )
+    }
+
+    if (placement.alongTheBottom) {
+        // More room around the edges than the side column needs. The cross
+        // fills its square exactly, so with the strip pressed against the
+        // bottom of the screen the down arrow had its point shaved off.
+        Row(modifier = modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            // The arrows take every pixel the strip's height allows. They
+            // have to stay congruent, so they are bounded by a square, and a
+            // square in a horizontal strip can never be taller than the strip:
+            // making them bigger means making the strip taller, and the grid
+            // pays for it. See ARROW_BAR_WEIGHT.
+            val arrowsBox = Modifier.fillMaxHeight().aspectRatio(1f)
+
+            // Choose does not take all the room left over. It was a slab half
+            // the width of the screen, which is far more than a button needs in
+            // order to be easy to hit, and every pixel of it was a pixel a
+            // forearm could land on.
+            val chooseBox = Modifier.weight(1f).fillMaxHeight()
+
+            // The gap between them is empty, and deliberately the largest
+            // single thing here. It is what keeps a hand reaching for one end
+            // from arriving at the other, which is the whole reason for putting
+            // the pad down here at all.
+            if (placement.arrowsFirst) {
+                cross(arrowsBox)
+                Spacer(Modifier.weight(1.5f))
+                choose(chooseBox)
+            } else {
+                choose(chooseBox)
+                Spacer(Modifier.weight(1.5f))
+                cross(arrowsBox)
+            }
+        }
+    } else {
+        Column(modifier = modifier.padding(8.dp)) {
+            cross(Modifier.fillMaxWidth().weight(1f))
+            choose(Modifier.fillMaxWidth().weight(CHOOSE_WEIGHT))
+        }
     }
 }
 
@@ -724,23 +816,34 @@ private fun ArrowCross(
     onRight: () -> Unit,
     onDown: () -> Unit,
 ) {
-    Box(
-        modifier = modifier.pointerInput(onUp, onLeft, onRight, onDown) {
-            detectTapGestures { tap ->
-                val dx = tap.x - size.width / 2f
-                val dy = tap.y - size.height / 2f
-                // Which side of the two diagonals the tap fell on, and nothing
-                // more. Every point in the square belongs to exactly one arrow.
-                if (abs(dx) > abs(dy)) {
-                    if (dx > 0) onRight() else onLeft()
-                } else {
-                    if (dy > 0) onDown() else onUp()
+    BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
+        // A centred square, and the listening happens inside it and nowhere
+        // else. This matters more than it looks: the quarters are cut by the
+        // diagonals, so in a box wider than it is tall the left and right
+        // quarters would swallow almost everything and up and down would be
+        // reduced to two thin wedges. Along the bottom of the screen, that
+        // would have made up and down nearly unhittable.
+        val side = minOf(maxWidth, maxHeight)
+
+        Box(
+            modifier = Modifier
+                .size(side)
+                .pointerInput(onUp, onLeft, onRight, onDown) {
+                    detectTapGestures { tap ->
+                        val dx = tap.x - size.width / 2f
+                        val dy = tap.y - size.height / 2f
+                        // Which side of the two diagonals the tap fell on, and
+                        // nothing more. Every point in the square belongs to
+                        // exactly one arrow.
+                        if (abs(dx) > abs(dy)) {
+                            if (dx > 0) onRight() else onLeft()
+                        } else {
+                            if (dy > 0) onDown() else onUp()
+                        }
+                    }
                 }
-            }
-        }
-    ) {
+        ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            // Square, so the four are congruent even in a column that is not.
             val side = min(size.width, size.height)
             val cx = size.width / 2f
             val cy = size.height / 2f
@@ -778,6 +881,7 @@ private fun ArrowCross(
             arrow(cx, cy + arm, cx - half, cy + hub, cx + half, cy + hub)
             arrow(cx - arm, cy, cx - hub, cy - half, cx - hub, cy + half)
             arrow(cx + arm, cy, cx + hub, cy - half, cx + hub, cy + half)
+        }
         }
     }
 }
@@ -1145,13 +1249,39 @@ private fun SettingsPanel(controller: ScanController) {
         Spacer(Modifier.height(32.dp))
 
         if (controller.inputMode == InputMode.Arrows) {
-            // Which hand still reaches is not something anyone chooses, so the
-            // pad moves rather than her.
-            SettingSwitch(
-                title = controller.language.settingsArrowSideTitle,
-                detail = controller.language.settingsArrowSideDetail,
-                checked = controller.arrowsOnLeft,
-                onChange = { controller.useArrowsOnLeft(it) },
+            // Which hand still reaches, and where the forearm falls on the way
+            // to the screen, are not things anyone chooses. So the pad moves
+            // rather than her.
+            Text(
+                text = controller.language.settingsArrowPlaceTitle,
+                color = Ink,
+                fontFamily = Hyperlegible,
+                fontSize = 30.sp
+            )
+            Text(
+                text = controller.language.settingsArrowPlaceDetail,
+                color = DimInk,
+                fontFamily = Hyperlegible,
+                fontSize = 20.sp
+            )
+            Spacer(Modifier.height(14.dp))
+
+            // Two rows of two rather than one row of four: the choice is
+            // really two questions, where the pad goes and which way round it
+            // is, and four pills in a line reads as one flat list of options
+            // that happen to share words.
+            ArrowPlacementRow(
+                controller = controller,
+                heading = controller.language.settingsArrowColumn,
+                first = ArrowPlacement.Right,
+                second = ArrowPlacement.Left,
+            )
+            Spacer(Modifier.height(16.dp))
+            ArrowPlacementRow(
+                controller = controller,
+                heading = controller.language.settingsArrowBar,
+                first = ArrowPlacement.BottomRight,
+                second = ArrowPlacement.BottomLeft,
             )
             Spacer(Modifier.height(32.dp))
         }
@@ -1408,6 +1538,38 @@ private fun SettingsPanel(controller: ScanController) {
             fontFamily = Hyperlegible,
             fontSize = 18.sp
         )
+    }
+}
+
+/** One row of the arrow-pad placement choice: a heading and two pills. */
+@Composable
+private fun ArrowPlacementRow(
+    controller: ScanController,
+    heading: String,
+    first: ArrowPlacement,
+    second: ArrowPlacement,
+) {
+    Text(
+        text = heading,
+        color = DimInk,
+        fontFamily = Hyperlegible,
+        fontSize = 20.sp,
+        modifier = Modifier.padding(bottom = 8.dp)
+    )
+    Row {
+        for (placement in listOf(first, second)) {
+            ModeOption(
+                text = when (placement) {
+                    ArrowPlacement.Right -> controller.language.settingsArrowRight
+                    ArrowPlacement.Left -> controller.language.settingsArrowLeft
+                    ArrowPlacement.BottomRight -> controller.language.settingsArrowBottomRight
+                    ArrowPlacement.BottomLeft -> controller.language.settingsArrowBottomLeft
+                },
+                selected = controller.arrowPlacement == placement,
+                onTap = { controller.useArrowPlacement(placement) },
+            )
+            Spacer(Modifier.width(16.dp))
+        }
     }
 }
 

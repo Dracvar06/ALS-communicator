@@ -2,6 +2,7 @@ package cat.merce.comunicador.ui
 
 import cat.merce.comunicador.scan.ScanState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -187,6 +188,75 @@ class ArrowModeTest {
         c.moveDown()
         c.moveRight()
         assertEquals(ScanState.Cell(row = 0, col = 0), c.state)
+    }
+
+    @Test
+    fun `the pad starts on the right and can be moved`() {
+        val c = arrows()
+        assertEquals(ArrowPlacement.Right, c.arrowPlacement)
+
+        c.useArrowPlacement(ArrowPlacement.BottomRight)
+        assertEquals(ArrowPlacement.BottomRight, c.arrowPlacement)
+    }
+
+    @Test
+    fun `moving the pad is reported once, so it can be saved`() {
+        val c = arrows()
+        var saved: ArrowPlacement? = null
+        var times = 0
+        c.onArrowPlacementChanged = { saved = it; times++ }
+
+        c.useArrowPlacement(ArrowPlacement.BottomRight)
+        c.useArrowPlacement(ArrowPlacement.BottomRight)
+
+        assertEquals(ArrowPlacement.BottomRight, saved)
+        assertEquals(1, times)
+    }
+
+    @Test
+    fun `an unknown saved placement falls back to the right`() {
+        // A settings file written by a newer version, or a corrupted one.
+        // Landing on a side she can reach beats refusing to start.
+        assertEquals(ArrowPlacement.Right, ArrowPlacement.fromCode("Sideways"))
+        assertEquals(ArrowPlacement.Right, ArrowPlacement.fromCode(null))
+    }
+
+    @Test
+    fun `the strip that used to be called Bottom still opens`() {
+        // Saved before the strip could be turned round. Somebody who had
+        // already chosen it must not be dropped back to a side column.
+        assertEquals(ArrowPlacement.BottomRight, ArrowPlacement.fromCode("Bottom"))
+        assertTrue(ArrowPlacement.fromCode("Bottom").alongTheBottom)
+    }
+
+    @Test
+    fun `only the strip placements are along the bottom`() {
+        assertTrue(ArrowPlacement.BottomLeft.alongTheBottom)
+        assertTrue(ArrowPlacement.BottomRight.alongTheBottom)
+        assertFalse(ArrowPlacement.Right.alongTheBottom)
+        assertFalse(ArrowPlacement.Left.alongTheBottom)
+    }
+
+    @Test
+    fun `arrowsFirst says which end the arrows are drawn at`() {
+        assertTrue(ArrowPlacement.BottomLeft.arrowsFirst)
+        assertFalse(ArrowPlacement.BottomRight.arrowsFirst)
+    }
+
+    @Test
+    fun `moving the pad does not disturb what she has written`() {
+        val c = arrows()
+        c.moveDown()
+        c.moveRight()
+        c.press()
+        assertEquals("A", c.text)
+
+        c.useArrowPlacement(ArrowPlacement.BottomRight)
+
+        // Purely where the buttons are drawn. Nothing about the grid, the
+        // sentence or where the highlight is should move with them.
+        assertEquals("A", c.text)
+        assertEquals(cat.merce.comunicador.scan.ScanState.Cell(1, 1), c.state)
     }
 
     @Test

@@ -46,7 +46,7 @@ class ScanController(
     initialLocked: Boolean = false,
     initialOpenOnBoot: Boolean = false,
     initialInputMode: InputMode = InputMode.Scan,
-    initialArrowsOnLeft: Boolean = false,
+    initialArrowPlacement: ArrowPlacement = ArrowPlacement.Right,
 ) {
 
     /**
@@ -60,13 +60,14 @@ class ScanController(
     var onInputModeChanged: ((InputMode) -> Unit)? = null
 
     /**
-     * Which side of the screen the arrows sit on. Whichever hand still reaches
-     * is not a thing anyone gets to choose, so the app moves instead.
+     * Where the arrow pad sits. Whichever hand still reaches, and where the
+     * forearm falls on the way, are not things anyone gets to choose, so the
+     * app moves instead. See [ArrowPlacement].
      */
-    var arrowsOnLeft: Boolean by mutableStateOf(initialArrowsOnLeft)
+    var arrowPlacement: ArrowPlacement by mutableStateOf(initialArrowPlacement)
         private set
 
-    var onArrowsOnLeftChanged: ((Boolean) -> Unit)? = null
+    var onArrowPlacementChanged: ((ArrowPlacement) -> Unit)? = null
 
     /**
      * Battery charge, 0..100, or null before the first reading arrives.
@@ -670,10 +671,10 @@ class ScanController(
         onInputModeChanged?.invoke(mode)
     }
 
-    fun useArrowsOnLeft(enabled: Boolean) {
-        if (enabled == arrowsOnLeft) return
-        arrowsOnLeft = enabled
-        onArrowsOnLeftChanged?.invoke(enabled)
+    fun useArrowPlacement(placement: ArrowPlacement) {
+        if (placement == arrowPlacement) return
+        arrowPlacement = placement
+        onArrowPlacementChanged?.invoke(placement)
     }
 
     fun useTouchInput(enabled: Boolean) {
