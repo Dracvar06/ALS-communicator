@@ -7,6 +7,7 @@ import cat.merce.comunicador.prediction.Predictor
 import cat.merce.comunicador.prediction.WordListPredictor
 import cat.merce.comunicador.prediction.Words
 import cat.merce.comunicador.input.SwitchFilter
+import cat.merce.comunicador.scan.Cursor
 import cat.merce.comunicador.scan.ScanLayout
 import cat.merce.comunicador.scan.ScanState
 import cat.merce.comunicador.scan.Scanner
@@ -44,7 +45,47 @@ class ScanController(
     initialLanguage: Language = CATALAN,
     initialLocked: Boolean = false,
     initialOpenOnBoot: Boolean = false,
+    initialInputMode: InputMode = InputMode.Scan,
+    initialArrowsOnLeft: Boolean = false,
 ) {
+
+    /**
+     * Scanning, or steering with arrows. The two are different enough that the
+     * grid itself changes: arrow mode carries a backspace key, because it has
+     * no second switch to undo with.
+     */
+    var inputMode: InputMode by mutableStateOf(initialInputMode)
+        private set
+
+    var onInputModeChanged: ((InputMode) -> Unit)? = null
+
+    /**
+     * Which side of the screen the arrows sit on. Whichever hand still reaches
+     * is not a thing anyone gets to choose, so the app moves instead.
+     */
+    var arrowsOnLeft: Boolean by mutableStateOf(initialArrowsOnLeft)
+        private set
+
+    var onArrowsOnLeftChanged: ((Boolean) -> Unit)? = null
+
+    /**
+     * Battery charge, 0..100, or null before the first reading arrives.
+     *
+     * On her own tablet the app hides the system bars and locked mode stops
+     * anyone leaving it, so this is the only place the charge can be seen. A
+     * communication device that goes flat without warning is a person left
+     * unable to speak, which makes this less of an ornament than it looks.
+     */
+    var batteryPercent: Int? by mutableStateOf(null)
+        private set
+
+    var batteryCharging: Boolean by mutableStateOf(false)
+        private set
+
+    fun setBattery(percent: Int?, charging: Boolean) {
+        batteryPercent = percent?.coerceIn(0, 100)
+        batteryCharging = charging
+    }
 
     /**
      * Locked mode: the app holds the screen and cannot be left. For her own
@@ -102,7 +143,8 @@ class ScanController(
     /** The grid currently on screen: the phrases when in that screen, else writing. */
     val rows: List<List<Key>> get() = if (inPhrases) phrasesGrid else writingGrid
 
-    private var writingGrid: List<List<Key>> = keyboardFor(initialLanguage)
+    private var writingGrid: List<List<Key>> =
+        keyboardFor(initialLanguage, withDelete = initialInputMode == InputMode.Arrows)
 
     /** Where the highlight is. */
     var state: ScanState by mutableStateOf(ScanState.Row(0))
@@ -149,6 +191,52 @@ class ScanController(
 
     var inSettings: Boolean by mutableStateOf(false)
         private set
+
+    /**
+     * The walkthrough, which explains the app to the person setting it up.
+     *
+     * Not scannable and not reachable from the grid, like settings: it is for
+     * the helper, and every control the grid has to carry costs her time on
+     * every letter for the rest of the day.
+     */
+    var inTutorial: Boolean by mutableStateOf(false)
+        private set
+
+    /** Which page of the walkthrough is showing. */
+    var tutorialPage: Int by mutableStateOf(0)
+        private set
+
+    /** The pages of the current language's walkthrough. */
+    val tutorialPages: List<TutorialPage> get() = language.tutorial
+
+    fun openTutorial() {
+        tutorialPage = 0
+        inTutorial = true
+    }
+
+    fun nextTutorialPage() {
+        if (tutorialPage < tutorialPages.size - 1) tutorialPage++ else closeTutorial()
+    }
+
+    fun previousTutorialPage() {
+        if (tutorialPage > 0) tutorialPage--
+    }
+
+    /**
+     * Leaves the walkthrough and goes back to writing.
+     *
+     * Reached by a switch press as well as by the button, for the same reason
+     * settings is: a screen she cannot leave without a helper's hands is a
+     * screen that can strand her.
+     */
+    fun closeTutorial() {
+        if (!inTutorial) return
+        inTutorial = false
+        // Out to the grid rather than back to settings. The last page asks the
+        // helper to go and try it, so that is where they should land.
+        closeSettings()
+        restartTiming()
+    }
 
     /** The carer's screen for finding out what a switch interface sends. */
     var inDiagnostics: Boolean by mutableStateOf(false)
@@ -236,7 +324,10 @@ class ScanController(
     var canUndo: Boolean by mutableStateOf(false)
         private set
 
-    private var scanner = Scanner(ScanLayout(keyboardFor(initialLanguage).map { it.size }))
+    private var scanner = Scanner(ScanLayout(writingGrid.map { it.size }))
+
+    /** Used instead of [scanner] in arrow mode. Both are kept in step. */
+    private var cursor = Cursor(ScanLayout(writingGrid.map { it.size }))
 
     /**
      * What undo walks back through, oldest first.
@@ -256,12 +347,27 @@ class ScanController(
 
     init {
         refreshSuggestions()
+        // Arrow mode has no row-scanning stage, so it starts on a single cell.
+        state = currentState()
+    }
+
+    /**
+     * Where the highlight belongs right now, according to whichever of the two
+     * machines is driving. Every place that used to read scanner.state goes
+     * through here instead, so neither mode can be forgotten in one branch.
+     */
+    private fun currentState(): ScanState = when (inputMode) {
+        InputMode.Scan -> scanner.state
+        InputMode.Arrows -> cursor.position.let { ScanState.Cell(it.row, it.col) }
     }
 
     /** The scan interval elapsed. */
     fun tick() {
-        // Nothing is scanning while a carer has settings open.
-        if (inSettings) return
+        // Nothing is scanning while a carer has settings or the guide open.
+        if (inSettings || inTutorial) return
+        // In arrow mode the highlight only ever moves because she moved it.
+        // The clock on screen keeps running; it simply has nothing to advance.
+        if (inputMode == InputMode.Arrows) return
 
         val before = state
         scanner.tick()
@@ -281,10 +387,19 @@ class ScanController(
 
     /** The writing switch was pressed. */
     fun press() {
+        if (inTutorial) {
+            closeTutorial()
+            return
+        }
         if (inSettings) {
             // Any press gets a carer out of settings. Settings is the one place
             // the grid cannot reach, so it must not need the grid to leave.
             closeSettings()
+            return
+        }
+
+        if (inputMode == InputMode.Arrows) {
+            pressArrows()
             return
         }
 
@@ -327,6 +442,46 @@ class ScanController(
     }
 
     /**
+     * A press in arrow mode: take whatever the cursor is sitting on.
+     *
+     * The cursor deliberately stays where it is afterwards. Scanning has to
+     * return to the top because the rhythm is what she is following, but here
+     * she is steering, and the next letter is far more often near the last one
+     * than back at the beginning. Doubled letters cost one press.
+     */
+    private fun pressArrows() {
+        val position = cursor.position
+        when (val key = rows[position.row][position.col]) {
+            Key.OpenPhrases -> { openPhrases(); return }
+            Key.Back -> { closePhrases(); return }
+            is Key.Phrase -> onSpeak?.invoke(key.text)
+
+            else -> {
+                val textBefore = text
+                apply(key)
+                push(Step.ChangedText(textBefore, position.row))
+                noticeFinishedWord(textBefore, text)
+                refreshSuggestions()
+            }
+        }
+    }
+
+    /** Steer the cursor. Ignored unless arrow mode is on. */
+    fun moveUp() = move { cursor.up() }
+
+    fun moveDown() = move { cursor.down() }
+
+    fun moveLeft() = move { cursor.left() }
+
+    fun moveRight() = move { cursor.right() }
+
+    private inline fun move(step: () -> Unit) {
+        if (inputMode != InputMode.Arrows || inSettings || inTutorial) return
+        step()
+        state = currentState()
+    }
+
+    /**
      * The undo switch was pressed. Steps back exactly one action.
      *
      * Inside a row, it leaves the row. After a letter, it removes the letter
@@ -335,6 +490,10 @@ class ScanController(
      * keeps walking back.
      */
     fun undo() {
+        if (inTutorial) {
+            closeTutorial()
+            return
+        }
         if (inSettings) {
             closeSettings()
             return
@@ -368,17 +527,23 @@ class ScanController(
             is Step.ChangedText -> {
                 val undoneText = text
                 text = step.before
-                scanner.goIntoRow(step.row)
-                state = scanner.state
 
-                // She is back on the first letter of the row, so it earns the
-                // extra time again just as if she had entered it herself.
-                justEnteredRow = true
-                restartTiming()
+                // Only scanning has a row to be put back inside. In arrow mode
+                // the cursor is already wherever she left it, which is where
+                // she will want to try again from, so it is not moved.
+                if (inputMode == InputMode.Scan) {
+                    scanner.goIntoRow(step.row)
+                    state = scanner.state
 
-                // She is inside the row again, so one more undo should take her
-                // out of it, exactly as if she had just opened it.
-                push(Step.OpenedRow(step.row))
+                    // She is back on the first letter of the row, so it earns
+                    // the extra time again as if she had entered it herself.
+                    justEnteredRow = true
+                    restartTiming()
+
+                    // She is inside the row again, so one more undo should take
+                    // her out of it, exactly as if she had just opened it.
+                    push(Step.OpenedRow(step.row))
+                }
 
                 // A word taken back is not a word she meant, so it must not
                 // stay in what the app has learned about her.
@@ -406,7 +571,7 @@ class ScanController(
     fun changeLanguage(newLanguage: Language) {
         if (newLanguage.code == language.code) return
         language = newLanguage
-        writingGrid = keyboardFor(newLanguage)
+        writingGrid = keyboardFor(newLanguage, withDelete = inputMode == InputMode.Arrows)
         setPhrases(newLanguage.defaultPhrases)
         inPhrases = false
         rescan(writingGrid)
@@ -448,10 +613,14 @@ class ScanController(
         refreshCanUndo()
     }
 
-    /** Starts a fresh scan over a new layout, from the top row. */
+    /** Starts afresh over a new layout, from the top left. */
     private fun rescan(layout: List<List<Key>>) {
-        scanner = Scanner(ScanLayout(layout.map { it.size }))
-        state = scanner.state
+        val shape = ScanLayout(layout.map { it.size })
+        scanner = Scanner(shape)
+        // Rebuilt together, so a cursor can never be left pointing at a cell
+        // that the new grid does not have.
+        cursor = Cursor(shape)
+        state = currentState()
     }
 
     /**
@@ -480,6 +649,31 @@ class ScanController(
         // controller sends a steady trickle of phantom presses, and letting
         // those reset the timer would hold the screen open for good. Only a
         // touch resets it; otherwise it closes on its own on the timer below.
+    }
+
+    /**
+     * Switches between scanning and arrows.
+     *
+     * The writing grid is rebuilt, because arrow mode carries a backspace key
+     * that scanning does not need, and both machines start again from the top
+     * left so the change is never half applied.
+     */
+    fun useInputMode(mode: InputMode) {
+        if (mode == inputMode) return
+        inputMode = mode
+        writingGrid = keyboardFor(language, withDelete = mode == InputMode.Arrows)
+        rescan(if (inPhrases) phrasesGrid else writingGrid)
+        justEnteredRow = false
+        restartTiming()
+        history.clear()
+        refreshCanUndo()
+        onInputModeChanged?.invoke(mode)
+    }
+
+    fun useArrowsOnLeft(enabled: Boolean) {
+        if (enabled == arrowsOnLeft) return
+        arrowsOnLeft = enabled
+        onArrowsOnLeftChanged?.invoke(enabled)
     }
 
     fun useTouchInput(enabled: Boolean) {
@@ -546,8 +740,10 @@ class ScanController(
         if (!inSettings) return
         inSettings = false
         // Back to the top, so the rhythm after settings is always the same.
-        scanner.goToRow(0)
-        state = scanner.state
+        // Arrow mode has no rhythm to restore and no reason to move her, so the
+        // cursor is left exactly where she parked it.
+        if (inputMode == InputMode.Scan) scanner.goToRow(0)
+        state = currentState()
         justEnteredRow = false
         restartTiming()
         history.clear()
@@ -603,6 +799,7 @@ class ScanController(
         Key.OpenPhrases -> language.phrasesLabel
         Key.Back -> language.backLabel
         Key.Clear -> "\u00d7"
+        Key.Delete -> "\u232b"
     }
 
     /** Should the cell at this position be highlighted right now? */
@@ -620,6 +817,7 @@ class ScanController(
             Key.No -> text += language.noLabel + " "
             Key.Space -> text += " "
             Key.Clear -> text = ""
+            Key.Delete -> if (text.isNotEmpty()) text = text.dropLast(1)
 
             // Handled in press(), never routed through here.
             Key.OpenPhrases, Key.Back, is Key.Phrase -> Unit

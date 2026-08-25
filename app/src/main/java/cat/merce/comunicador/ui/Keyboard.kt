@@ -23,6 +23,12 @@ sealed interface Key {
 
     data object Clear : Key
 
+    /**
+     * Backspace. Only on the grid in arrow mode, where there is no second
+     * switch to undo with and removing a letter has to be reachable by hand.
+     */
+    data object Delete : Key
+
     /** Opens the phrases screen, from the writing grid. */
     data object OpenPhrases : Key
 

@@ -1,7 +1,14 @@
 package cat.merce.comunicador.ui
 
 import android.app.ActivityManager
+import android.app.KeyguardManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.os.BatteryManager
+import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.speech.tts.TextToSpeech
@@ -112,10 +119,19 @@ class MainActivity : ComponentActivity() {
             initialLanguage = languageForCode(settings.getString(KEY_LANGUAGE, null)),
             initialLocked = settings.getBoolean(KEY_LOCKED, false),
             initialOpenOnBoot = settings.getBoolean(KEY_OPEN_ON_BOOT, false),
+            initialInputMode = InputMode.fromCode(settings.getString(KEY_INPUT_MODE, null)),
+            initialArrowsOnLeft = settings.getBoolean(KEY_ARROWS_ON_LEFT, false),
         )
+        controller.onInputModeChanged = { mode ->
+            settings.edit(commit = true) { putString(KEY_INPUT_MODE, mode.name) }
+        }
+        controller.onArrowsOnLeftChanged = { on ->
+            settings.edit(commit = true) { putBoolean(KEY_ARROWS_ON_LEFT, on) }
+        }
         controller.onLockedChanged = { on ->
             settings.edit(commit = true) { putBoolean(KEY_LOCKED, on) }
             applyLock(on)
+            applyStayVisible(on)
         }
         controller.onOpenOnBootChanged = { on ->
             settings.edit(commit = true) { putBoolean(KEY_OPEN_ON_BOOT, on) }
@@ -172,8 +188,21 @@ class MainActivity : ComponentActivity() {
 
         loadPrediction()
 
+        // A completely empty settings file means nobody has ever touched this
+        // install, so whoever is holding the device is setting it up. Show them
+        // how it works once, without being asked: the app failing because the
+        // person explaining it had it wrong is a real way for it to fail, and
+        // the helper who most needs the guide is the one who does not know it
+        // is there. Only ever on a fresh install, so it cannot interrupt her
+        // mid-sentence later on.
+        if (settings.all.isEmpty()) {
+            controller.openTutorial()
+            settings.edit(commit = true) { putBoolean(KEY_TUTORIAL_SEEN, true) }
+        }
+
         // She cannot wake a sleeping tablet, so it must not sleep.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        applyStayVisible(controller.locked)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowCompat.getInsetsController(window, window.decorView).apply {
@@ -272,7 +301,89 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (controller.locked) applyLock(true)
+        if (controller.locked) {
+            applyLock(true)
+            // Asked for again on every resume, not only when the setting is
+            // turned on: coming back from a black screen is exactly the moment
+            // a keyguard is in the way.
+            dismissKeyguard()
+        }
+    }
+
+    /**
+     * Makes the app survive the screen going off.
+     *
+     * The screen-on flag stops the tablet sleeping while the app is in front,
+     * but it cannot stop the power button, an empty battery, or a device
+     * policy. When the screen does come back the lock screen is what is showing,
+     * and she cannot swipe it away — so the app was simply gone until somebody
+     * else picked the tablet up. These three ask Android to show the app over
+     * the lock screen, to turn the screen on when the app is brought forward,
+     * and to take a non-secure keyguard away.
+     *
+     * Tied to locked mode, which is a setting for her own device. A helper's
+     * own phone keeps its lock screen exactly as it was.
+     */
+    private fun applyStayVisible(on: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(on)
+            setTurnScreenOn(on)
+        } else {
+            @Suppress("DEPRECATION")
+            val flags = WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+            if (on) window.addFlags(flags) else window.clearFlags(flags)
+        }
+        if (on) dismissKeyguard()
+    }
+
+    /**
+     * Asks for a swipe-to-unlock screen to be taken away. A PIN or pattern is
+     * not dismissed by this and never should be: it would be a way past the
+     * lock screen of any tablet the app is installed on.
+     */
+    private fun dismissKeyguard() {
+        val keyguard = getSystemService(KeyguardManager::class.java) ?: return
+        runCatching { keyguard.requestDismissKeyguard(this, null) }
+    }
+
+    /**
+     * Watches the charge so it can be shown in the corner of the grid.
+     *
+     * Registered while the app is in front and dropped when it is not, so
+     * nothing is listening when nobody is looking. The first read comes from
+     * the sticky broadcast, which Android keeps around, so the number appears
+     * immediately rather than at the next change.
+     */
+    private val batteryWatcher = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) = readBattery(intent)
+    }
+
+    private fun readBattery(intent: Intent?) {
+        if (intent == null) return
+        val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+        val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+        val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+        val percent = if (level >= 0 && scale > 0) level * 100 / scale else null
+        controller.setBattery(
+            percent = percent,
+            charging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                status == BatteryManager.BATTERY_STATUS_FULL,
+        )
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val sticky = registerReceiver(
+            batteryWatcher,
+            IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+        )
+        readBattery(sticky)
+    }
+
+    override fun onStop() {
+        runCatching { unregisterReceiver(batteryWatcher) }
+        super.onStop()
     }
 
     /**
@@ -393,6 +504,29 @@ class MainActivity : ComponentActivity() {
             return true
         }
 
+        // In arrow mode a real d-pad or a keyboard's arrow keys steer the
+        // cursor. Nothing has to be bound for this: the four arrow keys mean
+        // one obvious thing, and a helper testing on a keyboard should not have
+        // to set them up first. Bound buttons still win, so an arrow key can be
+        // given to writing if someone wants it.
+        if (controller.inputMode == InputMode.Arrows &&
+            token !in writeTokens && token !in undoTokens
+        ) {
+            val moved = when (event.keyCode) {
+                KeyEvent.KEYCODE_DPAD_UP -> controller::moveUp
+                KeyEvent.KEYCODE_DPAD_DOWN -> controller::moveDown
+                KeyEvent.KEYCODE_DPAD_LEFT -> controller::moveLeft
+                KeyEvent.KEYCODE_DPAD_RIGHT -> controller::moveRight
+                else -> null
+            }
+            if (moved != null) {
+                // repeatCount is already filtered above, so holding a key does
+                // not pour moves in.
+                if (down) moved()
+                return true
+            }
+        }
+
         // Otherwise only take the keys that are actually bound; let the rest
         // through so the system still works.
         if (token !in writeTokens && token !in undoTokens) {
@@ -502,6 +636,9 @@ class MainActivity : ComponentActivity() {
         const val KEY_LANGUAGE = "language"
         const val KEY_LOCKED = "locked"
         const val KEY_OPEN_ON_BOOT = "open_on_boot"
+        const val KEY_INPUT_MODE = "input_mode"
+        const val KEY_ARROWS_ON_LEFT = "arrows_on_left"
+        const val KEY_TUTORIAL_SEEN = "tutorial_seen"
         const val KEY_WRITE_TOKENS = "write_tokens"
         const val KEY_UNDO_TOKENS = "undo_tokens"
         const val PHRASES_FILE = "phrases.txt"

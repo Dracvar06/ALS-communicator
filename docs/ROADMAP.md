@@ -4,6 +4,60 @@ Where the project could go next, roughly in order of how much it would help a
 real user. Nothing here is committed; it is a place to think out loud so ideas
 are not lost. What is already built is in the git history and `CLAUDE.md`.
 
+## What the first session with her actually changed (2026-08-25)
+
+Worth recording, because almost none of it was what the plan expected.
+
+- **The switch was not wanted.** Bluetooth switches, the ESP32 box, the whole
+  hardware thread: she would rather touch the screen. The hardware work is not
+  wasted — it is still the right answer for someone who cannot reach a screen —
+  but it is not the default path any more.
+- **Scanning was the wrong shape for her.** Waiting for a highlight to arrive
+  and pressing at the right moment is a real skill, and it is not free. She
+  wanted to *steer*. Hence arrow mode: four arrows and a choose button, no
+  timing at all. Both modes are kept, since which one suits a person cannot be
+  decided in advance and may change.
+- **A device that sleeps is a person who cannot speak.** The screen going off
+  and coming back to a lock screen left her with nothing until somebody else
+  picked the tablet up.
+- **The explanation failed, not the app.** It was taken to her by somebody who
+  had only had it described to them second hand, and who therefore explained it
+  wrong; what was judged not to work was the explanation. Hence the walkthrough
+  in settings, written for the helper rather than for her, and shown once
+  unasked on a fresh install. A tool only one person understands stops working
+  the first day that person is not in the room.
+- **Nobody could see the battery.** Locked mode hides the system bars, which
+  makes the charge invisible right up until the device dies.
+
+### The invisible halves
+
+Reported 2026-08-25: people struggle with the fact that **the letters are not
+buttons**, and that in scanning the two real buttons are the unmarked halves of
+the screen. It looks like a grid of buttons, so they tap a letter, nothing
+happens, and they conclude the app is broken.
+
+Addressed for now with its own walkthrough page and a moving picture of the two
+halves washing over the grid. Not yet tried on anyone who had the
+misunderstanding, so it is unproven.
+
+If words and a picture turn out not to be enough, the next step is to make the
+halves briefly visible: a faint wash on whichever half was last touched, or a
+one-off outline the first few times the app is opened. Deliberately not done
+yet — anything drawn over the grid covers letters, and the grid is what she
+reads all day. It is a cost paid forever to fix a misunderstanding that lasts a
+minute, so it should only be paid if teaching genuinely fails.
+
+### Still open in arrow mode
+
+- **Press and hold to repeat.** Left out deliberately: both axes wrap, so
+  nothing is more than three presses away, and a hand resting too long on a
+  button would pay for it. Worth revisiting if she asks for it.
+- **Tapping a letter directly.** Obvious and tempting, and dangerous: a hand
+  resting on the screen would type. Would need to be a separate setting.
+- **Arrow size and spacing.** The pad takes about a quarter of the width. If
+  the buttons turn out to be too small or too close together for her, that
+  fraction is the thing to change.
+
 ## Known gaps, deliberately left for now
 
 - **Screen pinning / kiosk mode.** With two switches she cannot get back into

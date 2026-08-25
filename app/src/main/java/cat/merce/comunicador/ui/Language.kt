@@ -70,6 +70,28 @@ class Language(
     val settingsBootTitle: String,
     val settingsBootDetail: String,
 
+    // How she drives the grid: scanning, or steering with arrows.
+    val settingsModeTitle: String,
+    val settingsModeDetail: String,
+    val settingsModeScan: String,
+    val settingsModeArrows: String,
+    val settingsArrowSideTitle: String,
+    val settingsArrowSideDetail: String,
+
+    /** The word on the big choose button in arrow mode. */
+    val arrowChoose: String,
+
+    /** Read aloud on the settings screen when the charge is getting low. */
+    val batteryLow: String,
+
+    // The walkthrough, which is for the helper rather than for her.
+    val settingsTutorial: String,
+    val tutorialNext: String,
+    val tutorialBack: String,
+    val tutorialActiveMode: String,
+    val tutorialPressed: String,
+    val tutorial: List<TutorialPage>,
+
     // The words on the button-binding screen.
     val bindPressFor: String,
     val bindButtonFor: String,
@@ -147,6 +169,160 @@ val CATALAN = Language(
     settingsLockedDetail = "L'aplicació es queda a la pantalla i no se'n pot sortir. Desactiva-ho aquí per sortir.",
     settingsBootTitle = "Obre's en encendre",
     settingsBootDetail = "L'aplicació s'obre sola quan el dispositiu es reinicia.",
+    settingsModeTitle = "Com es tria una lletra",
+    settingsModeDetail = "Amb escaneig el senyalador es mou sol i esperes. " +
+        "Amb fletxes el mous tu i no has d'esperar mai.",
+    settingsModeScan = "Escaneig automàtic",
+    settingsModeArrows = "Fletxes",
+    settingsArrowSideTitle = "Fletxes a l'esquerra",
+    settingsArrowSideDetail = "Posa-les al costat de la mà que arriba millor.",
+    arrowChoose = "TRIA",
+    batteryLow = "Bateria baixa",
+    settingsTutorial = "COM FUNCIONA",
+    tutorialNext = "SEGÜENT",
+    tutorialBack = "ENRERE",
+    tutorialActiveMode = "AQUEST ÉS EL MODE ACTIU",
+    tutorialPressed = "PREM",
+    tutorial = listOf(
+        TutorialPage(
+            title = "Per a què serveix",
+            lines = listOf(
+                "Serveix perquè una persona que no pot parlar ni moure les mans " +
+                    "pugui escriure i dir coses.",
+                "Ella només fa un moviment: tocar la pantalla. Tota la resta " +
+                    "l'ha de fer l'aplicació.",
+                "Tu ets qui la prepara. Aquesta guia explica com funciona, " +
+                    "perquè puguis explicar-l'hi bé.",
+            ),
+        ),
+        TutorialPage(
+            title = "Dues maneres de triar una lletra",
+            lines = listOf(
+                "N'hi ha dues, i es canvien als ajustos. Cap de les dues és " +
+                    "millor: depèn de la persona.",
+                "ESCANEIG AUTOMÀTIC: el requadre vermell es mou sol. Ella " +
+                    "espera i prem quan arriba on vol.",
+                "FLETXES: el requadre no es mou sol. Ella el mou amb quatre " +
+                    "fletxes i prem TRIA.",
+                "Si esperar la cansa, prova les fletxes. Si li costa encertar " +
+                    "el moment exacte, també.",
+            ),
+        ),
+        TutorialPage(
+            title = "Les lletres no són botons",
+            demo = TutorialDemo.Touch,
+            lines = listOf(
+                "Això és el que costa més d'entendre, i val la pena llegir-ho " +
+                    "dues vegades.",
+                "Les lletres de la pantalla NO són botons. Tocar la lletra que " +
+                    "vol no fa res. Serveixen per llegir-les, no per prémer-les.",
+                "Amb l'escaneig automàtic, els botons són dos i ocupen mitja " +
+                    "pantalla cadascun: tota la meitat DRETA escriu, tota la " +
+                    "meitat ESQUERRA desfà.",
+                "No es veuen, i és a posta: la graella és per mirar-la, i unes " +
+                    "línies al damunt només taparien lletres.",
+                "Això vol dir que ella pot tocar on li vagi bé de la meitat " +
+                    "que sigui. No ha d'encertar res, i no pot fallar el botó.",
+                "Amb fletxes és diferent: allà els botons sí que es veuen, són " +
+                    "les quatre fletxes i TRIA. Les lletres segueixen sense " +
+                    "ser botons.",
+                "Es pot desactivar als ajustos, a TOCAR LA PANTALLA PER " +
+                    "ESCRIURE, si algú toca la pantalla sense voler.",
+            ),
+        ),
+        TutorialPage(
+            title = "Escaneig automàtic",
+            demo = TutorialDemo.Scan,
+            lines = listOf(
+                "El requadre vermell baixa fila per fila, tot sol.",
+                "Quan és a la fila que ella vol, prem. Ara el requadre es mou " +
+                    "de lletra en lletra dins d'aquella fila.",
+                "Quan és a la lletra que vol, torna a prémer. La lletra " +
+                    "s'escriu i tot torna a començar de dalt.",
+                "Si se li passa la lletra no cal fer res: després de dues " +
+                    "voltes la fila es deixa sola i torna a baixar.",
+                "Tocar la meitat esquerra de la pantalla desfà l'última cosa.",
+            ),
+        ),
+        TutorialPage(
+            title = "Fletxes",
+            demo = TutorialDemo.Arrows,
+            lines = listOf(
+                "El requadre es queda quiet fins que ella el mou. No hi ha " +
+                    "res a esperar i no es pot arribar tard.",
+                "Les quatre fletxes el mouen una casella cada vegada. TRIA " +
+                    "escriu la lletra que hi ha marcada.",
+                "Dona la volta: des de la primera lletra d'una fila, " +
+                    "l'esquerra porta a l'última. Des de la fila de dalt, " +
+                    "amunt porta a la de baix. Res queda mai lluny.",
+                "Després d'escriure, el requadre es queda on és. Dues lletres " +
+                    "iguals seguides són dues premudes de TRIA.",
+                "La tecla ⌫ de la graella esborra una lletra.",
+                "Els espais entre les fletxes també compten: un toc que cau " +
+                    "entre dues va a la més propera.",
+            ),
+        ),
+        TutorialPage(
+            title = "La graella",
+            lines = listOf(
+                "Fila de dalt: tres paraules que l'aplicació suggereix, i " +
+                    "després SÍ, NO i FRASES.",
+                "Les paraules suggerides canvien mentre ella escriu. Triar-ne " +
+                    "una escriu la paraula sencera i l'espai: sovint és el " +
+                    "camí més curt.",
+                "Les lletres no estan per ordre alfabètic, sinó per ordre " +
+                    "d'ús en català, perquè les més freqüents quedin a prop.",
+                "× esborra tota la frase, i per això és a l'últim racó.",
+            ),
+        ),
+        TutorialPage(
+            title = "Frases",
+            lines = listOf(
+                "FRASES obre una pantalla amb frases senceres.",
+                "Triar-ne una la diu en veu alta. No s'escriu res al requadre.",
+                "Per tornar a escriure: TORNA, o tocar la meitat esquerra de " +
+                    "la pantalla.",
+            ),
+        ),
+        TutorialPage(
+            title = "Els ajustos que importen",
+            lines = listOf(
+                "VELOCITAT DE L'ESCANEIG: quant dura cada pas. Si se li " +
+                    "escapen lletres, fes-lo més lent.",
+                "TEMPS EXTRA A LA PRIMERA LLETRA: en entrar a una fila, li " +
+                    "dona un moment més per reaccionar.",
+                "TEMPS MÍNIM ENTRE POLSACIONS: si una sola premuda escriu " +
+                    "dues lletres, puja'l.",
+                "IGNORA ELS TREMOLORS: una ràfega de tocs seguits compta una " +
+                    "sola vegada.",
+                "Canvia una cosa cada vegada i prova-la. Canviar-ho tot alhora " +
+                    "no diu res sobre què ha ajudat.",
+            ),
+        ),
+        TutorialPage(
+            title = "Mode bloquejat i bateria",
+            lines = listOf(
+                "Amb el mode bloquejat, l'aplicació es queda a la pantalla i " +
+                    "no se'n surt sense voler.",
+                "Per sortir-ne: la rodeta ⚙ de dalt a la dreta, i desactiva'l " +
+                    "als ajustos. Sempre es pot.",
+                "La bateria es veu a dalt a la dreta. Es posa vermella per " +
+                    "sota del 20 %.",
+                "Si es queda sense bateria es queda sense veu. Val la pena " +
+                    "deixar-la endollada.",
+            ),
+        ),
+        TutorialPage(
+            title = "Ja està",
+            lines = listOf(
+                "Tanca això i prova-ho tu, uns minuts, abans d'explicar-l'hi " +
+                    "a ella. És la millor manera d'explicar-ho bé.",
+                "Si alguna cosa no li va bé, gairebé sempre és un ajust i no " +
+                    "l'aplicació. Comença per la velocitat.",
+                "Pots tornar a obrir aquesta guia quan vulguis: ⚙ → COM FUNCIONA.",
+            ),
+        ),
+    ),
     bindPressFor = "Prem el botó per a",
     bindButtonFor = "Botó per a",
     bindWrite = "ESCRIURE",
@@ -231,6 +407,162 @@ val ENGLISH = Language(
     settingsLockedDetail = "The app stays on screen and cannot be left. Turn this off here to leave.",
     settingsBootTitle = "Open on restart",
     settingsBootDetail = "The app opens by itself when the device restarts.",
+    settingsModeTitle = "How a letter is chosen",
+    settingsModeDetail = "Scanning moves the highlight for you and you wait. " +
+        "Arrows let you move it yourself, with no waiting at all.",
+    settingsModeScan = "Automatic scanning",
+    settingsModeArrows = "Arrows",
+    settingsArrowSideTitle = "Arrows on the left",
+    settingsArrowSideDetail = "Put them on the side of whichever hand reaches best.",
+    arrowChoose = "CHOOSE",
+    batteryLow = "Battery low",
+    settingsTutorial = "HOW IT WORKS",
+    tutorialNext = "NEXT",
+    tutorialBack = "BACK",
+    tutorialActiveMode = "THIS IS THE MODE IN USE",
+    tutorialPressed = "PRESS",
+    tutorial = listOf(
+        TutorialPage(
+            title = "What it is for",
+            lines = listOf(
+                "It lets someone who cannot speak and cannot move their hands " +
+                    "write things and say them out loud.",
+                "She makes one movement: a touch on the screen. Everything " +
+                    "else has to be done by the app.",
+                "You are the person setting it up. This guide explains how it " +
+                    "works, so that you can explain it to her properly.",
+            ),
+        ),
+        TutorialPage(
+            title = "Two ways to choose a letter",
+            lines = listOf(
+                "There are two, and you switch between them in settings. " +
+                    "Neither is better: it depends on the person.",
+                "AUTOMATIC SCANNING: the red highlight moves by itself. She " +
+                    "waits, and presses when it reaches what she wants.",
+                "ARROWS: the highlight does not move by itself. She moves it " +
+                    "with four arrows and presses CHOOSE.",
+                "If waiting tires her, try arrows. If getting the moment right " +
+                    "is the hard part, try arrows too.",
+            ),
+        ),
+        TutorialPage(
+            title = "The letters are not buttons",
+            demo = TutorialDemo.Touch,
+            lines = listOf(
+                "This is the part people get wrong, and it is worth reading " +
+                    "twice.",
+                "The letters on the screen are NOT buttons. Tapping the letter " +
+                    "she wants does nothing. They are there to be read, not " +
+                    "pressed.",
+                "With automatic scanning there are two buttons and they are " +
+                    "half the screen each: the whole RIGHT half writes, the " +
+                    "whole LEFT half undoes.",
+                "They are invisible on purpose: the grid is there to be looked " +
+                    "at, and lines drawn over it would only cover letters.",
+                "Which means she can touch wherever suits her within the right " +
+                    "half. There is nothing to aim at, and she cannot miss.",
+                "Arrows are different: there the buttons are visible — the " +
+                    "four arrows and CHOOSE. The letters still are not buttons.",
+                "You can switch this off in settings, under TOUCH THE SCREEN " +
+                    "TO WRITE, if somebody keeps touching the screen by " +
+                    "accident.",
+            ),
+        ),
+        TutorialPage(
+            title = "Automatic scanning",
+            demo = TutorialDemo.Scan,
+            lines = listOf(
+                "The red highlight moves down the rows, one at a time, on its own.",
+                "When it is on the row she wants, she presses. The highlight " +
+                    "now moves letter by letter along that row.",
+                "When it is on the letter she wants, she presses again. The " +
+                    "letter is written and it all starts again from the top.",
+                "If the letter goes past, she does not have to do anything: " +
+                    "after two passes the row lets go by itself.",
+                "Touching the left half of the screen undoes the last thing.",
+            ),
+        ),
+        TutorialPage(
+            title = "Arrows",
+            demo = TutorialDemo.Arrows,
+            lines = listOf(
+                "The highlight stays still until she moves it. There is " +
+                    "nothing to wait for and nothing to be late for.",
+                "The four arrows move it one cell at a time. CHOOSE writes " +
+                    "whichever letter is highlighted.",
+                "It wraps around: from the first letter of a row, left goes to " +
+                    "the last. From the top row, up goes to the bottom. " +
+                    "Nothing is ever far away.",
+                "After writing, the highlight stays where it is. A doubled " +
+                    "letter is two presses of CHOOSE and nothing else.",
+                "The ⌫ key on the grid removes one letter.",
+                "The gaps between the arrows count too: a tap that lands " +
+                    "between two goes to the nearer one.",
+            ),
+        ),
+        TutorialPage(
+            title = "The grid",
+            lines = listOf(
+                "Top row: three words the app is suggesting, then YES, NO and " +
+                    "PHRASES.",
+                "The suggested words change as she writes. Taking one writes " +
+                    "the whole word and the space after it, which is often " +
+                    "much the shortest route.",
+                "The letters are not in alphabetical order. They are in order " +
+                    "of how often they are used, so the common ones are near.",
+                "× clears the whole sentence, which is why it sits in the last " +
+                    "corner of the grid.",
+            ),
+        ),
+        TutorialPage(
+            title = "Phrases",
+            lines = listOf(
+                "PHRASES opens a screen of whole sentences.",
+                "Choosing one speaks it out loud. Nothing is written into the " +
+                    "text box.",
+                "To get back to writing: BACK, or touch the left half of the " +
+                    "screen.",
+            ),
+        ),
+        TutorialPage(
+            title = "The settings that matter",
+            lines = listOf(
+                "SCANNING SPEED: how long each step lasts. If letters are " +
+                    "getting away from her, make it slower.",
+                "EXTRA TIME ON THE FIRST LETTER: gives her a moment longer to " +
+                    "react just after she has entered a row.",
+                "MINIMUM TIME BETWEEN PRESSES: if one press is writing two " +
+                    "letters, raise it.",
+                "IGNORE TREMORS: a burst of taps close together counts once.",
+                "Change one thing at a time and try it. Changing everything at " +
+                    "once tells you nothing about what helped.",
+            ),
+        ),
+        TutorialPage(
+            title = "Locked mode and battery",
+            lines = listOf(
+                "In locked mode the app stays on the screen and cannot be left " +
+                    "by accident.",
+                "To get out: the ⚙ in the top right corner, then turn it off " +
+                    "in settings. It is always possible.",
+                "The battery is shown in the top right. It turns red below 20%.",
+                "A flat battery is a person with no voice. It is worth leaving " +
+                    "it plugged in.",
+            ),
+        ),
+        TutorialPage(
+            title = "That is all",
+            lines = listOf(
+                "Close this and try it yourself for a few minutes before you " +
+                    "explain it to her. It is the only way to explain it well.",
+                "If something is not working for her it is almost always a " +
+                    "setting rather than the app. Start with the speed.",
+                "You can open this guide again whenever you like: ⚙ → HOW IT " +
+                    "WORKS.",
+            ),
+        ),
+    ),
     bindPressFor = "Press the button for",
     bindButtonFor = "Button for",
     bindWrite = "WRITE",
@@ -315,6 +647,163 @@ val SPANISH = Language(
     settingsLockedDetail = "La aplicación se queda en la pantalla y no se puede salir. Desactívalo aquí para salir.",
     settingsBootTitle = "Abrirse al encender",
     settingsBootDetail = "La aplicación se abre sola cuando el dispositivo se reinicia.",
+    settingsModeTitle = "Cómo se elige una letra",
+    settingsModeDetail = "Con escaneo el señalador se mueve solo y hay que esperar. " +
+        "Con flechas lo mueves tú y no esperas nunca.",
+    settingsModeScan = "Escaneo automático",
+    settingsModeArrows = "Flechas",
+    settingsArrowSideTitle = "Flechas a la izquierda",
+    settingsArrowSideDetail = "Ponlas del lado de la mano que llega mejor.",
+    arrowChoose = "ELIGE",
+    batteryLow = "Batería baja",
+    settingsTutorial = "CÓMO FUNCIONA",
+    tutorialNext = "SIGUIENTE",
+    tutorialBack = "ATRÁS",
+    tutorialActiveMode = "ESTE ES EL MODO ACTIVO",
+    tutorialPressed = "PULSA",
+    tutorial = listOf(
+        TutorialPage(
+            title = "Para qué sirve",
+            lines = listOf(
+                "Sirve para que una persona que no puede hablar ni mover las " +
+                    "manos pueda escribir y decir cosas.",
+                "Ella hace un solo movimiento: tocar la pantalla. Todo lo " +
+                    "demás lo tiene que hacer la aplicación.",
+                "Tú eres quien la prepara. Esta guía explica cómo funciona, " +
+                    "para que puedas explicárselo bien.",
+            ),
+        ),
+        TutorialPage(
+            title = "Dos maneras de elegir una letra",
+            lines = listOf(
+                "Hay dos, y se cambian en los ajustes. Ninguna es mejor: " +
+                    "depende de la persona.",
+                "ESCANEO AUTOMÁTICO: el recuadro rojo se mueve solo. Ella " +
+                    "espera y pulsa cuando llega adonde quiere.",
+                "FLECHAS: el recuadro no se mueve solo. Ella lo mueve con " +
+                    "cuatro flechas y pulsa ELIGE.",
+                "Si esperar la cansa, prueba las flechas. Si le cuesta " +
+                    "acertar el momento exacto, también.",
+            ),
+        ),
+        TutorialPage(
+            title = "Las letras no son botones",
+            demo = TutorialDemo.Touch,
+            lines = listOf(
+                "Esto es lo que más cuesta entender, y vale la pena leerlo dos " +
+                    "veces.",
+                "Las letras de la pantalla NO son botones. Tocar la letra que " +
+                    "ella quiere no hace nada. Están para leerlas, no para " +
+                    "pulsarlas.",
+                "Con el escaneo automático hay dos botones y ocupan media " +
+                    "pantalla cada uno: toda la mitad DERECHA escribe, toda la " +
+                    "mitad IZQUIERDA deshace.",
+                "No se ven, y es a propósito: la cuadrícula está para mirarla, " +
+                    "y unas líneas encima solo taparían letras.",
+                "Eso quiere decir que puede tocar donde le vaya bien de la " +
+                    "mitad que sea. No tiene que acertar nada, y no puede " +
+                    "fallar el botón.",
+                "Con flechas es distinto: allí los botones sí se ven, son las " +
+                    "cuatro flechas y ELIGE. Las letras siguen sin ser botones.",
+                "Se puede desactivar en los ajustes, en TOCAR LA PANTALLA PARA " +
+                    "ESCRIBIR, si alguien toca la pantalla sin querer.",
+            ),
+        ),
+        TutorialPage(
+            title = "Escaneo automático",
+            demo = TutorialDemo.Scan,
+            lines = listOf(
+                "El recuadro rojo baja fila por fila, él solo.",
+                "Cuando está en la fila que ella quiere, pulsa. Ahora el " +
+                    "recuadro se mueve de letra en letra dentro de esa fila.",
+                "Cuando está en la letra que quiere, vuelve a pulsar. La letra " +
+                    "se escribe y todo empieza otra vez desde arriba.",
+                "Si se le pasa la letra no hace falta nada: después de dos " +
+                    "vueltas la fila se suelta sola.",
+                "Tocar la mitad izquierda de la pantalla deshace lo último.",
+            ),
+        ),
+        TutorialPage(
+            title = "Flechas",
+            demo = TutorialDemo.Arrows,
+            lines = listOf(
+                "El recuadro se queda quieto hasta que ella lo mueve. No hay " +
+                    "nada que esperar y no se puede llegar tarde.",
+                "Las cuatro flechas lo mueven una casilla cada vez. ELIGE " +
+                    "escribe la letra marcada.",
+                "Da la vuelta: desde la primera letra de una fila, la " +
+                    "izquierda lleva a la última. Desde la fila de arriba, " +
+                    "arriba lleva a la de abajo. Nada queda nunca lejos.",
+                "Después de escribir, el recuadro se queda donde está. Dos " +
+                    "letras iguales seguidas son dos pulsaciones de ELIGE.",
+                "La tecla ⌫ de la cuadrícula borra una letra.",
+                "Los espacios entre las flechas también cuentan: un toque que " +
+                    "cae entre dos va a la más cercana.",
+            ),
+        ),
+        TutorialPage(
+            title = "La cuadrícula",
+            lines = listOf(
+                "Fila de arriba: tres palabras que sugiere la aplicación, y " +
+                    "después SÍ, NO y FRASES.",
+                "Las palabras sugeridas cambian mientras ella escribe. Elegir " +
+                    "una escribe la palabra entera y el espacio: casi siempre " +
+                    "es el camino más corto.",
+                "Las letras no están en orden alfabético, sino por orden de " +
+                    "uso, para que las más frecuentes queden cerca.",
+                "× borra la frase entera, y por eso está en el último rincón.",
+            ),
+        ),
+        TutorialPage(
+            title = "Frases",
+            lines = listOf(
+                "FRASES abre una pantalla con frases enteras.",
+                "Elegir una la dice en voz alta. No se escribe nada en el " +
+                    "recuadro.",
+                "Para volver a escribir: VUELVE, o tocar la mitad izquierda de " +
+                    "la pantalla.",
+            ),
+        ),
+        TutorialPage(
+            title = "Los ajustes que importan",
+            lines = listOf(
+                "VELOCIDAD DEL ESCANEO: cuánto dura cada paso. Si se le " +
+                    "escapan letras, hazlo más lento.",
+                "TIEMPO EXTRA EN LA PRIMERA LETRA: al entrar en una fila, le " +
+                    "da un momento más para reaccionar.",
+                "TIEMPO MÍNIMO ENTRE PULSACIONES: si una sola pulsación " +
+                    "escribe dos letras, súbelo.",
+                "IGNORA LOS TEMBLORES: una ráfaga de toques seguidos cuenta " +
+                    "una sola vez.",
+                "Cambia una cosa cada vez y pruébala. Cambiarlo todo a la vez " +
+                    "no dice nada sobre qué ha ayudado.",
+            ),
+        ),
+        TutorialPage(
+            title = "Modo bloqueado y batería",
+            lines = listOf(
+                "Con el modo bloqueado, la aplicación se queda en la pantalla " +
+                    "y no se sale de ella sin querer.",
+                "Para salir: la rueda ⚙ de arriba a la derecha, y desactívalo " +
+                    "en los ajustes. Siempre se puede.",
+                "La batería se ve arriba a la derecha. Se pone roja por debajo " +
+                    "del 20 %.",
+                "Si se queda sin batería se queda sin voz. Vale la pena " +
+                    "dejarla enchufada.",
+            ),
+        ),
+        TutorialPage(
+            title = "Ya está",
+            lines = listOf(
+                "Cierra esto y pruébalo tú unos minutos antes de explicárselo " +
+                    "a ella. Es la mejor manera de explicarlo bien.",
+                "Si algo no le va bien, casi siempre es un ajuste y no la " +
+                    "aplicación. Empieza por la velocidad.",
+                "Puedes volver a abrir esta guía cuando quieras: ⚙ → CÓMO " +
+                    "FUNCIONA.",
+            ),
+        ),
+    ),
     bindPressFor = "Pulsa el botón para",
     bindButtonFor = "Botón para",
     bindWrite = "ESCRIBIR",
@@ -343,8 +832,11 @@ fun languageForCode(code: String?): Language =
 /**
  * Builds the writing grid for a language: the suggestions, yes, no and the
  * phrases key on the fastest row, then space and the letters below.
+ *
+ * @param withDelete adds a backspace key. Arrow mode has one button and no undo
+ *   switch, so without it there would be no way to take a letter back.
  */
-fun keyboardFor(language: Language): List<List<Key>> {
+fun keyboardFor(language: Language, withDelete: Boolean = false): List<List<Key>> {
     val rows = mutableListOf(
         listOf(
             Key.Suggestion(0), Key.Suggestion(1), Key.Suggestion(2),
@@ -365,5 +857,9 @@ fun keyboardFor(language: Language): List<List<Key>> {
     // wiping the sentence is both rare and the most costly thing to do by
     // accident.
     rows[rows.size - 1] = rows.last() + Key.Clear
+    // Arrow mode has one button and no undo switch, so backspace has to be a
+    // cell she can steer to. It sits beside the clear key, at the far end,
+    // where nothing is ever reached by accident.
+    if (withDelete) rows[rows.size - 1] = rows.last() + Key.Delete
     return rows
 }

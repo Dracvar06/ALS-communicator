@@ -1,6 +1,7 @@
 package cat.merce.comunicador.ui
 
 import android.os.SystemClock
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -40,6 +41,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -47,6 +51,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlin.math.abs
+import kotlin.math.min
 import kotlin.math.roundToLong
 
 private val Background = Color(0xFF000000)
@@ -57,6 +63,55 @@ private val DimInk = Color(0xFF9E9E9E)
 private val TextAreaBackground = Color(0xFF121212)
 private val SettingsCorner = Color(0xFF2A2A2A)
 private val SettingsCornerInk = Color(0xFF6E6E6E)
+private val ArrowKeyColour = Color(0xFF3A3A3A)
+private val ArrowChoose = Color(0xFF4A4A4A)
+private val LowBattery = Color(0xFFE53935)
+
+/**
+ * How wide the arrow pad is, against the grid's 1. A third of the screen, which
+ * is what it took before the arrows were comfortably reachable; the letters are
+ * sized from their cells, so the grid gives up width without giving up clarity.
+ */
+private const val ARROW_PAD_WEIGHT = 0.5f
+
+/** Up, left, right, down, choose. */
+private const val ARROW_BUTTONS = 5
+
+/**
+ * The choose button's share of the pad's height, against the arrow cross's 1.
+ * It is pressed once per letter where an arrow is pressed two or three times,
+ * so it does not need to be the biggest thing here — but a missed choose costs
+ * a letter, where a missed arrow costs a moment.
+ *
+ * Also chosen so the cross above ends up roughly square. The four arrows have
+ * to be congruent, which means they are sized off the *shorter* side of their
+ * box, so any height beyond its width would simply be left empty. This hands
+ * that height to the choose button instead.
+ */
+private const val CHOOSE_WEIGHT = 0.7f
+
+/** How far the base of each arrow sits back from the middle, as a fraction. */
+private const val ARROW_HUB = 0.23f
+
+/**
+ * Half the width of an arrow's base, as a fraction of the square.
+ *
+ * **Must stay below [ARROW_HUB].** Each arrow lives in its own quarter of the
+ * square, and the two ends of its base sit at (±half, hub) from the middle;
+ * once half reaches hub those corners cross the diagonal into the next arrow's
+ * quarter, and the four triangles fuse into one four-pointed star. Which is
+ * exactly what happened the first time this was drawn.
+ */
+private const val ARROW_BASE_HALF = 0.17f
+
+/** Blunts the three points. Cosmetic; it does not change what can be tapped. */
+private const val ARROW_ROUNDING = 0.02f
+
+/** Beyond this an arrow looks shouted rather than clear, even given the room. */
+private const val ARROW_MAX_TEXT_SP = 56f
+
+/** Below this the readout turns red, which is about an hour of use left. */
+private const val LOW_BATTERY_PERCENT = 20
 
 @Composable
 fun ScanScreen(controller: ScanController) {
@@ -91,37 +146,59 @@ fun ScanScreen(controller: ScanController) {
         when {
             controller.bindingRole != null || controller.bindingMoreRole != null ->
                 BindingPanel(controller)
+            controller.inTutorial -> TutorialPanel(controller)
             controller.inDiagnostics -> DiagnosticsPanel(controller)
             controller.inSettings -> SettingsPanel(controller)
-            controller.inPhrases -> {
-                PhrasesGrid(controller)
-                // Same halves as writing: right selects, left goes back.
-                if (controller.touchInput) {
-                    TouchZones(
-                        onWrite = controller::press,
-                        onUndo = controller::undo,
-                        debounceMs = controller.debounceMs,
-                        antiTremor = controller.antiTremor,
-                    )
-                }
-            }
             else -> {
-                WritingGrid(controller)
-                // Sits above the grid but below the gear, so the gear corner
-                // still opens settings. Only present when a carer has left
-                // touch input on.
-                if (controller.touchInput) {
-                    TouchZones(
-                        onWrite = controller::press,
-                        onUndo = controller::undo,
-                        debounceMs = controller.debounceMs,
-                        antiTremor = controller.antiTremor,
-                    )
+                val arrows = controller.inputMode == InputMode.Arrows
+
+                Row(modifier = Modifier.fillMaxSize()) {
+                    // The pad takes a slice off one side and the grid gets the
+                    // rest, rather than floating over the letters: something
+                    // she has to hit must never sit on top of something she has
+                    // to read.
+                    if (arrows && controller.arrowsOnLeft) {
+                        ArrowPad(controller, Modifier.weight(ARROW_PAD_WEIGHT).fillMaxHeight())
+                    }
+
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                        if (controller.inPhrases) {
+                            PhrasesGrid(controller)
+                        } else {
+                            WritingGrid(controller)
+                        }
+
+                        // The two touch halves belong to scanning only. In
+                        // arrow mode the pad is the input, and a tap that
+                        // landed on the grid would type something she was
+                        // only looking at.
+                        if (controller.touchInput && !arrows) {
+                            TouchZones(
+                                onWrite = controller::press,
+                                onUndo = controller::undo,
+                                debounceMs = controller.debounceMs,
+                                antiTremor = controller.antiTremor,
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.align(Alignment.TopEnd),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            BatteryReadout(controller)
+                            // Settings is reached from the writing grid only,
+                            // as before; the phrases screen keeps its corner
+                            // clear for the phrase in it.
+                            if (!controller.inPhrases) {
+                                SettingsCornerButton(onOpen = controller::openSettings)
+                            }
+                        }
+                    }
+
+                    if (arrows && !controller.arrowsOnLeft) {
+                        ArrowPad(controller, Modifier.weight(ARROW_PAD_WEIGHT).fillMaxHeight())
+                    }
                 }
-                SettingsCornerButton(
-                    onOpen = controller::openSettings,
-                    modifier = Modifier.align(Alignment.TopEnd)
-                )
             }
         }
     }
@@ -221,6 +298,569 @@ private fun DiagnosticsPanel(controller: ScanController) {
 
         TouchButton(text = controller.language.settingsClose, onTap = controller::closeSettings)
     }
+}
+
+/**
+ * The walkthrough, for whoever is setting the app up.
+ *
+ * This exists because of a failure that had nothing to do with the code. The
+ * app was taken to her by somebody who had only had it described to them, and
+ * who therefore explained it wrong; it was judged not to work, and what had
+ * actually not worked was the explanation. A tool that only one person
+ * understands stops working the first day that person is not in the room.
+ *
+ * So it is written for the helper, not for her, and it says out loud the things
+ * that are obvious only once somebody has seen them happen: that a row lets go
+ * of itself, that the arrows wrap, that a missed letter is not a mistake to be
+ * fixed but a moment to be waited out.
+ *
+ * Laid out across rather than down: the tablet is held sideways, so words on
+ * one side and a moving picture on the other beats a column of text with the
+ * buttons pushed off the bottom.
+ */
+@Composable
+private fun TutorialPanel(controller: ScanController) {
+    val pages = controller.tutorialPages
+    val page = pages.getOrNull(controller.tutorialPage) ?: return
+    val last = controller.tutorialPage == pages.lastIndex
+
+    Column(modifier = Modifier.fillMaxSize().padding(40.dp)) {
+        Text(
+            text = "${controller.tutorialPage + 1} / ${pages.size}",
+            color = DimInk,
+            fontFamily = Hyperlegible,
+            fontSize = 20.sp
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = page.title,
+            color = Ink,
+            fontFamily = Hyperlegible,
+            fontWeight = FontWeight.Bold,
+            fontSize = 40.sp
+        )
+
+        Spacer(Modifier.height(20.dp))
+
+        Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    // Scrolls rather than shrinks, so a long page still works
+                    // on a short screen and the buttons below stay put.
+                    .verticalScroll(rememberScrollState())
+            ) {
+                for (line in page.lines) {
+                    Row(modifier = Modifier.padding(bottom = 14.dp)) {
+                        Text(
+                            text = "\u2022",
+                            color = CellLit,
+                            fontFamily = Hyperlegible,
+                            fontSize = 24.sp,
+                            modifier = Modifier.width(24.dp)
+                        )
+                        Text(
+                            text = line,
+                            color = Ink,
+                            fontFamily = Hyperlegible,
+                            fontSize = 24.sp,
+                            lineHeight = 32.sp
+                        )
+                    }
+                }
+            }
+
+            page.demo?.let { demo ->
+                Spacer(Modifier.width(28.dp))
+                Column(
+                    modifier = Modifier.width(300.dp).fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    // Beside the words rather than above them: the text runs
+                    // to a different length on every page, and a picture that
+                    // slides up and down the screen as you page through is
+                    // harder to keep hold of than one that stays put.
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    val active = when (demo) {
+                        TutorialDemo.Scan -> controller.inputMode == InputMode.Scan
+                        TutorialDemo.Arrows -> controller.inputMode == InputMode.Arrows
+                        // Not a mode, so there is no mode to be current.
+                        TutorialDemo.Touch -> false
+                    }
+                    if (active) {
+                        // Which of the two is switched on right now is the
+                        // single most useful thing on this page, and the one a
+                        // helper is most likely to get wrong.
+                        Text(
+                            text = controller.language.tutorialActiveMode,
+                            color = CellLit,
+                            fontFamily = Hyperlegible,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                    }
+                    TutorialPicture(demo, controller.language)
+                }
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (controller.tutorialPage > 0) {
+                TouchButton(
+                    text = controller.language.tutorialBack,
+                    onTap = controller::previousTutorialPage,
+                )
+                Spacer(Modifier.width(20.dp))
+            }
+            TouchButton(
+                text = if (last) {
+                    controller.language.settingsClose
+                } else {
+                    controller.language.tutorialNext
+                },
+                onTap = controller::nextTutorialPage,
+            )
+            Spacer(Modifier.weight(1f))
+            if (!last) {
+                TouchButton(
+                    text = controller.language.settingsClose,
+                    onTap = controller::closeTutorial,
+                )
+            }
+        }
+    }
+}
+
+/** Picks the right moving picture for a page. */
+@Composable
+private fun TutorialPicture(demo: TutorialDemo, language: Language) {
+    when (demo) {
+        TutorialDemo.Touch -> TutorialTouchDemo(language)
+        TutorialDemo.Scan, TutorialDemo.Arrows -> TutorialDemoGrid(demo, language)
+    }
+}
+
+/**
+ * The two invisible halves of the screen, lighting up in turn over a grid.
+ *
+ * The single most common misunderstanding this app produces. A grid of letters
+ * looks exactly like a grid of buttons, so a helper taps the letter they want,
+ * nothing happens, and they reasonably conclude the thing is broken. It is not
+ * a fault they can be talked out of in words — "the letters are not buttons"
+ * describes an absence, and an absence is hard to picture.
+ *
+ * So it is drawn: the grid underneath, and one enormous half-screen button
+ * washing over it. The point being made by the picture is the one that matters
+ * most to her, which is that there is nothing to aim at and she cannot miss.
+ */
+@Composable
+private fun TutorialTouchDemo(language: Language) {
+    val frames = remember {
+        listOf(
+            TouchFrame(left = false, right = false, holdMs = 500),
+            TouchFrame(left = false, right = true, holdMs = 1500),
+            TouchFrame(left = false, right = false, holdMs = 500),
+            TouchFrame(left = true, right = false, holdMs = 1500),
+        )
+    }
+    var index by remember { mutableStateOf(0) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(frames[index].holdMs)
+            index = (index + 1) % frames.size
+        }
+    }
+    val frame = frames[index]
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(190.dp)
+            .background(TextAreaBackground, RoundedCornerShape(10.dp))
+            .padding(6.dp)
+    ) {
+        // The grid, underneath and untouchable, exactly as it is in the app.
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            repeat(DEMO_ROWS + 1) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    repeat(DEMO_COLS + 1) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .background(CellIdle, RoundedCornerShape(3.dp))
+                        )
+                    }
+                }
+            }
+        }
+
+        // The two halves, over the top of all of it.
+        Row(modifier = Modifier.fillMaxSize()) {
+            TouchHalf(
+                label = language.settingsUndo.uppercase(),
+                lit = frame.left,
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+            )
+            TouchHalf(
+                label = language.settingsWrite.uppercase(),
+                lit = frame.right,
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun TouchHalf(label: String, lit: Boolean, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.background(
+            // Translucent rather than solid, so the letters stay visible
+            // underneath while it is lit. That the button is *over* the grid
+            // rather than made of it is the whole point of the picture.
+            color = if (lit) CellLit.copy(alpha = 0.8f) else Color.Transparent,
+            shape = RoundedCornerShape(6.dp),
+        ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            color = if (lit) Ink else DimInk,
+            fontFamily = Hyperlegible,
+            fontWeight = FontWeight.Bold,
+            fontSize = 20.sp,
+        )
+    }
+}
+
+private class TouchFrame(val left: Boolean, val right: Boolean, val holdMs: Long)
+
+/**
+ * A small grid that acts out one way of choosing a letter, over and over.
+ *
+ * Words are a poor way to describe a rhythm. "The highlight moves down the rows
+ * and you press" is a sentence somebody can read, agree with, and still not be
+ * able to picture — and picturing it is the whole of what a helper has to pass
+ * on. So the page shows it happening instead, on a grid small enough to sit
+ * beside the text.
+ */
+@Composable
+private fun TutorialDemoGrid(demo: TutorialDemo, language: Language) {
+    // row, col (null lights the whole row), the cue to show, how long to hold.
+    val frames = remember(demo, language) {
+        if (demo == TutorialDemo.Arrows) {
+            listOf(
+                DemoFrame(0, 0, null, 800),
+                DemoFrame(1, 0, "\u25bc", 700),
+                DemoFrame(1, 1, "\u25b6", 700),
+                DemoFrame(1, 2, "\u25b6", 700),
+                DemoFrame(1, 2, language.arrowChoose, 900),
+            )
+        } else {
+            listOf(
+                DemoFrame(0, null, null, 800),
+                DemoFrame(1, null, null, 800),
+                DemoFrame(1, null, language.tutorialPressed, 600),
+                DemoFrame(1, 0, null, 700),
+                DemoFrame(1, 1, null, 700),
+                DemoFrame(1, 2, null, 700),
+                DemoFrame(1, 2, language.tutorialPressed, 800),
+                DemoFrame(0, null, null, 700),
+            )
+        }
+    }
+
+    var index by remember(frames) { mutableStateOf(0) }
+    LaunchedEffect(frames) {
+        while (true) {
+            delay(frames[index].holdMs)
+            index = (index + 1) % frames.size
+        }
+    }
+    val frame = frames[index]
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        for (row in 0 until DEMO_ROWS) {
+            Row {
+                for (col in 0 until DEMO_COLS) {
+                    val lit = frame.row == row && (frame.col == null || frame.col == col)
+                    Box(
+                        modifier = Modifier
+                            .padding(3.dp)
+                            .size(width = 62.dp, height = 42.dp)
+                            .background(
+                                color = if (lit) CellLit else CellIdle,
+                                shape = RoundedCornerShape(6.dp)
+                            )
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        // A fixed height whether or not there is a cue, so the grid above does
+        // not jump up and down as the loop goes round.
+        Box(modifier = Modifier.height(44.dp), contentAlignment = Alignment.Center) {
+            frame.cue?.let { cue ->
+                Text(
+                    text = cue,
+                    color = Ink,
+                    fontFamily = Hyperlegible,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                    modifier = Modifier
+                        .background(ArrowChoose, RoundedCornerShape(10.dp))
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                )
+            }
+        }
+    }
+}
+
+private class DemoFrame(
+    val row: Int,
+    /** Null lights the whole row, as row scanning does. */
+    val col: Int?,
+    val cue: String?,
+    val holdMs: Long,
+)
+
+/** Big enough to show a row being entered, small enough to sit beside text. */
+private const val DEMO_ROWS = 3
+private const val DEMO_COLS = 4
+
+/**
+ * The four arrows and the choose button, down one side of the screen.
+ *
+ * The other way of using the app. Scanning asks her to wait for the highlight
+ * to arrive and to press at exactly the right moment; this asks for more
+ * presses but no timing at all, and nothing is ever missed by a moment. Which
+ * of the two suits a person is not something anyone can work out in advance,
+ * which is why both are here.
+ *
+ * The choose button is the largest, because it is pressed once per letter
+ * while each arrow is pressed less often, and because a missed choose is the
+ * one that costs a letter.
+ *
+ * Deliberately no press-and-hold repeat. Both wraps mean nothing on the grid is
+ * more than three presses away in either direction, so a repeat would buy very
+ * little, and a hand that rests too long on a button would pay for it.
+ */
+@Composable
+private fun ArrowPad(controller: ScanController, modifier: Modifier = Modifier) {
+
+    // One filter per button rather than one for the pad. A tremor repeating the
+    // same arrow has to be swallowed, but moving and then choosing is two real
+    // presses in quick succession and has to keep working.
+    val filters = remember(controller.debounceMs, controller.antiTremor) {
+        List(ARROW_BUTTONS) {
+            SwitchFilter(
+                debounceMs = controller.debounceMs,
+                restartOnReject = controller.antiTremor,
+            )
+        }
+    }
+
+    /** Runs an arrow, but only if it is a real press and not a tremor. */
+    fun guarded(index: Int, move: () -> Unit): () -> Unit = {
+        // The same window as the switches, so the tremor setting means one
+        // thing everywhere rather than two.
+        if (filters[index].accept(Switch.Write, SystemClock.elapsedRealtime())) move()
+    }
+
+    Column(modifier = modifier.padding(8.dp)) {
+        ArrowCross(
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            onUp = guarded(0, controller::moveUp),
+            onLeft = guarded(1, controller::moveLeft),
+            onRight = guarded(2, controller::moveRight),
+            onDown = guarded(3, controller::moveDown),
+        )
+
+        ArrowKey(
+            label = controller.language.arrowChoose,
+            filter = filters[4],
+            modifier = Modifier.fillMaxWidth().weight(CHOOSE_WEIGHT),
+            onPress = controller::press,
+            // A lighter fill, so the one button that commits a letter does not
+            // read as a fifth arrow.
+            highlight = true,
+        )
+    }
+}
+
+/**
+ * The four arrows, as one square of four triangles around a middle.
+ *
+ * Four congruent triangles, each pointing the way it moves the highlight. Every
+ * measurement comes off the same `side`, so no arrow is bigger or better placed
+ * than another — with an up that is easier to hit than a left, the grid stops
+ * being neutral and she pays for it on every letter.
+ *
+ * **The whole square is live, and the gaps belong to the nearest arrow.** What
+ * is drawn is four triangles; what is *listened to* is four quarters of a
+ * square, split along its diagonals. So a tap that lands short of a triangle,
+ * or in the space between two, still does the obvious thing rather than
+ * nothing. For a hand that cannot be placed precisely, a pad with no dead space
+ * anywhere in it is worth more than tidy edges.
+ */
+@Composable
+private fun ArrowCross(
+    modifier: Modifier = Modifier,
+    onUp: () -> Unit,
+    onLeft: () -> Unit,
+    onRight: () -> Unit,
+    onDown: () -> Unit,
+) {
+    Box(
+        modifier = modifier.pointerInput(onUp, onLeft, onRight, onDown) {
+            detectTapGestures { tap ->
+                val dx = tap.x - size.width / 2f
+                val dy = tap.y - size.height / 2f
+                // Which side of the two diagonals the tap fell on, and nothing
+                // more. Every point in the square belongs to exactly one arrow.
+                if (abs(dx) > abs(dy)) {
+                    if (dx > 0) onRight() else onLeft()
+                } else {
+                    if (dy > 0) onDown() else onUp()
+                }
+            }
+        }
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            // Square, so the four are congruent even in a column that is not.
+            val side = min(size.width, size.height)
+            val cx = size.width / 2f
+            val cy = size.height / 2f
+            val arm = side / 2f
+            val hub = side * ARROW_HUB
+            val half = side * ARROW_BASE_HALF
+
+            /** One arrow: its tip, and the two ends of the base behind it. */
+            fun arrow(
+                tipX: Float, tipY: Float,
+                leftX: Float, leftY: Float,
+                rightX: Float, rightY: Float,
+            ) {
+                val path = Path().apply {
+                    moveTo(tipX, tipY)
+                    lineTo(leftX, leftY)
+                    lineTo(rightX, rightY)
+                    close()
+                }
+                drawPath(path, ArrowKeyColour)
+                // Fill plus a rounded outline, so the points are blunt rather
+                // than needle sharp. Purely how it looks; the tap area is the
+                // whole quarter regardless.
+                drawPath(
+                    path = path,
+                    color = ArrowKeyColour,
+                    style = Stroke(width = side * ARROW_ROUNDING, join = StrokeJoin.Round),
+                )
+            }
+
+            // Up and down, then left and right. Each is the same triangle,
+            // turned: arm out to the tip, hub back from the middle, half across
+            // the base.
+            arrow(cx, cy - arm, cx - half, cy - hub, cx + half, cy - hub)
+            arrow(cx, cy + arm, cx - half, cy + hub, cx + half, cy + hub)
+            arrow(cx - arm, cy, cx - hub, cy - half, cx - hub, cy + half)
+            arrow(cx + arm, cy, cx + hub, cy - half, cx + hub, cy + half)
+        }
+    }
+}
+
+/**
+ * One button of the arrow pad.
+ *
+ * Not a Compose Button and never focusable, for the same reason the rest of
+ * this screen is not: a focusable control can be pressed by a space bar, and a
+ * switch sending a space would then work the pad instead of the grid.
+ */
+@Composable
+private fun ArrowKey(
+    label: String,
+    filter: SwitchFilter,
+    modifier: Modifier = Modifier,
+    onPress: () -> Unit,
+    highlight: Boolean = false,
+) {
+    Box(
+        modifier = modifier
+            .padding(6.dp)
+            .background(
+                color = if (highlight) ArrowChoose else ArrowKeyColour,
+                shape = RoundedCornerShape(14.dp)
+            )
+            .pointerInput(filter) {
+                detectTapGestures {
+                    // The same window as the switches, so the tremor setting
+                    // means one thing everywhere rather than two.
+                    if (filter.accept(Switch.Write, SystemClock.elapsedRealtime())) onPress()
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        BoxWithConstraints {
+            // Sized from the button, like the letters are, so the pad works on
+            // a ten inch tablet and on a phone held sideways.
+            val size = minOf(
+                maxHeight.value * 0.5f,
+                maxWidth.value / (label.length.coerceAtLeast(1) * 0.62f),
+                ARROW_MAX_TEXT_SP,
+            )
+            Text(
+                text = label,
+                color = Ink,
+                fontFamily = Hyperlegible,
+                fontWeight = FontWeight.Bold,
+                fontSize = size.sp,
+                maxLines = 1,
+                softWrap = false,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+/**
+ * The battery charge, small, in the corner of the grid.
+ *
+ * On her own tablet the system bars are hidden and locked mode stops anyone
+ * leaving the app, so without this there is genuinely no way to find out how
+ * much charge is left short of unlocking the whole thing. A device that goes
+ * flat unannounced is a person who cannot say so.
+ *
+ * Stays grey and quiet until the charge is actually low, and then turns red, so
+ * it is ignorable for most of the day and hard to miss when it matters.
+ */
+@Composable
+private fun BatteryReadout(controller: ScanController) {
+    val percent = controller.batteryPercent ?: return
+    val low = percent <= LOW_BATTERY_PERCENT && !controller.batteryCharging
+
+    Text(
+        // The bolt says charging without needing a word for it in every
+        // language the app grows into.
+        text = if (controller.batteryCharging) "\u26a1 $percent%" else "$percent%",
+        color = if (low) LowBattery else SettingsCornerInk,
+        fontFamily = Hyperlegible,
+        fontWeight = if (low) FontWeight.Bold else FontWeight.Normal,
+        fontSize = 20.sp,
+        modifier = Modifier.padding(horizontal = 10.dp, vertical = 12.dp),
+    )
 }
 
 /**
@@ -355,6 +995,32 @@ private fun SettingSwitch(
     }
 }
 
+/**
+ * One of the two input modes, as a pill. Two buttons rather than a switch,
+ * because these are two named ways of working rather than one thing being on
+ * or off, and a helper should be able to see which one they are choosing.
+ */
+@Composable
+private fun ModeOption(text: String, selected: Boolean, onTap: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .background(
+                color = if (selected) CellLit else CellIdle,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .pointerInput(Unit) { detectTapGestures { onTap() } }
+            .padding(horizontal = 32.dp, vertical = 18.dp)
+    ) {
+        Text(
+            text = text,
+            color = Ink,
+            fontFamily = Hyperlegible,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            fontSize = 26.sp
+        )
+    }
+}
+
 /** A plain touch button. Never focusable, so no switch can ever press it. */
 @Composable
 private fun TouchButton(text: String, onTap: () -> Unit) {
@@ -436,72 +1102,131 @@ private fun SettingsPanel(controller: ScanController) {
             .padding(48.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = controller.language.settingsSpeed,
-            color = DimInk,
-            fontFamily = Hyperlegible,
-            fontSize = 28.sp
-        )
-        Spacer(Modifier.height(12.dp))
-        Text(
-            text = "${formatSeconds(chosenMs.roundToLong())} ${controller.language.settingsSecondsPerStep}",
-            color = Ink,
-            fontFamily = Hyperlegible,
-            fontWeight = FontWeight.Bold,
-            fontSize = 64.sp
+        // First, and full width, because a helper who has opened settings
+        // without knowing what the app does needs this before anything else
+        // here will mean much to them.
+        TouchButton(
+            text = controller.language.settingsTutorial,
+            onTap = controller::openTutorial,
         )
 
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(32.dp))
 
-        Slider(
-            value = chosenMs,
-            onValueChange = { chosenMs = it },
-            onValueChangeFinished = { controller.changeInterval(chosenMs.roundToLong()) },
-            valueRange = ScanController.MIN_INTERVAL_MS.toFloat()..
-                ScanController.MAX_INTERVAL_MS.toFloat(),
-            // One stop per tenth of a second, so it cannot land somewhere odd.
-            steps = ((ScanController.MAX_INTERVAL_MS - ScanController.MIN_INTERVAL_MS) /
-                ScanController.INTERVAL_STEP_MS).toInt() - 1,
-            colors = SliderDefaults.colors(
-                thumbColor = CellLit,
-                activeTrackColor = CellLit,
-                inactiveTrackColor = CellIdle,
-            ),
-            modifier = Modifier.fillMaxWidth().height(64.dp)
-        )
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Text(controller.language.settingsFaster, color = DimInk, fontFamily = Hyperlegible, fontSize = 22.sp)
-            Spacer(Modifier.weight(1f))
-            Text(controller.language.settingsSlower, color = DimInk, fontFamily = Hyperlegible, fontSize = 22.sp)
-        }
-
-        Spacer(Modifier.height(44.dp))
-
-        // Extra time on the first letter of each row, so entering a row and
-        // reacting to its first letter are not crammed into one interval.
-        var chosenFirst by remember { mutableFloatStateOf(controller.firstCellExtraMs.toFloat()) }
-
+        // Scanning or arrows. The most consequential setting on this screen,
+        // so it comes first: everything below it is a detail of whichever of
+        // the two is chosen.
         Text(
-            text = controller.language.settingsFirstLetterExtra + ": +${formatSeconds(chosenFirst.roundToLong())} s",
+            text = controller.language.settingsModeTitle,
             color = Ink,
             fontFamily = Hyperlegible,
             fontSize = 30.sp
         )
-        Slider(
-            value = chosenFirst,
-            onValueChange = { chosenFirst = it },
-            onValueChangeFinished = { controller.changeFirstCellExtra(chosenFirst.roundToLong()) },
-            valueRange = 0f..ScanController.MAX_FIRST_CELL_EXTRA_MS.toFloat(),
-            steps = (ScanController.MAX_FIRST_CELL_EXTRA_MS /
-                ScanController.INTERVAL_STEP_MS).toInt() - 1,
-            colors = SliderDefaults.colors(
-                thumbColor = CellLit,
-                activeTrackColor = CellLit,
-                inactiveTrackColor = CellIdle,
-            ),
-            modifier = Modifier.fillMaxWidth().height(56.dp)
+        Text(
+            text = controller.language.settingsModeDetail,
+            color = DimInk,
+            fontFamily = Hyperlegible,
+            fontSize = 20.sp
         )
+        Spacer(Modifier.height(14.dp))
+        Row {
+            ModeOption(
+                text = controller.language.settingsModeScan,
+                selected = controller.inputMode == InputMode.Scan,
+                onTap = { controller.useInputMode(InputMode.Scan) },
+            )
+            Spacer(Modifier.width(16.dp))
+            ModeOption(
+                text = controller.language.settingsModeArrows,
+                selected = controller.inputMode == InputMode.Arrows,
+                onTap = { controller.useInputMode(InputMode.Arrows) },
+            )
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        if (controller.inputMode == InputMode.Arrows) {
+            // Which hand still reaches is not something anyone chooses, so the
+            // pad moves rather than her.
+            SettingSwitch(
+                title = controller.language.settingsArrowSideTitle,
+                detail = controller.language.settingsArrowSideDetail,
+                checked = controller.arrowsOnLeft,
+                onChange = { controller.useArrowsOnLeft(it) },
+            )
+            Spacer(Modifier.height(32.dp))
+        }
+
+        // Both of these are about a highlight that moves on its own, so in
+        // arrow mode they would be two sliders that visibly do nothing.
+        if (controller.inputMode == InputMode.Scan) {
+            Text(
+                text = controller.language.settingsSpeed,
+                color = DimInk,
+                fontFamily = Hyperlegible,
+                fontSize = 28.sp
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "${formatSeconds(chosenMs.roundToLong())} ${controller.language.settingsSecondsPerStep}",
+                color = Ink,
+                fontFamily = Hyperlegible,
+                fontWeight = FontWeight.Bold,
+                fontSize = 64.sp
+            )
+
+            Spacer(Modifier.height(40.dp))
+
+            Slider(
+                value = chosenMs,
+                onValueChange = { chosenMs = it },
+                onValueChangeFinished = { controller.changeInterval(chosenMs.roundToLong()) },
+                valueRange = ScanController.MIN_INTERVAL_MS.toFloat()..
+                    ScanController.MAX_INTERVAL_MS.toFloat(),
+                // One stop per tenth of a second, so it cannot land somewhere odd.
+                steps = ((ScanController.MAX_INTERVAL_MS - ScanController.MIN_INTERVAL_MS) /
+                    ScanController.INTERVAL_STEP_MS).toInt() - 1,
+                colors = SliderDefaults.colors(
+                    thumbColor = CellLit,
+                    activeTrackColor = CellLit,
+                    inactiveTrackColor = CellIdle,
+                ),
+                modifier = Modifier.fillMaxWidth().height(64.dp)
+            )
+
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Text(controller.language.settingsFaster, color = DimInk, fontFamily = Hyperlegible, fontSize = 22.sp)
+                Spacer(Modifier.weight(1f))
+                Text(controller.language.settingsSlower, color = DimInk, fontFamily = Hyperlegible, fontSize = 22.sp)
+            }
+
+            Spacer(Modifier.height(44.dp))
+
+            // Extra time on the first letter of each row, so entering a row and
+            // reacting to its first letter are not crammed into one interval.
+            var chosenFirst by remember { mutableFloatStateOf(controller.firstCellExtraMs.toFloat()) }
+
+            Text(
+                text = controller.language.settingsFirstLetterExtra + ": +${formatSeconds(chosenFirst.roundToLong())} s",
+                color = Ink,
+                fontFamily = Hyperlegible,
+                fontSize = 30.sp
+            )
+            Slider(
+                value = chosenFirst,
+                onValueChange = { chosenFirst = it },
+                onValueChangeFinished = { controller.changeFirstCellExtra(chosenFirst.roundToLong()) },
+                valueRange = 0f..ScanController.MAX_FIRST_CELL_EXTRA_MS.toFloat(),
+                steps = (ScanController.MAX_FIRST_CELL_EXTRA_MS /
+                    ScanController.INTERVAL_STEP_MS).toInt() - 1,
+                colors = SliderDefaults.colors(
+                    thumbColor = CellLit,
+                    activeTrackColor = CellLit,
+                    inactiveTrackColor = CellIdle,
+                ),
+                modifier = Modifier.fillMaxWidth().height(56.dp)
+            )
+
+        }
 
         Spacer(Modifier.height(44.dp))
 
