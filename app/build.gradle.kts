@@ -32,8 +32,8 @@ android {
         // 26 = Android 8.0. Set by the project brief.
         minSdk = 26
         targetSdk = 37
-        versionCode = 4
-        versionName = "0.4"
+        versionCode = 5
+        versionName = "0.5"
     }
 
     buildTypes {

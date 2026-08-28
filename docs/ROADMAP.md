@@ -47,7 +47,7 @@ yet — anything drawn over the grid covers letters, and the grid is what she
 reads all day. It is a cost paid forever to fix a misunderstanding that lasts a
 minute, so it should only be paid if teaching genuinely fails.
 
-### Unexplained: the input mode resetting to scanning
+### Closed: the input mode "resetting" to scanning
 
 Seen three times on 2026-08-25, on the Lenovo tablet: the app was found back in
 scanning mode when it had been left in arrows. The other settings — speed,
@@ -62,8 +62,16 @@ against a layout that had shifted underneath them, so a stray tap on the
 too confidently once already and then it happened again with no taps in
 between, so it is written down here rather than closed.
 
-Worth watching. If a helper ever reports the app "going back to the old way by
-itself", this is the note.
+**Closed on 2026-08-28: it was Eloi, setting the device up before a session.**
+Every occurrence was somebody changing the mode on purpose, on a device that had
+been handed over and used between one look and the next.
+
+Left here rather than deleted, because the reasoning was wrong in an instructive
+way. A device that several people set up between sessions has no single owner of
+its state, and "I left it in X and found it in Y" is not evidence of a bug until
+you know nobody touched it. Twice this was asserted to be a stray `adb` tap and
+twice that was too confident. If a helper ever does report the app "going back
+to the old way by itself", the first question is who else has had it.
 
 ### Still open in arrow mode
 

@@ -53,6 +53,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -1284,11 +1285,13 @@ private fun SettingSwitch(
     detail: String,
     checked: Boolean,
     onChange: (Boolean) -> Unit,
+    titleSize: TextUnit = 30.sp,
+    detailSize: TextUnit = 20.sp,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, color = Ink, fontFamily = Hyperlegible, fontSize = 30.sp)
-            Text(text = detail, color = DimInk, fontFamily = Hyperlegible, fontSize = 20.sp)
+            Text(text = title, color = Ink, fontFamily = Hyperlegible, fontSize = titleSize)
+            Text(text = detail, color = DimInk, fontFamily = Hyperlegible, fontSize = detailSize)
         }
         Switch(
             checked = checked,
@@ -1409,427 +1412,529 @@ private fun SettingsPanel(controller: ScanController) {
     // change anything. Re-read each time the panel opens, since it is only
     // composed while settings are showing.
     var chosenMs by remember { mutableFloatStateOf(controller.scanIntervalMs.toFloat()) }
+    var chosenFirst by remember { mutableFloatStateOf(controller.firstCellExtraMs.toFloat()) }
+    var chosenDebounce by remember { mutableFloatStateOf(controller.debounceMs.toFloat()) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            // Scrolls, so this still works on a tablet shorter than the one it
-            // was laid out on.
-            .verticalScroll(rememberScrollState())
-            .padding(48.dp),
-        verticalArrangement = Arrangement.Center
-    ) {
-        // First, and full width, because a helper who has opened settings
-        // without knowing what the app does needs this before anything else
-        // here will mean much to them.
-        TouchButton(
-            text = controller.language.settingsTutorial,
-            onTap = controller::openTutorial,
-        )
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
 
-        Spacer(Modifier.height(32.dp))
+        // Everything on this screen was sized against a ten inch tablet, where
+        // a 30sp heading is a heading. On a phone held sideways there is less
+        // than half the height, and the same numbers turned settings into two
+        // items per screen and a great deal of scrolling. So every size here is
+        // measured off the screen instead of written down.
+        val scale = (maxHeight / REFERENCE_SETTINGS_HEIGHT).coerceIn(0.5f, 1f)
+        val heading = (34 * scale).sp
+        val title = (30 * scale).sp
+        val detail = (20 * scale).sp
+        val gap = 28.dp * scale
+        val small = 12.dp * scale
 
-        // Scanning or arrows. The most consequential setting on this screen,
-        // so it comes first: everything below it is a detail of whichever of
-        // the two is chosen.
-        Text(
-            text = controller.language.settingsModeTitle,
-            color = Ink,
-            fontFamily = Hyperlegible,
-            fontSize = 30.sp
-        )
-        Text(
-            text = controller.language.settingsModeDetail,
-            color = DimInk,
-            fontFamily = Hyperlegible,
-            fontSize = 20.sp
-        )
-        Spacer(Modifier.height(14.dp))
-        Row {
-            for (mode in InputMode.entries) {
-                ModeOption(
-                    text = when (mode) {
-                        InputMode.Scan -> controller.language.settingsModeScan
-                        InputMode.Arrows -> controller.language.settingsModeArrows
-                        InputMode.Direct -> controller.language.settingsModeDirect
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                // Scrolls, so this still works on a device shorter than the one
+                // it was laid out on.
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 48.dp * scale, vertical = 40.dp * scale),
+        ) {
+            // First, and before any heading, because a helper who has opened
+            // settings without knowing what the app does needs this before
+            // anything else here will mean much to them.
+            TouchButton(
+                text = controller.language.settingsTutorial,
+                onTap = controller::openTutorial,
+            )
+
+            // ----------------------------------------------------------------
+            // How writing works
+            // ----------------------------------------------------------------
+            SectionHeading(
+                title = controller.language.sectionWriting,
+                detail = controller.language.sectionWritingDetail,
+                headingSize = heading,
+                detailSize = detail,
+                scale = scale,
+            )
+
+            // Scanning, arrows or direct touch. The most consequential setting
+            // in the app: everything below it in this section is a detail of
+            // whichever of the three is chosen.
+            Text(
+                text = controller.language.settingsModeTitle,
+                color = Ink,
+                fontFamily = Hyperlegible,
+                fontSize = title
+            )
+            Text(
+                text = controller.language.settingsModeDetail,
+                color = DimInk,
+                fontFamily = Hyperlegible,
+                fontSize = detail
+            )
+            Spacer(Modifier.height(small))
+            Row {
+                for (mode in InputMode.entries) {
+                    ModeOption(
+                        text = when (mode) {
+                            InputMode.Scan -> controller.language.settingsModeScan
+                            InputMode.Arrows -> controller.language.settingsModeArrows
+                            InputMode.Direct -> controller.language.settingsModeDirect
+                        },
+                        selected = controller.inputMode == mode,
+                        onTap = { controller.useInputMode(mode) },
+                    )
+                    Spacer(Modifier.width(16.dp))
+                }
+            }
+
+            if (controller.inputMode == InputMode.Arrows) {
+                Spacer(Modifier.height(gap))
+
+                // Which hand still reaches, and where the forearm falls on the
+                // way to the screen, are not things anyone chooses. So the pad
+                // moves rather than her.
+                Text(
+                    text = controller.language.settingsArrowPlaceTitle,
+                    color = Ink,
+                    fontFamily = Hyperlegible,
+                    fontSize = title
+                )
+                Text(
+                    text = controller.language.settingsArrowPlaceDetail,
+                    color = DimInk,
+                    fontFamily = Hyperlegible,
+                    fontSize = detail
+                )
+                Spacer(Modifier.height(small))
+                Row {
+                    for (placement in ArrowPlacement.entries) {
+                        ModeOption(
+                            text = when (placement) {
+                                ArrowPlacement.Right -> controller.language.settingsArrowRight
+                                ArrowPlacement.Left -> controller.language.settingsArrowLeft
+                                ArrowPlacement.Bottom -> controller.language.settingsArrowBottom
+                            },
+                            selected = controller.arrowPlacement == placement,
+                            onTap = { controller.useArrowPlacement(placement) },
+                        )
+                        Spacer(Modifier.width(16.dp))
+                    }
+                }
+
+                Spacer(Modifier.height(gap))
+
+                // Which end choose sits at is its own question, and the same
+                // question in both arrangements: top or bottom of a column,
+                // left or right of a strip. So it is one switch rather than a
+                // separate option for every combination.
+                SettingSwitch(
+                    title = if (controller.arrowPlacement.alongTheBottom) {
+                        controller.language.settingsChooseLeft
+                    } else {
+                        controller.language.settingsChooseTop
                     },
-                    selected = controller.inputMode == mode,
-                    onTap = { controller.useInputMode(mode) },
+                    detail = controller.language.settingsChooseDetail,
+                    checked = controller.chooseFirst,
+                    onChange = { controller.useChooseFirst(it) },
+                    titleSize = title,
+                    detailSize = detail,
                 )
-                Spacer(Modifier.width(16.dp))
-            }
-        }
 
-        Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(gap))
 
-        // These two are about reading and writing rather than about how she
-        // drives the grid, so they sit above the per-mode settings and stay
-        // put whichever mode is chosen.
-        SettingSwitch(
-            title = controller.language.settingsForgiveTitle,
-            detail = controller.language.settingsForgiveDetail,
-            checked = controller.forgiveMistakes,
-            onChange = { controller.useForgiveMistakes(it) },
-        )
-
-        Spacer(Modifier.height(24.dp))
-
-        SettingSwitch(
-            title = controller.language.settingsBoldWritingTitle,
-            detail = controller.language.settingsBoldWritingDetail,
-            checked = controller.boldWriting,
-            onChange = { controller.useBoldWriting(it) },
-        )
-
-        Spacer(Modifier.height(32.dp))
-
-        if (controller.inputMode == InputMode.Arrows) {
-            // Which hand still reaches, and where the forearm falls on the way
-            // to the screen, are not things anyone chooses. So the pad moves
-            // rather than her.
-            Text(
-                text = controller.language.settingsArrowPlaceTitle,
-                color = Ink,
-                fontFamily = Hyperlegible,
-                fontSize = 30.sp
-            )
-            Text(
-                text = controller.language.settingsArrowPlaceDetail,
-                color = DimInk,
-                fontFamily = Hyperlegible,
-                fontSize = 20.sp
-            )
-            Spacer(Modifier.height(14.dp))
-
-            // Two rows of two rather than one row of four: the choice is
-            // really two questions, where the pad goes and which way round it
-            // is, and four pills in a line reads as one flat list of options
-            // that happen to share words.
-            Row {
-                for (placement in ArrowPlacement.entries) {
-                    ModeOption(
-                        text = when (placement) {
-                            ArrowPlacement.Right -> controller.language.settingsArrowRight
-                            ArrowPlacement.Left -> controller.language.settingsArrowLeft
-                            ArrowPlacement.Bottom -> controller.language.settingsArrowBottom
-                        },
-                        selected = controller.arrowPlacement == placement,
-                        onTap = { controller.useArrowPlacement(placement) },
-                    )
-                    Spacer(Modifier.width(16.dp))
+                Text(
+                    text = controller.language.settingsArrowShapeTitle,
+                    color = Ink,
+                    fontFamily = Hyperlegible,
+                    fontSize = title
+                )
+                Text(
+                    text = controller.language.settingsArrowShapeDetail,
+                    color = DimInk,
+                    fontFamily = Hyperlegible,
+                    fontSize = detail
+                )
+                Spacer(Modifier.height(small))
+                Row {
+                    for (shape in ArrowShape.entries) {
+                        ModeOption(
+                            text = when (shape) {
+                                ArrowShape.Joined -> controller.language.settingsArrowShapeJoined
+                                ArrowShape.Separate -> controller.language.settingsArrowShapeSeparate
+                            },
+                            selected = controller.arrowShape == shape,
+                            onTap = { controller.useArrowShape(shape) },
+                        )
+                        Spacer(Modifier.width(16.dp))
+                    }
                 }
+
+                Spacer(Modifier.height(gap))
+
+                SettingSwitch(
+                    title = controller.language.settingsEraseKeysTitle,
+                    detail = controller.language.settingsEraseKeysDetail,
+                    checked = controller.eraseKeys,
+                    onChange = { controller.useEraseKeys(it) },
+                    titleSize = title,
+                    detailSize = detail,
+                )
             }
 
-            Spacer(Modifier.height(24.dp))
+            // Both of these are about a highlight that moves on its own, so in
+            // the other two modes they would be sliders that visibly do
+            // nothing.
+            if (controller.inputMode == InputMode.Scan) {
+                Spacer(Modifier.height(gap))
 
-            // Which end choose sits at is its own question, and the same
-            // question in both arrangements: top or bottom of a column, left or
-            // right of a strip. So it is one switch rather than a separate
-            // option for every combination.
-            SettingSwitch(
-                title = if (controller.arrowPlacement.alongTheBottom) {
-                    controller.language.settingsChooseLeft
-                } else {
-                    controller.language.settingsChooseTop
-                },
-                detail = controller.language.settingsChooseDetail,
-                checked = controller.chooseFirst,
-                onChange = { controller.useChooseFirst(it) },
-            )
+                Text(
+                    text = controller.language.settingsSpeed,
+                    color = DimInk,
+                    fontFamily = Hyperlegible,
+                    fontSize = title
+                )
+                Spacer(Modifier.height(small))
+                Text(
+                    text = "${formatSeconds(chosenMs.roundToLong())} ${controller.language.settingsSecondsPerStep}",
+                    color = Ink,
+                    fontFamily = Hyperlegible,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = (64 * scale).sp
+                )
 
-            Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(small))
 
-            Text(
-                text = controller.language.settingsArrowShapeTitle,
-                color = Ink,
-                fontFamily = Hyperlegible,
-                fontSize = 30.sp
-            )
-            Text(
-                text = controller.language.settingsArrowShapeDetail,
-                color = DimInk,
-                fontFamily = Hyperlegible,
-                fontSize = 20.sp
-            )
-            Spacer(Modifier.height(14.dp))
-            Row {
-                for (shape in ArrowShape.entries) {
-                    ModeOption(
-                        text = when (shape) {
-                            ArrowShape.Joined -> controller.language.settingsArrowShapeJoined
-                            ArrowShape.Separate -> controller.language.settingsArrowShapeSeparate
-                        },
-                        selected = controller.arrowShape == shape,
-                        onTap = { controller.useArrowShape(shape) },
+                Slider(
+                    value = chosenMs,
+                    onValueChange = { chosenMs = it },
+                    onValueChangeFinished = { controller.changeInterval(chosenMs.roundToLong()) },
+                    valueRange = ScanController.MIN_INTERVAL_MS.toFloat()..
+                        ScanController.MAX_INTERVAL_MS.toFloat(),
+                    // One stop per tenth of a second, so it cannot land somewhere odd.
+                    steps = ((ScanController.MAX_INTERVAL_MS - ScanController.MIN_INTERVAL_MS) /
+                        ScanController.INTERVAL_STEP_MS).toInt() - 1,
+                    colors = SliderDefaults.colors(
+                        thumbColor = CellLit,
+                        activeTrackColor = CellLit,
+                        inactiveTrackColor = CellIdle,
+                    ),
+                    modifier = Modifier.fillMaxWidth().height(64.dp * scale)
+                )
+
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        controller.language.settingsFaster,
+                        color = DimInk,
+                        fontFamily = Hyperlegible,
+                        fontSize = detail,
                     )
-                    Spacer(Modifier.width(16.dp))
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        controller.language.settingsSlower,
+                        color = DimInk,
+                        fontFamily = Hyperlegible,
+                        fontSize = detail,
+                    )
                 }
+
+                Spacer(Modifier.height(gap))
+
+                // Extra time on the first letter of each row, so entering a row
+                // and reacting to its first letter are not crammed into one
+                // interval.
+                Text(
+                    text = controller.language.settingsFirstLetterExtra +
+                        ": +${formatSeconds(chosenFirst.roundToLong())} s",
+                    color = Ink,
+                    fontFamily = Hyperlegible,
+                    fontSize = title
+                )
+                Slider(
+                    value = chosenFirst,
+                    onValueChange = { chosenFirst = it },
+                    onValueChangeFinished = { controller.changeFirstCellExtra(chosenFirst.roundToLong()) },
+                    valueRange = 0f..ScanController.MAX_FIRST_CELL_EXTRA_MS.toFloat(),
+                    steps = (ScanController.MAX_FIRST_CELL_EXTRA_MS /
+                        ScanController.INTERVAL_STEP_MS).toInt() - 1,
+                    colors = SliderDefaults.colors(
+                        thumbColor = CellLit,
+                        activeTrackColor = CellLit,
+                        inactiveTrackColor = CellIdle,
+                    ),
+                    modifier = Modifier.fillMaxWidth().height(56.dp * scale)
+                )
             }
 
-            Spacer(Modifier.height(24.dp))
-
-            SettingSwitch(
-                title = controller.language.settingsEraseKeysTitle,
-                detail = controller.language.settingsEraseKeysDetail,
-                checked = controller.eraseKeys,
-                onChange = { controller.useEraseKeys(it) },
+            // ----------------------------------------------------------------
+            // Timing and tremors
+            // ----------------------------------------------------------------
+            SectionHeading(
+                title = controller.language.sectionTiming,
+                detail = controller.language.sectionTimingDetail,
+                headingSize = heading,
+                detailSize = detail,
+                scale = scale,
             )
-            Spacer(Modifier.height(32.dp))
-        }
 
-        // Both of these are about a highlight that moves on its own, so in
-        // arrow mode they would be two sliders that visibly do nothing.
-        if (controller.inputMode == InputMode.Scan) {
+            // How close together two presses of one switch may be. Raise it if
+            // a single press is producing several letters.
             Text(
-                text = controller.language.settingsSpeed,
-                color = DimInk,
-                fontFamily = Hyperlegible,
-                fontSize = 28.sp
-            )
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = "${formatSeconds(chosenMs.roundToLong())} ${controller.language.settingsSecondsPerStep}",
+                text = controller.language.settingsMinBetweenPresses +
+                    ": ${chosenDebounce.roundToLong()} ms",
                 color = Ink,
                 fontFamily = Hyperlegible,
-                fontWeight = FontWeight.Bold,
-                fontSize = 64.sp
+                fontSize = title
             )
-
-            Spacer(Modifier.height(40.dp))
-
             Slider(
-                value = chosenMs,
-                onValueChange = { chosenMs = it },
-                onValueChangeFinished = { controller.changeInterval(chosenMs.roundToLong()) },
-                valueRange = ScanController.MIN_INTERVAL_MS.toFloat()..
-                    ScanController.MAX_INTERVAL_MS.toFloat(),
-                // One stop per tenth of a second, so it cannot land somewhere odd.
-                steps = ((ScanController.MAX_INTERVAL_MS - ScanController.MIN_INTERVAL_MS) /
-                    ScanController.INTERVAL_STEP_MS).toInt() - 1,
+                value = chosenDebounce,
+                onValueChange = { chosenDebounce = it },
+                onValueChangeFinished = { controller.changeDebounce(chosenDebounce.roundToLong()) },
+                valueRange = 0f..SwitchFilter.MAX_DEBOUNCE_MS.toFloat(),
+                steps = (SwitchFilter.MAX_DEBOUNCE_MS / 25L).toInt() - 1,
                 colors = SliderDefaults.colors(
                     thumbColor = CellLit,
                     activeTrackColor = CellLit,
                     inactiveTrackColor = CellIdle,
                 ),
-                modifier = Modifier.fillMaxWidth().height(64.dp)
+                modifier = Modifier.fillMaxWidth().height(56.dp * scale)
             )
 
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Text(controller.language.settingsFaster, color = DimInk, fontFamily = Hyperlegible, fontSize = 22.sp)
-                Spacer(Modifier.weight(1f))
-                Text(controller.language.settingsSlower, color = DimInk, fontFamily = Hyperlegible, fontSize = 22.sp)
-            }
+            Spacer(Modifier.height(gap))
 
-            Spacer(Modifier.height(44.dp))
-
-            // Extra time on the first letter of each row, so entering a row and
-            // reacting to its first letter are not crammed into one interval.
-            var chosenFirst by remember { mutableFloatStateOf(controller.firstCellExtraMs.toFloat()) }
-
-            Text(
-                text = controller.language.settingsFirstLetterExtra + ": +${formatSeconds(chosenFirst.roundToLong())} s",
-                color = Ink,
-                fontFamily = Hyperlegible,
-                fontSize = 30.sp
-            )
-            Slider(
-                value = chosenFirst,
-                onValueChange = { chosenFirst = it },
-                onValueChangeFinished = { controller.changeFirstCellExtra(chosenFirst.roundToLong()) },
-                valueRange = 0f..ScanController.MAX_FIRST_CELL_EXTRA_MS.toFloat(),
-                steps = (ScanController.MAX_FIRST_CELL_EXTRA_MS /
-                    ScanController.INTERVAL_STEP_MS).toInt() - 1,
-                colors = SliderDefaults.colors(
-                    thumbColor = CellLit,
-                    activeTrackColor = CellLit,
-                    inactiveTrackColor = CellIdle,
-                ),
-                modifier = Modifier.fillMaxWidth().height(56.dp)
-            )
-
-        }
-
-        Spacer(Modifier.height(44.dp))
-
-        // How close together two presses of one switch may be. Raise it if a
-        // single press is producing several letters.
-        var chosenDebounce by remember { mutableFloatStateOf(controller.debounceMs.toFloat()) }
-
-        Text(
-            text = controller.language.settingsMinBetweenPresses + ": ${chosenDebounce.roundToLong()} ms",
-            color = Ink,
-            fontFamily = Hyperlegible,
-            fontSize = 30.sp
-        )
-        Slider(
-            value = chosenDebounce,
-            onValueChange = { chosenDebounce = it },
-            onValueChangeFinished = { controller.changeDebounce(chosenDebounce.roundToLong()) },
-            valueRange = 0f..SwitchFilter.MAX_DEBOUNCE_MS.toFloat(),
-            steps = (SwitchFilter.MAX_DEBOUNCE_MS / 25L).toInt() - 1,
-            colors = SliderDefaults.colors(
-                thumbColor = CellLit,
-                activeTrackColor = CellLit,
-                inactiveTrackColor = CellIdle,
-            ),
-            modifier = Modifier.fillMaxWidth().height(56.dp)
-        )
-
-        Spacer(Modifier.height(40.dp))
-
-        // Turn touch input off once real switches arrive, so a stray touch on
-        // the screen cannot type.
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = controller.language.settingsTouchTitle,
-                    color = Ink,
-                    fontFamily = Hyperlegible,
-                    fontSize = 30.sp
-                )
-                Text(
-                    text = controller.language.settingsTouchDetail,
-                    color = DimInk,
-                    fontFamily = Hyperlegible,
-                    fontSize = 20.sp
-                )
-            }
-            Switch(
-                checked = controller.touchInput,
-                onCheckedChange = { controller.useTouchInput(it) },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Ink,
-                    checkedTrackColor = CellLit,
-                    uncheckedTrackColor = CellIdle,
-                ),
-            )
-        }
-
-        Spacer(Modifier.height(28.dp))
-
-        // Tremor mode: a burst of taps counts once.
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = controller.language.settingsTremorTitle,
-                    color = Ink,
-                    fontFamily = Hyperlegible,
-                    fontSize = 30.sp
-                )
-                Text(
-                    text = controller.language.settingsTremorDetail,
-                    color = DimInk,
-                    fontFamily = Hyperlegible,
-                    fontSize = 20.sp
-                )
-            }
-            Switch(
+            SettingSwitch(
+                title = controller.language.settingsTremorTitle,
+                detail = controller.language.settingsTremorDetail,
                 checked = controller.antiTremor,
-                onCheckedChange = { controller.useAntiTremor(it) },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Ink,
-                    checkedTrackColor = CellLit,
-                    uncheckedTrackColor = CellIdle,
-                ),
+                onChange = { controller.useAntiTremor(it) },
+                titleSize = title,
+                detailSize = detail,
             )
-        }
 
-        Spacer(Modifier.height(32.dp))
+            // ----------------------------------------------------------------
+            // Words and reading
+            // ----------------------------------------------------------------
+            SectionHeading(
+                title = controller.language.sectionWords,
+                detail = controller.language.sectionWordsDetail,
+                headingSize = heading,
+                detailSize = detail,
+                scale = scale,
+            )
 
-        // Bind one or more controller / switch buttons to each action.
-        Text(
-            text = controller.language.settingsButtons,
-            color = Ink,
-            fontFamily = Hyperlegible,
-            fontSize = 30.sp
-        )
-        Text(
-            text = controller.language.settingsWrite + ": " + boundOrDefault(controller.writeButtonLabels),
-            color = DimInk,
-            fontFamily = Hyperlegible,
-            fontSize = 20.sp
-        )
-        Text(
-            text = controller.language.settingsUndo + ": " + boundOrDefault(controller.undoButtonLabels),
-            color = DimInk,
-            fontFamily = Hyperlegible,
-            fontSize = 20.sp
-        )
-        Spacer(Modifier.height(10.dp))
-        Row {
+            SettingSwitch(
+                title = controller.language.settingsForgiveTitle,
+                detail = controller.language.settingsForgiveDetail,
+                checked = controller.forgiveMistakes,
+                onChange = { controller.useForgiveMistakes(it) },
+                titleSize = title,
+                detailSize = detail,
+            )
+
+            Spacer(Modifier.height(gap))
+
+            SettingSwitch(
+                title = controller.language.settingsBoldWritingTitle,
+                detail = controller.language.settingsBoldWritingDetail,
+                checked = controller.boldWriting,
+                onChange = { controller.useBoldWriting(it) },
+                titleSize = title,
+                detailSize = detail,
+            )
+
+            // ----------------------------------------------------------------
+            // Switches and controllers
+            // ----------------------------------------------------------------
+            SectionHeading(
+                title = controller.language.sectionSwitches,
+                detail = controller.language.sectionSwitchesDetail,
+                headingSize = heading,
+                detailSize = detail,
+                scale = scale,
+            )
+
+            // Turn touch input off once real switches arrive, so a stray touch
+            // on the screen cannot type.
+            SettingSwitch(
+                title = controller.language.settingsTouchTitle,
+                detail = controller.language.settingsTouchDetail,
+                checked = controller.touchInput,
+                onChange = { controller.useTouchInput(it) },
+                titleSize = title,
+                detailSize = detail,
+            )
+
+            Spacer(Modifier.height(gap))
+
+            // Bind one or more controller or switch buttons to each action.
+            Text(
+                text = controller.language.settingsButtons,
+                color = Ink,
+                fontFamily = Hyperlegible,
+                fontSize = title
+            )
+            Text(
+                text = controller.language.settingsWrite + ": " +
+                    boundOrDefault(controller.writeButtonLabels),
+                color = DimInk,
+                fontFamily = Hyperlegible,
+                fontSize = detail
+            )
+            Text(
+                text = controller.language.settingsUndo + ": " +
+                    boundOrDefault(controller.undoButtonLabels),
+                color = DimInk,
+                fontFamily = Hyperlegible,
+                fontSize = detail
+            )
+            Spacer(Modifier.height(small))
+            Row {
+                TouchButton(
+                    text = controller.language.settingsAssignWrite,
+                    onTap = { controller.startBinding(SwitchRole.Write) },
+                )
+                Spacer(Modifier.width(20.dp))
+                TouchButton(
+                    text = controller.language.settingsAssignUndo,
+                    onTap = { controller.startBinding(SwitchRole.Undo) },
+                )
+            }
+
+            Spacer(Modifier.height(small))
+
             TouchButton(
-                text = controller.language.settingsAssignWrite,
-                onTap = { controller.startBinding(SwitchRole.Write) },
+                text = controller.language.settingsCheckButtons,
+                onTap = controller::openDiagnostics,
             )
-            Spacer(Modifier.width(20.dp))
-            TouchButton(
-                text = controller.language.settingsAssignUndo,
-                onTap = { controller.startBinding(SwitchRole.Undo) },
+
+            // ----------------------------------------------------------------
+            // The device
+            // ----------------------------------------------------------------
+            SectionHeading(
+                title = controller.language.sectionDevice,
+                detail = controller.language.sectionDeviceDetail,
+                headingSize = heading,
+                detailSize = detail,
+                scale = scale,
             )
-        }
 
-        Spacer(Modifier.height(28.dp))
+            // Locked mode, and reopening after a restart. Both belong to her
+            // own device; on a helper's phone they stay off and it remains a
+            // phone.
+            SettingSwitch(
+                title = controller.language.settingsLockedTitle,
+                detail = controller.language.settingsLockedDetail,
+                checked = controller.locked,
+                onChange = { controller.useLocked(it) },
+                titleSize = title,
+                detailSize = detail,
+            )
 
-        // Locked mode, and reopening after a restart. Both belong to her own
-        // device; on a helper's phone they stay off and it remains a phone.
-        SettingSwitch(
-            title = controller.language.settingsLockedTitle,
-            detail = controller.language.settingsLockedDetail,
-            checked = controller.locked,
-            onChange = { controller.useLocked(it) },
-        )
+            Spacer(Modifier.height(gap))
 
-        Spacer(Modifier.height(28.dp))
+            SettingSwitch(
+                title = controller.language.settingsBootTitle,
+                detail = controller.language.settingsBootDetail,
+                checked = controller.openOnBoot,
+                onChange = { controller.useOpenOnBoot(it) },
+                titleSize = title,
+                detailSize = detail,
+            )
 
-        SettingSwitch(
-            title = controller.language.settingsBootTitle,
-            detail = controller.language.settingsBootDetail,
-            checked = controller.openOnBoot,
-            onChange = { controller.useOpenOnBoot(it) },
-        )
+            Spacer(Modifier.height(gap))
 
-        Spacer(Modifier.height(32.dp))
+            // Language. Changing it swaps the letters and their order, the
+            // words on the keys, the prediction and the voice, all together.
+            Text(
+                text = controller.language.settingsLanguage,
+                color = Ink,
+                fontFamily = Hyperlegible,
+                fontSize = title
+            )
+            Spacer(Modifier.height(small))
+            LanguageChooser(
+                current = controller.language,
+                onChoose = { controller.changeLanguage(it) },
+            )
 
-        // Language. Changing it swaps the letters and their order, the words on
-        // the keys, the prediction and the voice, all together.
-        Text(
-            text = controller.language.settingsLanguage,
-            color = Ink,
-            fontFamily = Hyperlegible,
-            fontSize = 30.sp
-        )
-        Spacer(Modifier.height(10.dp))
-        LanguageChooser(
-            current = controller.language,
-            onChoose = { controller.changeLanguage(it) },
-        )
+            Spacer(Modifier.height(gap))
+            SectionRule()
+            Spacer(Modifier.height(gap))
 
-        Spacer(Modifier.height(40.dp))
-
-        Row {
             TouchButton(text = controller.language.settingsClose, onTap = controller::closeSettings)
-            Spacer(Modifier.width(20.dp))
-            TouchButton(text = controller.language.settingsCheckButtons, onTap = controller::openDiagnostics)
-        }
 
-        Spacer(Modifier.height(20.dp))
-        Text(
-            // She is never stuck here even if nobody is holding the tablet.
-            text = controller.language.settingsEitherCloses,
-            color = DimInk,
-            fontFamily = Hyperlegible,
-            fontSize = 20.sp
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            // Printed because there is no cable to ask the tablet with.
-            text = "Comunicador ${BuildConfig.VERSION_NAME} " +
-                "(build ${BuildConfig.VERSION_CODE})",
-            color = DimInk,
-            fontFamily = Hyperlegible,
-            fontSize = 18.sp
-        )
+            Spacer(Modifier.height(small))
+            Text(
+                // She is never stuck here even if nobody is holding the tablet.
+                text = controller.language.settingsEitherCloses,
+                color = DimInk,
+                fontFamily = Hyperlegible,
+                fontSize = detail
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                // Printed because there is no cable to ask the tablet with.
+                text = "Comunicador ${BuildConfig.VERSION_NAME} " +
+                    "(build ${BuildConfig.VERSION_CODE})",
+                color = DimInk,
+                fontFamily = Hyperlegible,
+                fontSize = (18 * scale).sp
+            )
+        }
     }
+}
+
+/**
+ * The height these settings were drawn against: a ten inch tablet in landscape.
+ * Everything scales down from here and nothing scales up, so the tablet keeps
+ * exactly the sizes it was tuned with and a phone gets a smaller version of the
+ * same screen rather than a differently proportioned one.
+ */
+private val REFERENCE_SETTINGS_HEIGHT = 760.dp
+
+/**
+ * One heading in settings, with the rule above it.
+ *
+ * The screen was nineteen controls in a flat scroll, which reads as nineteen
+ * equally important decisions. There are about four that matter, and grouping
+ * is what says so — a helper looking for the scanning speed should be able to
+ * stop reading as soon as they pass a heading that is not about writing.
+ */
+@Composable
+private fun SectionHeading(
+    title: String,
+    detail: String,
+    headingSize: TextUnit,
+    detailSize: TextUnit,
+    scale: Float,
+) {
+    Spacer(Modifier.height(44.dp * scale))
+    SectionRule()
+    Spacer(Modifier.height(20.dp * scale))
+    Text(
+        text = title,
+        color = Ink,
+        fontFamily = Hyperlegible,
+        fontWeight = FontWeight.Bold,
+        fontSize = headingSize,
+    )
+    Text(
+        text = detail,
+        color = DimInk,
+        fontFamily = Hyperlegible,
+        fontSize = detailSize,
+    )
+    Spacer(Modifier.height(28.dp * scale))
+}
+
+/** The line between two sections. Named so it cannot be mistaken for Material's. */
+@Composable
+private fun SectionRule() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(2.dp)
+            .background(SettingsCorner)
+    )
 }
 
 private fun boundOrDefault(labels: List<String>): String =
