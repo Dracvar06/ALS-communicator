@@ -47,7 +47,43 @@ class NgramModel private constructor(
         return found
     }
 
+    /**
+     * Words that could be what she meant, allowing for [allowed] mistakes.
+     * Commonest first, like [startingWith].
+     *
+     * Only ever called once the exact search has come up short, because it is
+     * the expensive one: every candidate is compared letter by letter rather
+     * than looked up. The buckets keep that bounded — the first two letters she
+     * typed, since one of them may be the mistake, and nothing else.
+     */
+    fun resembling(foldedPrefix: String, limit: Int, allowed: Int): List<String> {
+        if (limit <= 0 || foldedPrefix.isEmpty()) return emptyList()
+
+        val letters = LinkedHashSet<Char>()
+        letters += foldedPrefix[0]
+        if (foldedPrefix.length > 1) letters += foldedPrefix[1]
+
+        val found = ArrayList<String>(limit)
+        var examined = 0
+        for (letter in letters) {
+            for (index in byFirstLetter[letter] ?: IntArray(0)) {
+                // A ceiling on the work rather than on the answer. The buckets
+                // are in frequency order, so stopping early drops the rarest
+                // words, which are the ones she was least likely to mean.
+                if (examined++ > RESEMBLING_BUDGET) return found
+                if (Words.resembles(foldedPrefix, foldedWords[index], allowed)) {
+                    found += words[index]
+                    if (found.size == limit) return found
+                }
+            }
+        }
+        return found
+    }
+
     companion object {
+
+        /** How many words a forgiving search may look at before giving up. */
+        private const val RESEMBLING_BUDGET = 6000
 
         /**
          * Reads the asset. Lines are tab separated:

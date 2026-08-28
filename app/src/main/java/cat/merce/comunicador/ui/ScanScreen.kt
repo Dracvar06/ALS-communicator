@@ -42,6 +42,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
@@ -67,6 +70,8 @@ private val SettingsCorner = Color(0xFF2A2A2A)
 private val SettingsCornerInk = Color(0xFF6E6E6E)
 private val ArrowKeyColour = Color(0xFF3A3A3A)
 private val ArrowChoose = Color(0xFF4A4A4A)
+private val ArrowArmed = Color(0xFF8E1F1F)
+private val ArrowGlyph = Color(0xFFD6D6D6)
 private val LowBattery = Color(0xFFE53935)
 
 /**
@@ -76,8 +81,27 @@ private val LowBattery = Color(0xFFE53935)
  */
 private const val ARROW_PAD_WEIGHT = 0.5f
 
-/** Up, left, right, down, choose. */
-private const val ARROW_BUTTONS = 5
+/** Up, left, right, down, choose, erase a letter, erase everything. */
+private const val ARROW_BUTTONS = 7
+
+/**
+ * The share of the pad taken by each erase button, where choose takes
+ * [CHOOSE_BAR_WEIGHT] and the empty gap [ARROW_GAP_WEIGHT].
+ *
+ * Smaller than choose, because choose is pressed once per letter and these are
+ * pressed once per mistake — and because every pixel given to a button beside
+ * the arrows is a pixel taken off the gap that keeps the two apart.
+ */
+private const val ERASE_WEIGHT = 0.5f
+
+/** Choose's share of the strip once it is sharing with the erase buttons. */
+private const val CHOOSE_BAR_WEIGHT = 0.8f
+
+/** What is left of the strip: empty, between the erase buttons and the arrows. */
+private const val ARROW_GAP_WEIGHT = 0.7f
+
+/** The erase pair's share of a side column's height, against the cross's 1. */
+private const val ERASE_ROW_WEIGHT = 0.45f
 
 /**
  * The choose button's share of the pad's height, against the arrow cross's 1.
@@ -120,6 +144,27 @@ private const val ARROW_BASE_HALF = 0.17f
 
 /** Blunts the three points. Cosmetic; it does not change what can be tapped. */
 private const val ARROW_ROUNDING = 0.02f
+
+/**
+ * The most of a side column's height the arrows may take.
+ *
+ * The arrows have to stay congruent, so they are bounded by a square, and in a
+ * column that square wants to be as wide as the column — which on a phone is
+ * most of the height. This is the ceiling that stops it eating choose entirely.
+ */
+private const val CROSS_MAX_HEIGHT_SHARE = 0.66f
+
+/** The erase pair's share of whatever height the arrows leave behind. */
+private const val ERASE_SHARE_OF_LEFTOVER = 0.4f
+
+/** An arrow button's share of the pad, per side. The pad is three cells wide. */
+private const val ARROW_CELL = 1f / 3f
+
+/** How much of its cell an arrow button fills, leaving the rest as the gap. */
+private const val ARROW_BUTTON_FILL = 0.92f
+
+/** The triangle inside a separated button, as a fraction of the button. */
+private const val ARROW_GLYPH = 0.62f
 
 /** Beyond this an arrow looks shouted rather than clear, even given the room. */
 private const val ARROW_MAX_TEXT_SP = 56f
@@ -322,10 +367,10 @@ private fun BoxScope.GridContent(controller: ScanController, arrows: Boolean) {
         WritingGrid(controller)
     }
 
-    // The two touch halves belong to scanning only. In arrow mode the pad is
-    // the input, and a tap that landed on the grid would type something she was
-    // only looking at.
-    if (controller.touchInput && !arrows) {
+    // The two touch halves belong to scanning alone. In arrow mode the pad is
+    // the input, and in direct mode the letters are — in both cases a half
+    // screen listening for taps would swallow them before they arrived.
+    if (controller.touchInput && controller.inputMode == InputMode.Scan) {
         TouchZones(
             onWrite = controller::press,
             onUndo = controller::undo,
@@ -733,6 +778,7 @@ private fun ArrowPad(
 
     val cross: @Composable (Modifier) -> Unit = { crossModifier ->
         ArrowCross(
+            shape = controller.arrowShape,
             modifier = crossModifier,
             onUp = guarded(0, controller::moveUp),
             onLeft = guarded(1, controller::moveLeft),
@@ -749,9 +795,37 @@ private fun ArrowPad(
             onPress = controller::press,
             // A lighter fill, so the one button that commits a letter does not
             // read as a fifth arrow.
-            highlight = true,
+            colour = ArrowChoose,
         )
     }
+
+    val eraseLetter: @Composable (Modifier) -> Unit = { keyModifier ->
+        ArrowKey(
+            label = controller.language.arrowDeleteLetter,
+            filter = filters[5],
+            modifier = keyModifier,
+            onPress = controller::eraseLetter,
+        )
+    }
+
+    // Turns red and changes what it says once it is armed. The colour is the
+    // part that carries: whoever is watching sees at a glance that the app is
+    // waiting for something, without having to read at speed.
+    val eraseAll: @Composable (Modifier) -> Unit = { keyModifier ->
+        ArrowKey(
+            label = if (controller.clearArmed) {
+                controller.language.arrowClearConfirm
+            } else {
+                controller.language.clearLabel
+            },
+            filter = filters[6],
+            modifier = keyModifier,
+            onPress = controller::eraseAll,
+            colour = if (controller.clearArmed) ArrowArmed else ArrowKeyColour,
+        )
+    }
+
+    val erasing = controller.eraseKeys
 
     if (placement.alongTheBottom) {
         // More room around the edges than the side column needs. The cross
@@ -775,20 +849,87 @@ private fun ArrowPad(
             // single thing here. It is what keeps a hand reaching for one end
             // from arriving at the other, which is the whole reason for putting
             // the pad down here at all.
-            if (placement.arrowsFirst) {
+            // The two erase keys come out of choose's share and out of the
+            // gap, in that order. Clear-all goes at the far end, with the edge
+            // of the screen on one side of it and choose on the other, so the
+            // one button that can undo a whole sentence is the furthest thing
+            // in the strip from the arrows her hand lives on. Backspace goes
+            // between choose and the arrows instead: it is the one she reaches
+            // for most, and the worst a stray press can cost is one letter.
+            val eraseBox = Modifier.weight(ERASE_WEIGHT).fillMaxHeight()
+            val sharedChooseBox = Modifier.weight(CHOOSE_BAR_WEIGHT).fillMaxHeight()
+
+            if (controller.chooseFirst) {
+                if (erasing) {
+                    eraseAll(eraseBox)
+                    choose(sharedChooseBox)
+                    eraseLetter(eraseBox)
+                    Spacer(Modifier.weight(ARROW_GAP_WEIGHT))
+                } else {
+                    choose(chooseBox)
+                    Spacer(Modifier.weight(1.5f))
+                }
                 cross(arrowsBox)
-                Spacer(Modifier.weight(1.5f))
-                choose(chooseBox)
             } else {
-                choose(chooseBox)
-                Spacer(Modifier.weight(1.5f))
                 cross(arrowsBox)
+                if (erasing) {
+                    Spacer(Modifier.weight(ARROW_GAP_WEIGHT))
+                    eraseLetter(eraseBox)
+                    choose(sharedChooseBox)
+                    eraseAll(eraseBox)
+                } else {
+                    Spacer(Modifier.weight(1.5f))
+                    choose(chooseBox)
+                }
             }
         }
     } else {
-        Column(modifier = modifier.padding(8.dp)) {
-            cross(Modifier.fillMaxWidth().weight(1f))
-            choose(Modifier.fillMaxWidth().weight(CHOOSE_WEIGHT))
+        BoxWithConstraints(modifier = modifier.padding(8.dp)) {
+            // The arrows are measured first and everything else divides up what
+            // is left, rather than the other way round.
+            //
+            // They have to stay congruent, which bounds them by a square, and a
+            // square in a column wants to be as wide as the column. Sizing them
+            // by weight meant they were bounded by their share of the *height*
+            // instead, so on a phone they came out a third narrower than the
+            // column they sat in and the rest of that width was simply empty —
+            // which is how they ended up too small to aim at comfortably.
+            val crossSide = minOf(maxWidth, maxHeight * CROSS_MAX_HEIGHT_SHARE)
+            val leftOver = maxHeight - crossSide
+            val eraseHeight = if (erasing) leftOver * ERASE_SHARE_OF_LEFTOVER else 0.dp
+
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Side by side, on the far side of choose from the arrows, for
+                // the same reason clear-all sits at the end of the strip: the
+                // two buttons her hand is on all day should have the least
+                // reachable thing be the one that erases the most.
+                val eraseRow: @Composable () -> Unit = {
+                    Row(modifier = Modifier.fillMaxWidth().height(eraseHeight)) {
+                        eraseAll(Modifier.weight(1f).fillMaxHeight())
+                        eraseLetter(Modifier.weight(1f).fillMaxHeight())
+                    }
+                }
+
+                // Choose takes whatever the arrows and the erase pair leave.
+                // It is a word in a box rather than something aimed at, so it
+                // is the one that can afford to give room away.
+                val chooseBox = Modifier.fillMaxWidth().weight(1f)
+                val crossBox = Modifier.size(crossSide).align(Alignment.CenterHorizontally)
+
+                // Choose above or below the arrows, for the same reason it sits
+                // at one end or the other of the strip: whichever of the two
+                // the forearm sweeps over on the way in is the one that should
+                // not be in the way.
+                if (controller.chooseFirst) {
+                    if (erasing) eraseRow()
+                    choose(chooseBox)
+                    cross(crossBox)
+                } else {
+                    cross(crossBox)
+                    choose(chooseBox)
+                    if (erasing) eraseRow()
+                }
+            }
         }
     }
 }
@@ -810,6 +951,7 @@ private fun ArrowPad(
  */
 @Composable
 private fun ArrowCross(
+    shape: ArrowShape,
     modifier: Modifier = Modifier,
     onUp: () -> Unit,
     onLeft: () -> Unit,
@@ -834,7 +976,9 @@ private fun ArrowCross(
                         val dy = tap.y - size.height / 2f
                         // Which side of the two diagonals the tap fell on, and
                         // nothing more. Every point in the square belongs to
-                        // exactly one arrow.
+                        // exactly one arrow. This is the same whichever way the
+                        // arrows are drawn, so changing their look can never
+                        // quietly open a hole in the middle of the pad.
                         if (abs(dx) > abs(dy)) {
                             if (dx > 0) onRight() else onLeft()
                         } else {
@@ -843,45 +987,102 @@ private fun ArrowCross(
                     }
                 }
         ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val side = min(size.width, size.height)
-            val cx = size.width / 2f
-            val cy = size.height / 2f
-            val arm = side / 2f
-            val hub = side * ARROW_HUB
-            val half = side * ARROW_BASE_HALF
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val square = min(size.width, size.height)
+                val cx = size.width / 2f
+                val cy = size.height / 2f
 
-            /** One arrow: its tip, and the two ends of the base behind it. */
-            fun arrow(
-                tipX: Float, tipY: Float,
-                leftX: Float, leftY: Float,
-                rightX: Float, rightY: Float,
-            ) {
-                val path = Path().apply {
-                    moveTo(tipX, tipY)
-                    lineTo(leftX, leftY)
-                    lineTo(rightX, rightY)
-                    close()
+                // Joined draws the triangles themselves as the buttons, so
+                // they are the pale-on-black shapes. Separate draws a button
+                // and then an arrow on top of it, which has to be lighter than
+                // what it sits on or it is not there at all.
+                val ink = when (shape) {
+                    ArrowShape.Joined -> ArrowKeyColour
+                    ArrowShape.Separate -> ArrowGlyph
                 }
-                drawPath(path, ArrowKeyColour)
-                // Fill plus a rounded outline, so the points are blunt rather
-                // than needle sharp. Purely how it looks; the tap area is the
-                // whole quarter regardless.
-                drawPath(
-                    path = path,
-                    color = ArrowKeyColour,
-                    style = Stroke(width = side * ARROW_ROUNDING, join = StrokeJoin.Round),
-                )
-            }
 
-            // Up and down, then left and right. Each is the same triangle,
-            // turned: arm out to the tip, hub back from the middle, half across
-            // the base.
-            arrow(cx, cy - arm, cx - half, cy - hub, cx + half, cy - hub)
-            arrow(cx, cy + arm, cx - half, cy + hub, cx + half, cy + hub)
-            arrow(cx - arm, cy, cx - hub, cy - half, cx - hub, cy + half)
-            arrow(cx + arm, cy, cx + hub, cy - half, cx + hub, cy + half)
-        }
+                /** One arrow: its tip, and the two ends of the base behind it. */
+                fun arrow(
+                    tipX: Float, tipY: Float,
+                    leftX: Float, leftY: Float,
+                    rightX: Float, rightY: Float,
+                    rounding: Float,
+                ) {
+                    val path = Path().apply {
+                        moveTo(tipX, tipY)
+                        lineTo(leftX, leftY)
+                        lineTo(rightX, rightY)
+                        close()
+                    }
+                    drawPath(path, ink)
+                    // Fill plus a rounded outline, so the points are blunt
+                    // rather than needle sharp. Purely how it looks; the tap
+                    // area is the whole quarter regardless.
+                    drawPath(
+                        path = path,
+                        color = ink,
+                        style = Stroke(width = rounding, join = StrokeJoin.Round),
+                    )
+                }
+
+                when (shape) {
+                    ArrowShape.Joined -> {
+                        val arm = square / 2f
+                        val hub = square * ARROW_HUB
+                        val half = square * ARROW_BASE_HALF
+                        val rounding = square * ARROW_ROUNDING
+
+                        // Up and down, then left and right. Each is the same
+                        // triangle, turned: arm out to the tip, hub back from
+                        // the middle, half across the base.
+                        arrow(cx, cy - arm, cx - half, cy - hub, cx + half, cy - hub, rounding)
+                        arrow(cx, cy + arm, cx - half, cy + hub, cx + half, cy + hub, rounding)
+                        arrow(cx - arm, cy, cx - hub, cy - half, cx - hub, cy + half, rounding)
+                        arrow(cx + arm, cy, cx + hub, cy - half, cx + hub, cy + half, rounding)
+                    }
+
+                    ArrowShape.Separate -> {
+                        // A plus laid over a three by three: up on the top
+                        // middle, down on the bottom middle, left and right on
+                        // the sides. The four corners are left empty on
+                        // purpose. There is no honest way to label a corner —
+                        // the top left is exactly as much "up" as it is "left"
+                        // — so nothing is drawn there and it keeps belonging to
+                        // whichever arrow it is nearer.
+                        val cell = square * ARROW_CELL
+                        val button = cell * ARROW_BUTTON_FILL
+                        val radius = CornerRadius(button * 0.18f)
+                        val glyph = button * ARROW_GLYPH
+                        val rounding = glyph * 0.06f
+
+                        /** One arrow's button, centred on [bx], [by]. */
+                        fun key(bx: Float, by: Float, direction: Int) {
+                            drawRoundRect(
+                                color = ArrowKeyColour,
+                                topLeft = Offset(bx - button / 2f, by - button / 2f),
+                                size = Size(button, button),
+                                cornerRadius = radius,
+                            )
+                            val reach = glyph / 2f
+                            // Squatter than it is wide, which is what an arrow
+                            // head looks like; a triangle as tall as its base
+                            // reads as a wedge rather than a direction.
+                            val base = glyph * 0.46f
+                            when (direction) {
+                                0 -> arrow(bx, by - reach, bx - reach, by + base, bx + reach, by + base, rounding)
+                                1 -> arrow(bx, by + reach, bx - reach, by - base, bx + reach, by - base, rounding)
+                                2 -> arrow(bx - reach, by, bx + base, by - reach, bx + base, by + reach, rounding)
+                                else -> arrow(bx + reach, by, bx - base, by - reach, bx - base, by + reach, rounding)
+                            }
+                        }
+
+                        key(cx, cy - cell, 0)
+                        key(cx, cy + cell, 1)
+                        key(cx - cell, cy, 2)
+                        key(cx + cell, cy, 3)
+                    }
+                }
+            }
         }
     }
 }
@@ -899,15 +1100,12 @@ private fun ArrowKey(
     filter: SwitchFilter,
     modifier: Modifier = Modifier,
     onPress: () -> Unit,
-    highlight: Boolean = false,
+    colour: Color = ArrowKeyColour,
 ) {
     Box(
         modifier = modifier
             .padding(6.dp)
-            .background(
-                color = if (highlight) ArrowChoose else ArrowKeyColour,
-                shape = RoundedCornerShape(14.dp)
-            )
+            .background(color = colour, shape = RoundedCornerShape(14.dp))
             .pointerInput(filter) {
                 detectTapGestures {
                     // The same window as the switches, so the tremor setting
@@ -922,7 +1120,10 @@ private fun ArrowKey(
             // a ten inch tablet and on a phone held sideways.
             val size = minOf(
                 maxHeight.value * 0.5f,
-                maxWidth.value / (label.length.coerceAtLeast(1) * 0.62f),
+                // The 0.62 is the average width of a character in this font as
+                // a fraction of its size; the 0.9 is the margin either side, so
+                // ESBORRA TOT stops touching the corners of its own button.
+                (maxWidth.value * 0.9f) / (label.length.coerceAtLeast(1) * 0.68f),
                 ARROW_MAX_TEXT_SP,
             )
             Text(
@@ -1153,6 +1354,7 @@ private fun WritingGrid(controller: ScanController) {
         // the room.
         ComposedText(
             text = controller.text,
+            bold = controller.boldWriting,
             modifier = Modifier.fillMaxWidth().weight(1.9f)
         )
 
@@ -1160,13 +1362,22 @@ private fun WritingGrid(controller: ScanController) {
         // when a row is short.
         val columns = controller.rows.maxOf { it.size }
 
+        val direct = controller.inputMode == InputMode.Direct
+
         for ((rowIndex, row) in controller.rows.withIndex()) {
             Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
                 for ((colIndex, key) in row.withIndex()) {
                     KeyCell(
                         label = controller.label(key),
                         lit = controller.isLit(rowIndex, colIndex),
-                        modifier = Modifier.weight(1f).fillMaxHeight()
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                        onTap = if (direct) {
+                            { controller.touchKey(rowIndex, colIndex) }
+                        } else {
+                            null
+                        },
+                        debounceMs = controller.debounceMs,
+                        antiTremor = controller.antiTremor,
                     )
                 }
                 if (row.size < columns) {
@@ -1233,18 +1444,40 @@ private fun SettingsPanel(controller: ScanController) {
         )
         Spacer(Modifier.height(14.dp))
         Row {
-            ModeOption(
-                text = controller.language.settingsModeScan,
-                selected = controller.inputMode == InputMode.Scan,
-                onTap = { controller.useInputMode(InputMode.Scan) },
-            )
-            Spacer(Modifier.width(16.dp))
-            ModeOption(
-                text = controller.language.settingsModeArrows,
-                selected = controller.inputMode == InputMode.Arrows,
-                onTap = { controller.useInputMode(InputMode.Arrows) },
-            )
+            for (mode in InputMode.entries) {
+                ModeOption(
+                    text = when (mode) {
+                        InputMode.Scan -> controller.language.settingsModeScan
+                        InputMode.Arrows -> controller.language.settingsModeArrows
+                        InputMode.Direct -> controller.language.settingsModeDirect
+                    },
+                    selected = controller.inputMode == mode,
+                    onTap = { controller.useInputMode(mode) },
+                )
+                Spacer(Modifier.width(16.dp))
+            }
         }
+
+        Spacer(Modifier.height(32.dp))
+
+        // These two are about reading and writing rather than about how she
+        // drives the grid, so they sit above the per-mode settings and stay
+        // put whichever mode is chosen.
+        SettingSwitch(
+            title = controller.language.settingsForgiveTitle,
+            detail = controller.language.settingsForgiveDetail,
+            checked = controller.forgiveMistakes,
+            onChange = { controller.useForgiveMistakes(it) },
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        SettingSwitch(
+            title = controller.language.settingsBoldWritingTitle,
+            detail = controller.language.settingsBoldWritingDetail,
+            checked = controller.boldWriting,
+            onChange = { controller.useBoldWriting(it) },
+        )
 
         Spacer(Modifier.height(32.dp))
 
@@ -1270,18 +1503,74 @@ private fun SettingsPanel(controller: ScanController) {
             // really two questions, where the pad goes and which way round it
             // is, and four pills in a line reads as one flat list of options
             // that happen to share words.
-            ArrowPlacementRow(
-                controller = controller,
-                heading = controller.language.settingsArrowColumn,
-                first = ArrowPlacement.Right,
-                second = ArrowPlacement.Left,
+            Row {
+                for (placement in ArrowPlacement.entries) {
+                    ModeOption(
+                        text = when (placement) {
+                            ArrowPlacement.Right -> controller.language.settingsArrowRight
+                            ArrowPlacement.Left -> controller.language.settingsArrowLeft
+                            ArrowPlacement.Bottom -> controller.language.settingsArrowBottom
+                        },
+                        selected = controller.arrowPlacement == placement,
+                        onTap = { controller.useArrowPlacement(placement) },
+                    )
+                    Spacer(Modifier.width(16.dp))
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            // Which end choose sits at is its own question, and the same
+            // question in both arrangements: top or bottom of a column, left or
+            // right of a strip. So it is one switch rather than a separate
+            // option for every combination.
+            SettingSwitch(
+                title = if (controller.arrowPlacement.alongTheBottom) {
+                    controller.language.settingsChooseLeft
+                } else {
+                    controller.language.settingsChooseTop
+                },
+                detail = controller.language.settingsChooseDetail,
+                checked = controller.chooseFirst,
+                onChange = { controller.useChooseFirst(it) },
             )
-            Spacer(Modifier.height(16.dp))
-            ArrowPlacementRow(
-                controller = controller,
-                heading = controller.language.settingsArrowBar,
-                first = ArrowPlacement.BottomRight,
-                second = ArrowPlacement.BottomLeft,
+
+            Spacer(Modifier.height(24.dp))
+
+            Text(
+                text = controller.language.settingsArrowShapeTitle,
+                color = Ink,
+                fontFamily = Hyperlegible,
+                fontSize = 30.sp
+            )
+            Text(
+                text = controller.language.settingsArrowShapeDetail,
+                color = DimInk,
+                fontFamily = Hyperlegible,
+                fontSize = 20.sp
+            )
+            Spacer(Modifier.height(14.dp))
+            Row {
+                for (shape in ArrowShape.entries) {
+                    ModeOption(
+                        text = when (shape) {
+                            ArrowShape.Joined -> controller.language.settingsArrowShapeJoined
+                            ArrowShape.Separate -> controller.language.settingsArrowShapeSeparate
+                        },
+                        selected = controller.arrowShape == shape,
+                        onTap = { controller.useArrowShape(shape) },
+                    )
+                    Spacer(Modifier.width(16.dp))
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            SettingSwitch(
+                title = controller.language.settingsEraseKeysTitle,
+                detail = controller.language.settingsEraseKeysDetail,
+                checked = controller.eraseKeys,
+                onChange = { controller.useEraseKeys(it) },
             )
             Spacer(Modifier.height(32.dp))
         }
@@ -1541,38 +1830,6 @@ private fun SettingsPanel(controller: ScanController) {
     }
 }
 
-/** One row of the arrow-pad placement choice: a heading and two pills. */
-@Composable
-private fun ArrowPlacementRow(
-    controller: ScanController,
-    heading: String,
-    first: ArrowPlacement,
-    second: ArrowPlacement,
-) {
-    Text(
-        text = heading,
-        color = DimInk,
-        fontFamily = Hyperlegible,
-        fontSize = 20.sp,
-        modifier = Modifier.padding(bottom = 8.dp)
-    )
-    Row {
-        for (placement in listOf(first, second)) {
-            ModeOption(
-                text = when (placement) {
-                    ArrowPlacement.Right -> controller.language.settingsArrowRight
-                    ArrowPlacement.Left -> controller.language.settingsArrowLeft
-                    ArrowPlacement.BottomRight -> controller.language.settingsArrowBottomRight
-                    ArrowPlacement.BottomLeft -> controller.language.settingsArrowBottomLeft
-                },
-                selected = controller.arrowPlacement == placement,
-                onTap = { controller.useArrowPlacement(placement) },
-            )
-            Spacer(Modifier.width(16.dp))
-        }
-    }
-}
-
 private fun boundOrDefault(labels: List<String>): String =
     if (labels.isEmpty()) "—" else labels.joinToString(", ")
 
@@ -1675,7 +1932,11 @@ private fun SettingsCornerButton(onOpen: () -> Unit, modifier: Modifier = Modifi
 }
 
 @Composable
-private fun ComposedText(text: String, modifier: Modifier = Modifier) {
+private fun ComposedText(
+    text: String,
+    bold: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
     val scroll = rememberScrollState()
 
     // Always keep the newest words in view. A long sentence wraps onto more
@@ -1704,6 +1965,7 @@ private fun ComposedText(text: String, modifier: Modifier = Modifier) {
                 text = "$text|",
                 color = Ink,
                 fontFamily = Hyperlegible,
+                fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
                 fontSize = 48.sp,
                 lineHeight = 58.sp
             )
@@ -1718,13 +1980,22 @@ private fun ComposedText(text: String, modifier: Modifier = Modifier) {
 @Composable
 private fun PhrasesGrid(controller: ScanController) {
     Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
+        val direct = controller.inputMode == InputMode.Direct
+
         for ((rowIndex, row) in controller.rows.withIndex()) {
             Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
                 for ((colIndex, key) in row.withIndex()) {
                     PhraseCell(
                         label = controller.label(key),
                         lit = controller.isLit(rowIndex, colIndex),
-                        modifier = Modifier.weight(1f).fillMaxHeight()
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                        onTap = if (direct) {
+                            { controller.touchKey(rowIndex, colIndex) }
+                        } else {
+                            null
+                        },
+                        debounceMs = controller.debounceMs,
+                        antiTremor = controller.antiTremor,
                     )
                 }
             }
@@ -1733,7 +2004,14 @@ private fun PhrasesGrid(controller: ScanController) {
 }
 
 @Composable
-private fun PhraseCell(label: String, lit: Boolean, modifier: Modifier = Modifier) {
+private fun PhraseCell(
+    label: String,
+    lit: Boolean,
+    modifier: Modifier = Modifier,
+    onTap: (() -> Unit)? = null,
+    debounceMs: Long = 0L,
+    antiTremor: Boolean = false,
+) {
     BoxWithConstraints(
         modifier = modifier
             .padding(5.dp)
@@ -1741,6 +2019,7 @@ private fun PhraseCell(label: String, lit: Boolean, modifier: Modifier = Modifie
                 color = if (lit) CellLit else CellIdle,
                 shape = RoundedCornerShape(10.dp)
             )
+            .then(tapGuard(onTap, debounceMs, antiTremor))
             .padding(8.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -1762,14 +2041,22 @@ private fun PhraseCell(label: String, lit: Boolean, modifier: Modifier = Modifie
 }
 
 @Composable
-private fun KeyCell(label: String, lit: Boolean, modifier: Modifier = Modifier) {
+private fun KeyCell(
+    label: String,
+    lit: Boolean,
+    modifier: Modifier = Modifier,
+    onTap: (() -> Unit)? = null,
+    debounceMs: Long = 0L,
+    antiTremor: Boolean = false,
+) {
     BoxWithConstraints(
         modifier = modifier
             .padding(4.dp)
             .background(
                 color = if (lit) CellLit else CellIdle,
                 shape = RoundedCornerShape(10.dp)
-            ),
+            )
+            .then(tapGuard(onTap, debounceMs, antiTremor)),
         contentAlignment = Alignment.Center
     ) {
         // Sized from the cell it is sitting in rather than from a number picked
@@ -1794,6 +2081,35 @@ private fun KeyCell(label: String, lit: Boolean, modifier: Modifier = Modifier) 
             softWrap = false,
             textAlign = TextAlign.Center
         )
+    }
+}
+
+/**
+ * Makes one cell of the grid tappable, in direct mode only.
+ *
+ * The filter is built here, inside the cell, so **each cell has its own**. That
+ * is the point of it: a tremor that taps the same letter twice has to count
+ * once, while touching two different letters in quick succession is two real
+ * choices and must both land. One filter shared across the grid would have
+ * turned fast, deliberate typing into half a sentence.
+ *
+ * Returns an empty modifier when there is nothing to tap, so the cells stay
+ * inert in the modes where the letters are for reading rather than pressing.
+ */
+@Composable
+private fun tapGuard(
+    onTap: (() -> Unit)?,
+    debounceMs: Long,
+    antiTremor: Boolean,
+): Modifier {
+    if (onTap == null) return Modifier
+    val filter = remember(debounceMs, antiTremor) {
+        SwitchFilter(debounceMs = debounceMs, restartOnReject = antiTremor)
+    }
+    return Modifier.pointerInput(filter, onTap) {
+        detectTapGestures {
+            if (filter.accept(Switch.Write, SystemClock.elapsedRealtime())) onTap()
+        }
     }
 }
 

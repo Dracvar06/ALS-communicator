@@ -169,3 +169,73 @@ Short answer: **yes, and there is a free route for exactly this case.**
   its own offline model built by `tools/build_model.py`.
 - **A shared, cleaned opener and phrase list** per language, so each new user
   starts from something sensible rather than a blank slate.
+
+## Erasing got its own buttons (2026-08-28)
+
+She is using arrow mode and getting on with it. The complaint was erasing:
+steering to the corner for a backspace costs several arrow presses at the one
+moment she is least happy with the app.
+
+So the pad carries two more buttons — one letter, and the whole sentence — with
+the grid keys left exactly where they were, since switch users and direct-touch
+users never see the pad. New setting, on by default: **Botons d'esborrar al
+costat de TRIA**.
+
+The cost of that is a destructive button within reach of a hand that cannot
+always be placed, and in arrow mode there is no undo switch to take a wipe back
+with. So clear-all is armed by the first press and only fires on the second: it
+turns red and says SEGUR?, and any other action cancels it. If that turns out to
+annoy her, make it a setting rather than deleting it.
+
+Order in the strip is clear-all at the far end, choose, backspace, gap, arrows —
+the destructive one furthest from the hand, the frequent one nearest. In the
+side column the erase pair sits on the far side of choose from the arrows, and
+Eloi asked for clear-all on the left of that pair.
+
+## Her phone, not the tablet (2026-08-28)
+
+Huawei P30 Lite (MAR-LX1A), Android 10, 2312x1080 at density 3.0, so **360dp
+tall in landscape** against the tablet's 800. Everything is sized in dp off a
+tablet, which means the settings and walkthrough screens are enormous here —
+readable, but two or three items to a screen. Worth a pass if the phone becomes
+the real device.
+
+The side column suits this screen better than the bottom strip: the phone is
+771dp wide, so a column costs width the grid can spare, where a strip costs
+height it cannot.
+
+Still to do on it: EMUI's App launch settings, or open-on-boot will not fire and
+the system may close the app on its own.
+
+## Bigger arrows, and suggestions that survive a mistake (2026-08-28)
+
+Three things, all from watching her use it on the phone.
+
+**The arrows were too small to aim at comfortably.** Two causes, and only the
+second was obvious. The pad was sized by weight, so the square that bounds the
+four congruent arrows was bounded by its share of the *height* — on a phone that
+made it a third narrower than the column it sat in, with the rest of the width
+simply empty. It is now measured off the column width first and everything else
+divides what is left (CROSS_MAX_HEIGHT_SHARE). The second cause was that the
+triangles looked far smaller than the area that actually answered to them, so
+she aimed carefully at a shape when she could have hit anywhere in the quarter.
+New ArrowShape.Separate draws a button behind each arrow to show the real size.
+Joined is still there.
+
+**What can be tapped did not change and must not.** Both shapes hand the same
+square to the same sector test, so the gaps still belong to the nearest arrow.
+A change of appearance opening a hole in the middle of the pad is exactly the
+kind of thing that would be found out on her rather than here.
+
+**A mistake used to empty the suggestion row.** A press that lands twice, or not
+at all, or on the neighbouring cell, and no Catalan word begins that way any
+more. That is the moment the row is worth the most, because taking the finished
+word is how she gets out of the mistake without erasing back to it — and
+applySuggestion already replaces the whole fragment, so the typo goes with it.
+Words.prefixDistance forgives one mistake, and only ever runs on slots the exact
+search left empty, so a correctly typed fragment gives the identical answer.
+Under three letters it does not run at all: one forgiven mistake on two letters
+matches most of the dictionary.
+
+Also: the sentence can be set in bold now, which is the one thing on screen read
+by somebody else, from further away.

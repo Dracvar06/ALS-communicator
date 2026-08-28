@@ -22,6 +22,16 @@ class NgramPredictor(
     private val openers: List<String> = CATALAN_OPENERS,
 ) : Predictor {
 
+    /**
+     * Whether a fragment with a mistake in it still gets suggestions.
+     *
+     * Only ever *adds*: the exact matches are found first and keep their
+     * places, and this fills slots that would otherwise have been left empty.
+     * So the worst it can do is offer a word she did not mean, in a slot that
+     * was showing nothing at all.
+     */
+    var forgiving: Boolean = true
+
     override fun predict(context: String, limit: Int): List<String> {
         require(limit >= 0) { "limit cannot be negative, was $limit" }
         if (limit == 0) return emptyList()
@@ -57,21 +67,64 @@ class NgramPredictor(
             take(chosen, model.startingWith(prefix, limit + chosen.size), prefix, limit)
         }
 
+        // Everything above matched exactly. If the slots are still not full,
+        // the likeliest reason is that there is a mistake in what she typed and
+        // no word in Catalan begins that way — so ask again, forgivingly.
+        //
+        // This runs second and only on what is left over, which is the whole
+        // point: a correctly typed fragment can never have a word she meant
+        // pushed off the end by a guess at a word she did not.
+        if (chosen.size < limit && forgiving && prefix.length >= MIN_FORGIVING_LENGTH) {
+            val allowed = 1
+            take(chosen, personal.successorsOf(previous), prefix, limit, allowed)
+            take(chosen, personal.words(), prefix, limit, allowed)
+            take(chosen, model.successorsOf(previous), prefix, limit, allowed)
+            if (chosen.size < limit) {
+                take(
+                    into = chosen,
+                    candidates = model.resembling(prefix, limit + chosen.size, allowed),
+                    prefix = prefix,
+                    limit = limit,
+                    allowed = allowed,
+                )
+            }
+        }
+
         return chosen.take(limit)
     }
 
+    /**
+     * @param allowed how many single character mistakes to forgive. Zero is an
+     *   ordinary exact match on the beginning of the word.
+     */
     private fun take(
         into: LinkedHashSet<String>,
         candidates: List<String>,
         prefix: String,
         limit: Int,
+        allowed: Int = 0,
     ) {
         if (into.size >= limit) return
         for (candidate in candidates) {
-            if (prefix.isEmpty() || Words.fold(candidate).startsWith(prefix)) {
+            val folded = Words.fold(candidate)
+            val fits = prefix.isEmpty() ||
+                if (allowed == 0) folded.startsWith(prefix)
+                else Words.resembles(prefix, folded, allowed)
+            if (fits) {
                 into += candidate
                 if (into.size == limit) return
             }
         }
+    }
+
+    private companion object {
+
+        /**
+         * Below this, forgiving is worse than useless: with two letters typed,
+         * one forgiven mistake matches most of the dictionary, and the slots
+         * fill with noise at the exact moment she can still see her own word
+         * coming.
+         */
+        const val MIN_FORGIVING_LENGTH = 3
     }
 }

@@ -43,6 +43,18 @@ sealed interface Key {
 const val SUGGESTION_SLOTS = 3
 
 /**
+ * The two further suggestions that appear once she has started writing.
+ *
+ * Sí and no are only ever an answer to something, which means they are only
+ * ever the first thing in a sentence. Once she is a letter into a word they are
+ * two of the six best cells on the grid sitting idle for the rest of it, so
+ * they are lent to prediction until the sentence is sent and they are needed
+ * again. Nothing about the grid's shape changes: the same two cells simply say
+ * something else.
+ */
+const val EXTRA_SUGGESTION_SLOTS = 2
+
+/**
  * Lays the phrases out as a scannable grid: a full-width TORNA to leave, then
  * the phrases three to a row. Built at runtime because the phrases are editable.
  */

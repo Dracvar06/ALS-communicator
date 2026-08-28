@@ -20,11 +20,8 @@ enum class ArrowPlacement {
     /** A column down the left-hand side, choose below the arrows. */
     Left,
 
-    /** A strip across the bottom: arrows at the right end, choose at the left. */
-    BottomRight,
-
-    /** A strip across the bottom: arrows at the left end, choose at the right. */
-    BottomLeft,
+    /** A strip across the bottom of the screen. */
+    Bottom,
     ;
 
     /**
@@ -36,24 +33,22 @@ enum class ArrowPlacement {
      * square, and a square in a horizontal strip can never be taller than the
      * strip.
      */
-    val alongTheBottom: Boolean get() = this == BottomRight || this == BottomLeft
-
-    /** True when the arrows are drawn before choose, reading left to right. */
-    val arrowsFirst: Boolean get() = this == BottomLeft || this == Left
+    val alongTheBottom: Boolean get() = this == Bottom
 
     companion object {
 
         /**
-         * The saved value, tolerating one that no longer exists.
+         * The saved value, tolerating ones that no longer exist.
          *
-         * "Bottom" is read as [BottomRight]: it is what the single strip
-         * arrangement used to be called, back when the arrows were always at
-         * the left end, and it was swapped round the day it was first tried on
-         * a real arm.
+         * "BottomRight" and "BottomLeft" were a single setting that said both
+         * where the pad went and which way round it was. Which end choose sits
+         * at turned out to be a separate question — it applies just as much to
+         * a column, where it means top or bottom — so it became its own
+         * setting, and both old names now simply mean the strip.
          */
         fun fromCode(code: String?): ArrowPlacement = when (code) {
             null -> Right
-            "Bottom" -> BottomRight
+            "BottomRight", "BottomLeft" -> Bottom
             else -> entries.firstOrNull { it.name == code } ?: Right
         }
     }

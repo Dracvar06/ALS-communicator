@@ -40,6 +40,7 @@ class Language(
 
     // The words on the keys.
     val spaceLabel: String,
+    val clearLabel: String,
     val yesLabel: String,
     val noLabel: String,
     val phrasesLabel: String,
@@ -75,17 +76,36 @@ class Language(
     val settingsModeDetail: String,
     val settingsModeScan: String,
     val settingsModeArrows: String,
+    val settingsModeDirect: String,
     val settingsArrowPlaceTitle: String,
     val settingsArrowPlaceDetail: String,
     val settingsArrowColumn: String,
     val settingsArrowBar: String,
+    val settingsChooseTop: String,
+    val settingsChooseLeft: String,
+    val settingsChooseDetail: String,
     val settingsArrowRight: String,
     val settingsArrowLeft: String,
-    val settingsArrowBottomRight: String,
-    val settingsArrowBottomLeft: String,
+    val settingsArrowBottom: String,
 
     /** The word on the big choose button in arrow mode. */
     val arrowChoose: String,
+
+    // The two erase buttons that can sit beside choose on the arrow pad.
+    val settingsForgiveTitle: String,
+    val settingsForgiveDetail: String,
+    val settingsBoldWritingTitle: String,
+    val settingsBoldWritingDetail: String,
+    val settingsArrowShapeTitle: String,
+    val settingsArrowShapeDetail: String,
+    val settingsArrowShapeJoined: String,
+    val settingsArrowShapeSeparate: String,
+    val settingsEraseKeysTitle: String,
+    val settingsEraseKeysDetail: String,
+    val arrowDeleteLetter: String,
+
+    /** What clear-all says once it is armed and waiting for a second press. */
+    val arrowClearConfirm: String,
 
     /** Read aloud on the settings screen when the charge is getting low. */
     val batteryLow: String,
@@ -148,6 +168,7 @@ val CATALAN = Language(
         "T'estimo",
     ),
     spaceLabel = "espai",
+    clearLabel = "ESBORRA TOT",
     yesLabel = "SÍ",
     noLabel = "NO",
     phrasesLabel = "FRASES",
@@ -180,17 +201,32 @@ val CATALAN = Language(
         "Amb fletxes el mous tu i no has d'esperar mai.",
     settingsModeScan = "Escaneig automàtic",
     settingsModeArrows = "Fletxes",
+    settingsModeDirect = "Tocar les lletres",
     settingsArrowPlaceTitle = "On van les fletxes",
     settingsArrowPlaceDetail = "Posa-les on el braç no hi passi per sobre en " +
         "anar a prémer. A baix separa TRIA de les fletxes tot l'ample de la " +
         "pantalla, però les fletxes queden més petites.",
     settingsArrowColumn = "En columna, a un costat",
     settingsArrowBar = "A baix, en una franja",
+    settingsChooseTop = "TRIA a dalt",
+    settingsChooseLeft = "TRIA a l'esquerra",
+    settingsChooseDetail = "Posa TRIA on el braç no hi passi per sobre.",
     settingsArrowRight = "A la dreta",
     settingsArrowLeft = "A l'esquerra",
-    settingsArrowBottomRight = "Fletxes a la dreta",
-    settingsArrowBottomLeft = "Fletxes a l'esquerra",
+    settingsArrowBottom = "A baix",
     arrowChoose = "TRIA",
+    settingsForgiveTitle = "Perdona les errades",
+    settingsForgiveDetail = "Si es repeteix una lletra sense voler, o se n'escapa una, les paraules segueixen sortint. Les que encaixen exactament surten sempre primer.",
+    settingsBoldWritingTitle = "Frase en negreta",
+    settingsBoldWritingDetail = "La frase que escriu, més gruixuda, per llegir-la de lluny.",
+    settingsArrowShapeTitle = "Com es veuen les fletxes",
+    settingsArrowShapeDetail = "Separades, cada fletxa té el seu botó i es veu fins on arriba. En creu es veuen com una sola peça. El que es pot tocar és igual en els dos casos.",
+    settingsArrowShapeJoined = "En creu",
+    settingsArrowShapeSeparate = "Separades",
+    settingsEraseKeysTitle = "Botons d'esborrar al costat de TRIA",
+    settingsEraseKeysDetail = "Esborra una lletra, o tot, sense haver-hi d'anar amb les fletxes. ESBORRA TOT pregunta abans.",
+    arrowDeleteLetter = "\u232b LLETRA",
+    arrowClearConfirm = "SEGUR?",
     batteryLow = "Bateria baixa",
     settingsTutorial = "COM FUNCIONA",
     tutorialNext = "SEGÜENT",
@@ -271,7 +307,12 @@ val CATALAN = Language(
                     "amunt porta a la de baix. Res queda mai lluny.",
                 "Després d'escriure, el requadre es queda on és. Dues lletres " +
                     "iguals seguides són dues premudes de TRIA.",
-                "La tecla ⌫ de la graella esborra una lletra.",
+                "Al costat de TRIA hi ha ⌫ LLETRA, que esborra l'última " +
+                    "lletra, i ESBORRA TOT, que buida la frase sencera. " +
+                    "ESBORRA TOT es prem dues vegades: la primera passa a dir " +
+                    "SEGUR? i es posa vermell, i només la segona buida. " +
+                    "Qualsevol altra cosa que faci ho anul·la.",
+                "La tecla ⌫ de la graella també esborra una lletra.",
                 "Els espais entre les fletxes també compten: un toc que cau " +
                     "entre dues va a la més propera.",
             ),
@@ -279,11 +320,18 @@ val CATALAN = Language(
         TutorialPage(
             title = "La graella",
             lines = listOf(
-                "Fila de dalt: tres paraules que l'aplicació suggereix, i " +
-                    "després SÍ, NO i FRASES.",
+                "Fila de dalt: paraules que l'aplicació suggereix, i després " +
+                    "SÍ, NO i FRASES.",
+                "SÍ i NO només hi són amb la frase buida. En començar a " +
+                    "escriure, aquelles dues caselles passen a ser dues " +
+                    "paraules suggerides més: cinc en comptes de tres. Tornen " +
+                    "soles quan la frase s'esborra.",
                 "Les paraules suggerides canvien mentre ella escriu. Triar-ne " +
                     "una escriu la paraula sencera i l'espai: sovint és el " +
                     "camí més curt.",
+                "També perdona errades: si una lletra es repeteix sense voler " +
+                    "o se n'escapa una, les paraules continuen sortint. Triar-" +
+                    "ne una arregla la paraula sencera, sense haver d'esborrar.",
                 "Les lletres no estan per ordre alfabètic, sinó per ordre " +
                     "d'ús en català, perquè les més freqüents quedin a prop.",
                 "× esborra tota la frase, i per això és a l'últim racó.",
@@ -394,6 +442,7 @@ val ENGLISH = Language(
         "I love you",
     ),
     spaceLabel = "space",
+    clearLabel = "CLEAR ALL",
     yesLabel = "YES",
     noLabel = "NO",
     phrasesLabel = "PHRASES",
@@ -426,17 +475,32 @@ val ENGLISH = Language(
         "Arrows let you move it yourself, with no waiting at all.",
     settingsModeScan = "Automatic scanning",
     settingsModeArrows = "Arrows",
+    settingsModeDirect = "Touch the letters",
     settingsArrowPlaceTitle = "Where the arrows go",
     settingsArrowPlaceDetail = "Put them where the arm does not pass over them " +
         "on its way to press. Along the bottom puts the width of the screen " +
         "between CHOOSE and the arrows, but the arrows end up smaller.",
     settingsArrowColumn = "In a column, down one side",
     settingsArrowBar = "Along the bottom, in a strip",
+    settingsChooseTop = "CHOOSE at the top",
+    settingsChooseLeft = "CHOOSE on the left",
+    settingsChooseDetail = "Put CHOOSE where the arm does not pass over it.",
     settingsArrowRight = "On the right",
     settingsArrowLeft = "On the left",
-    settingsArrowBottomRight = "Arrows on the right",
-    settingsArrowBottomLeft = "Arrows on the left",
+    settingsArrowBottom = "Along the bottom",
     arrowChoose = "CHOOSE",
+    settingsForgiveTitle = "Forgive mistakes",
+    settingsForgiveDetail = "If a letter lands twice, or not at all, words still come up. Exact matches always come first.",
+    settingsBoldWritingTitle = "Sentence in bold",
+    settingsBoldWritingDetail = "The sentence she is writing, heavier, to be read from across a room.",
+    settingsArrowShapeTitle = "How the arrows look",
+    settingsArrowShapeDetail = "Separate gives each arrow its own button, so its size is visible. Joined draws them as one shape. What answers to a tap is the same either way.",
+    settingsArrowShapeJoined = "Joined",
+    settingsArrowShapeSeparate = "Separate",
+    settingsEraseKeysTitle = "Erase buttons beside CHOOSE",
+    settingsEraseKeysDetail = "Delete a letter, or everything, without steering there. CLEAR ALL asks first.",
+    arrowDeleteLetter = "\u232b LETTER",
+    arrowClearConfirm = "SURE?",
     batteryLow = "Battery low",
     settingsTutorial = "HOW IT WORKS",
     tutorialNext = "NEXT",
@@ -518,7 +582,12 @@ val ENGLISH = Language(
                     "Nothing is ever far away.",
                 "After writing, the highlight stays where it is. A doubled " +
                     "letter is two presses of CHOOSE and nothing else.",
-                "The ⌫ key on the grid removes one letter.",
+                "Beside CHOOSE there is ⌫ LETTER, which removes the last " +
+                    "letter, and CLEAR ALL, which empties the whole sentence. " +
+                    "CLEAR ALL takes two presses: the first turns it red and " +
+                    "makes it say SURE?, and only the second empties it. " +
+                    "Anything else she does cancels it.",
+                "The ⌫ key on the grid removes one letter too.",
                 "The gaps between the arrows count too: a tap that lands " +
                     "between two goes to the nearer one.",
             ),
@@ -526,11 +595,18 @@ val ENGLISH = Language(
         TutorialPage(
             title = "The grid",
             lines = listOf(
-                "Top row: three words the app is suggesting, then YES, NO and " +
+                "Top row: words the app is suggesting, then YES, NO and " +
                     "PHRASES.",
+                "YES and NO are only there while the sentence is empty. Once " +
+                    "she starts writing, those two cells become two more " +
+                    "suggested words — five instead of three. They come back " +
+                    "on their own when the sentence is cleared.",
                 "The suggested words change as she writes. Taking one writes " +
                     "the whole word and the space after it, which is often " +
                     "much the shortest route.",
+                "It also forgives mistakes: if a letter lands twice, or not at " +
+                    "all, the words keep coming. Taking one repairs the whole " +
+                    "word, with nothing to erase.",
                 "The letters are not in alphabetical order. They are in order " +
                     "of how often they are used, so the common ones are near.",
                 "× clears the whole sentence, which is why it sits in the last " +
@@ -642,6 +718,7 @@ val SPANISH = Language(
         "Te quiero",
     ),
     spaceLabel = "espacio",
+    clearLabel = "BORRA TODO",
     yesLabel = "SÍ",
     noLabel = "NO",
     phrasesLabel = "FRASES",
@@ -674,17 +751,32 @@ val SPANISH = Language(
         "Con flechas lo mueves tú y no esperas nunca.",
     settingsModeScan = "Escaneo automático",
     settingsModeArrows = "Flechas",
+    settingsModeDirect = "Tocar las letras",
     settingsArrowPlaceTitle = "Dónde van las flechas",
     settingsArrowPlaceDetail = "Ponlas donde el brazo no pase por encima al ir " +
         "a pulsar. Abajo separa ELIGE de las flechas todo el ancho de la " +
         "pantalla, pero las flechas quedan más pequeñas.",
     settingsArrowColumn = "En columna, a un lado",
     settingsArrowBar = "Abajo, en una franja",
+    settingsChooseTop = "ELIGE arriba",
+    settingsChooseLeft = "ELIGE a la izquierda",
+    settingsChooseDetail = "Pon ELIGE donde el brazo no pase por encima.",
     settingsArrowRight = "A la derecha",
     settingsArrowLeft = "A la izquierda",
-    settingsArrowBottomRight = "Flechas a la derecha",
-    settingsArrowBottomLeft = "Flechas a la izquierda",
+    settingsArrowBottom = "Abajo",
     arrowChoose = "ELIGE",
+    settingsForgiveTitle = "Perdona los errores",
+    settingsForgiveDetail = "Si una letra se repite sin querer, o se escapa, las palabras siguen saliendo. Las que encajan exactamente salen siempre primero.",
+    settingsBoldWritingTitle = "Frase en negrita",
+    settingsBoldWritingDetail = "La frase que escribe, más gruesa, para leerla de lejos.",
+    settingsArrowShapeTitle = "Cómo se ven las flechas",
+    settingsArrowShapeDetail = "Separadas, cada flecha tiene su botón y se ve hasta dónde llega. En cruz se ven como una sola pieza. Lo que se puede tocar es igual en los dos casos.",
+    settingsArrowShapeJoined = "En cruz",
+    settingsArrowShapeSeparate = "Separadas",
+    settingsEraseKeysTitle = "Botones de borrar junto a ELIGE",
+    settingsEraseKeysDetail = "Borra una letra, o todo, sin tener que ir con las flechas. BORRA TODO pregunta antes.",
+    arrowDeleteLetter = "\u232b LETRA",
+    arrowClearConfirm = "¿SEGURO?",
     batteryLow = "Batería baja",
     settingsTutorial = "CÓMO FUNCIONA",
     tutorialNext = "SIGUIENTE",
@@ -766,7 +858,12 @@ val SPANISH = Language(
                     "arriba lleva a la de abajo. Nada queda nunca lejos.",
                 "Después de escribir, el recuadro se queda donde está. Dos " +
                     "letras iguales seguidas son dos pulsaciones de ELIGE.",
-                "La tecla ⌫ de la cuadrícula borra una letra.",
+                "Junto a ELIGE están ⌫ LETRA, que borra la última letra, " +
+                    "y BORRA TODO, que vacía la frase entera. BORRA TODO se " +
+                    "pulsa dos veces: la primera se pone roja y dice " +
+                    "¿SEGURO?, y solo la segunda vacía. Cualquier otra cosa " +
+                    "que haga lo anula.",
+                "La tecla ⌫ de la cuadrícula también borra una letra.",
                 "Los espacios entre las flechas también cuentan: un toque que " +
                     "cae entre dos va a la más cercana.",
             ),
@@ -774,11 +871,18 @@ val SPANISH = Language(
         TutorialPage(
             title = "La cuadrícula",
             lines = listOf(
-                "Fila de arriba: tres palabras que sugiere la aplicación, y " +
+                "Fila de arriba: palabras que sugiere la aplicación, y " +
                     "después SÍ, NO y FRASES.",
+                "SÍ y NO solo están con la frase vacía. Al empezar a escribir, " +
+                    "esas dos casillas pasan a ser dos palabras sugeridas más: " +
+                    "cinco en vez de tres. Vuelven solas cuando se borra la " +
+                    "frase.",
                 "Las palabras sugeridas cambian mientras ella escribe. Elegir " +
                     "una escribe la palabra entera y el espacio: casi siempre " +
                     "es el camino más corto.",
+                "También perdona errores: si una letra se repite sin querer o " +
+                    "se escapa, las palabras siguen saliendo. Elegir una " +
+                    "arregla la palabra entera, sin tener que borrar.",
                 "Las letras no están en orden alfabético, sino por orden de " +
                     "uso, para que las más frecuentes queden cerca.",
                 "× borra la frase entera, y por eso está en el último rincón.",

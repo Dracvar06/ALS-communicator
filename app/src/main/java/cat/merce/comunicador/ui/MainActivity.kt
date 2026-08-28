@@ -121,12 +121,36 @@ class MainActivity : ComponentActivity() {
             initialOpenOnBoot = settings.getBoolean(KEY_OPEN_ON_BOOT, false),
             initialInputMode = InputMode.fromCode(settings.getString(KEY_INPUT_MODE, null)),
             initialArrowPlacement = savedArrowPlacement(settings),
+            initialChooseFirst = settings.getBoolean(KEY_CHOOSE_FIRST, true),
+            initialEraseKeys = settings.getBoolean(KEY_ERASE_KEYS, true),
+            initialArrowShape = ArrowShape.fromCode(settings.getString(KEY_ARROW_SHAPE, null)),
+            initialForgiveMistakes = settings.getBoolean(KEY_FORGIVE, true),
+            initialBoldWriting = settings.getBoolean(KEY_BOLD_WRITING, true),
         )
         controller.onInputModeChanged = { mode ->
             settings.edit(commit = true) { putString(KEY_INPUT_MODE, mode.name) }
         }
         controller.onArrowPlacementChanged = { placement ->
             settings.edit(commit = true) { putString(KEY_ARROW_PLACEMENT, placement.name) }
+        }
+        controller.onForgiveMistakesChanged = { on ->
+            settings.edit(commit = true) { putBoolean(KEY_FORGIVE, on) }
+        }
+
+        controller.onBoldWritingChanged = { on ->
+            settings.edit(commit = true) { putBoolean(KEY_BOLD_WRITING, on) }
+        }
+
+        controller.onArrowShapeChanged = { shape ->
+            settings.edit(commit = true) { putString(KEY_ARROW_SHAPE, shape.name) }
+        }
+
+        controller.onEraseKeysChanged = { on ->
+            settings.edit(commit = true) { putBoolean(KEY_ERASE_KEYS, on) }
+        }
+
+        controller.onChooseFirstChanged = { on ->
+            settings.edit(commit = true) { putBoolean(KEY_CHOOSE_FIRST, on) }
         }
         controller.onLockedChanged = { on ->
             settings.edit(commit = true) { putBoolean(KEY_LOCKED, on) }
@@ -638,6 +662,11 @@ class MainActivity : ComponentActivity() {
         const val KEY_OPEN_ON_BOOT = "open_on_boot"
         const val KEY_INPUT_MODE = "input_mode"
         const val KEY_ARROW_PLACEMENT = "arrow_placement"
+        const val KEY_CHOOSE_FIRST = "choose_first"
+        const val KEY_ERASE_KEYS = "erase_keys"
+        const val KEY_ARROW_SHAPE = "arrow_shape"
+        const val KEY_FORGIVE = "forgive_mistakes"
+        const val KEY_BOLD_WRITING = "bold_writing"
 
         /** Replaced by [KEY_ARROW_PLACEMENT]; still read once, then ignored. */
         const val KEY_ARROWS_ON_LEFT = "arrows_on_left"

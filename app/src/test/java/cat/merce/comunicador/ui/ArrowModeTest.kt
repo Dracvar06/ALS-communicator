@@ -195,8 +195,8 @@ class ArrowModeTest {
         val c = arrows()
         assertEquals(ArrowPlacement.Right, c.arrowPlacement)
 
-        c.useArrowPlacement(ArrowPlacement.BottomRight)
-        assertEquals(ArrowPlacement.BottomRight, c.arrowPlacement)
+        c.useArrowPlacement(ArrowPlacement.Bottom)
+        assertEquals(ArrowPlacement.Bottom, c.arrowPlacement)
     }
 
     @Test
@@ -206,10 +206,10 @@ class ArrowModeTest {
         var times = 0
         c.onArrowPlacementChanged = { saved = it; times++ }
 
-        c.useArrowPlacement(ArrowPlacement.BottomRight)
-        c.useArrowPlacement(ArrowPlacement.BottomRight)
+        c.useArrowPlacement(ArrowPlacement.Bottom)
+        c.useArrowPlacement(ArrowPlacement.Bottom)
 
-        assertEquals(ArrowPlacement.BottomRight, saved)
+        assertEquals(ArrowPlacement.Bottom, saved)
         assertEquals(1, times)
     }
 
@@ -222,25 +222,19 @@ class ArrowModeTest {
     }
 
     @Test
-    fun `the strip that used to be called Bottom still opens`() {
-        // Saved before the strip could be turned round. Somebody who had
-        // already chosen it must not be dropped back to a side column.
-        assertEquals(ArrowPlacement.BottomRight, ArrowPlacement.fromCode("Bottom"))
-        assertTrue(ArrowPlacement.fromCode("Bottom").alongTheBottom)
+    fun `every name the strip has ever been saved under still opens it`() {
+        // Somebody who had already chosen the strip, under either of the two
+        // names it used to have, must not be dropped back to a side column.
+        for (code in listOf("Bottom", "BottomRight", "BottomLeft")) {
+            assertEquals(code, ArrowPlacement.Bottom, ArrowPlacement.fromCode(code))
+        }
     }
 
     @Test
-    fun `only the strip placements are along the bottom`() {
-        assertTrue(ArrowPlacement.BottomLeft.alongTheBottom)
-        assertTrue(ArrowPlacement.BottomRight.alongTheBottom)
+    fun `only the strip is along the bottom`() {
+        assertTrue(ArrowPlacement.Bottom.alongTheBottom)
         assertFalse(ArrowPlacement.Right.alongTheBottom)
         assertFalse(ArrowPlacement.Left.alongTheBottom)
-    }
-
-    @Test
-    fun `arrowsFirst says which end the arrows are drawn at`() {
-        assertTrue(ArrowPlacement.BottomLeft.arrowsFirst)
-        assertFalse(ArrowPlacement.BottomRight.arrowsFirst)
     }
 
     @Test
@@ -251,7 +245,7 @@ class ArrowModeTest {
         c.press()
         assertEquals("A", c.text)
 
-        c.useArrowPlacement(ArrowPlacement.BottomRight)
+        c.useArrowPlacement(ArrowPlacement.Bottom)
 
         // Purely where the buttons are drawn. Nothing about the grid, the
         // sentence or where the highlight is should move with them.

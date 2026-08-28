@@ -16,6 +16,16 @@ enum class InputMode {
 
     /** The highlight stays put; she steers it with four arrows and chooses. */
     Arrows,
+
+    /**
+     * She touches the letter she wants, and that is all.
+     *
+     * The fastest way by a wide margin, and the one people expect the moment
+     * they see a grid of letters — but it asks for something the other two do
+     * not, which is the ability to land a finger on a particular cell. Only
+     * possible while that holds, and worth using for exactly as long as it does.
+     */
+    Direct,
     ;
 
     companion object {

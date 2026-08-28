@@ -3,11 +3,13 @@ package cat.merce.comunicador.ui
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import cat.merce.comunicador.prediction.NgramPredictor
 import cat.merce.comunicador.prediction.Predictor
 import cat.merce.comunicador.prediction.WordListPredictor
 import cat.merce.comunicador.prediction.Words
 import cat.merce.comunicador.input.SwitchFilter
 import cat.merce.comunicador.scan.Cursor
+import cat.merce.comunicador.scan.Position
 import cat.merce.comunicador.scan.ScanLayout
 import cat.merce.comunicador.scan.ScanState
 import cat.merce.comunicador.scan.Scanner
@@ -47,6 +49,11 @@ class ScanController(
     initialOpenOnBoot: Boolean = false,
     initialInputMode: InputMode = InputMode.Scan,
     initialArrowPlacement: ArrowPlacement = ArrowPlacement.Right,
+    initialChooseFirst: Boolean = true,
+    initialEraseKeys: Boolean = true,
+    initialArrowShape: ArrowShape = ArrowShape.Separate,
+    initialForgiveMistakes: Boolean = true,
+    initialBoldWriting: Boolean = true,
 ) {
 
     /**
@@ -68,6 +75,122 @@ class ScanController(
         private set
 
     var onArrowPlacementChanged: ((ArrowPlacement) -> Unit)? = null
+
+    /**
+     * Whether choose comes before the arrows: above them in a column, or to
+     * their left in a strip.
+     *
+     * A separate question from where the pad goes, because the answer is about
+     * the arm rather than the screen — whichever of the two the forearm sweeps
+     * over on the way in is the one that should not be there.
+     */
+    var chooseFirst: Boolean by mutableStateOf(initialChooseFirst)
+        private set
+
+    var onChooseFirstChanged: ((Boolean) -> Unit)? = null
+
+    fun useChooseFirst(enabled: Boolean) {
+        if (enabled == chooseFirst) return
+        chooseFirst = enabled
+        onChooseFirstChanged?.invoke(enabled)
+    }
+
+    /**
+     * Whether the arrow pad carries its own two erase buttons.
+     *
+     * Erasing is the one thing that is worth its own button. Everything else on
+     * the grid is a letter she meant to reach, but a mistake has to be undone
+     * *now*, and steering to the corner for it means several arrow presses at
+     * the exact moment she is least happy with the app. The keys stay on the
+     * grid as well, so turning this off loses nothing but the shortcut.
+     */
+    var eraseKeys: Boolean by mutableStateOf(initialEraseKeys)
+        private set
+
+    var onEraseKeysChanged: ((Boolean) -> Unit)? = null
+
+    fun useEraseKeys(enabled: Boolean) {
+        if (enabled == eraseKeys) return
+        eraseKeys = enabled
+        clearArmed = false
+        onEraseKeysChanged?.invoke(enabled)
+    }
+
+    /**
+     * Whether the pad's clear-all button has been pressed once and is waiting
+     * for the second press that actually empties the sentence.
+     *
+     * The one destructive button in the app now sits within reach of a hand
+     * that cannot always be placed, and in arrow mode there is no undo switch
+     * to take a wipe back with. So it costs two presses instead of one. Any
+     * other action disarms it, which means the cost of a mistaken first press
+     * is nothing at all.
+     */
+    var clearArmed: Boolean by mutableStateOf(false)
+        private set
+
+    /**
+     * Erase one letter from the arrow pad, without steering to the key first.
+     */
+    fun eraseLetter() {
+        clearArmed = false
+        if (!canErase()) return
+        val textBefore = text
+        apply(Key.Delete)
+        if (text != textBefore) {
+            push(Step.ChangedText(textBefore, cursor.position.row))
+            refreshSuggestions()
+        }
+    }
+
+    /**
+     * Empty the sentence from the arrow pad. The first press only arms it; the
+     * second one, with nothing else in between, does it.
+     */
+    fun eraseAll() {
+        if (!canErase()) { clearArmed = false; return }
+        if (text.isEmpty()) { clearArmed = false; return }
+        if (!clearArmed) {
+            clearArmed = true
+            return
+        }
+        clearArmed = false
+        val textBefore = text
+        apply(Key.Clear)
+        push(Step.ChangedText(textBefore, cursor.position.row))
+        refreshSuggestions()
+    }
+
+    /**
+     * Whether the arrows are drawn as four separate buttons or as one shape.
+     *
+     * Appearance only: see [ArrowShape]. What answers to a tap does not change.
+     */
+    var arrowShape: ArrowShape by mutableStateOf(initialArrowShape)
+        private set
+
+    var onArrowShapeChanged: ((ArrowShape) -> Unit)? = null
+
+    fun useArrowShape(shape: ArrowShape) {
+        if (shape == arrowShape) return
+        arrowShape = shape
+        onArrowShapeChanged?.invoke(shape)
+    }
+
+    /** The pad's erase buttons are hers, and only while she is writing. */
+    private fun canErase(): Boolean =
+        eraseKeys && !inSettings && !inTutorial && !inPhrases
+
+    /**
+     * The cell she touched last, in direct mode. Null until she touches one.
+     *
+     * Lit so that a press is visibly acknowledged. Nothing is highlighted
+     * before her first touch, because a highlight sitting on a cell she has not
+     * chosen is exactly the thing that makes people believe the app is doing
+     * something it is not.
+     */
+    var directLast: Position? by mutableStateOf(null)
+        private set
 
     /**
      * Battery charge, 0..100, or null before the first reading arrives.
@@ -142,10 +265,41 @@ class ScanController(
     var onIntervalChanged: ((Long) -> Unit)? = null
 
     /** The grid currently on screen: the phrases when in that screen, else writing. */
-    val rows: List<List<Key>> get() = if (inPhrases) phrasesGrid else writingGrid
+    val rows: List<List<Key>> get() = if (inPhrases) phrasesGrid else writingRows()
+
+    /**
+     * True while sí and no have keys of their own, which is while the sentence
+     * is still empty. See [EXTRA_SUGGESTION_SLOTS].
+     */
+    private val yesNoOnGrid: Boolean get() = text.isEmpty()
+
+    /**
+     * The writing grid as it stands right now.
+     *
+     * The same six cells in the same places, every time. Only what two of them
+     * mean changes, and only between an empty sentence and a started one, so
+     * the shape the scanner and the cursor are working over never moves under
+     * her.
+     */
+    private fun writingRows(): List<List<Key>> {
+        if (yesNoOnGrid) return writingGrid
+        return writingGrid.mapIndexed { index, row ->
+            if (index != SUGGESTION_ROW) {
+                row
+            } else {
+                row.map { key ->
+                    when (key) {
+                        Key.Yes -> Key.Suggestion(SUGGESTION_SLOTS)
+                        Key.No -> Key.Suggestion(SUGGESTION_SLOTS + 1)
+                        else -> key
+                    }
+                }
+            }
+        }
+    }
 
     private var writingGrid: List<List<Key>> =
-        keyboardFor(initialLanguage, withDelete = initialInputMode == InputMode.Arrows)
+        keyboardFor(initialLanguage, withDelete = initialInputMode != InputMode.Scan)
 
     /** Where the highlight is. */
     var state: ScanState by mutableStateOf(ScanState.Row(0))
@@ -353,22 +507,25 @@ class ScanController(
     }
 
     /**
-     * Where the highlight belongs right now, according to whichever of the two
-     * machines is driving. Every place that used to read scanner.state goes
-     * through here instead, so neither mode can be forgotten in one branch.
+     * Where the highlight belongs right now, according to whichever machine is
+     * driving. Every place that used to read scanner.state goes through here
+     * instead, so no mode can be forgotten in one branch.
      */
     private fun currentState(): ScanState = when (inputMode) {
         InputMode.Scan -> scanner.state
         InputMode.Arrows -> cursor.position.let { ScanState.Cell(it.row, it.col) }
+        // Direct mode has no cursor at all; what it lights is the cell she last
+        // touched, which isLit reads from directLast rather than from here.
+        InputMode.Direct -> ScanState.Cell(0, 0)
     }
 
     /** The scan interval elapsed. */
     fun tick() {
         // Nothing is scanning while a carer has settings or the guide open.
         if (inSettings || inTutorial) return
-        // In arrow mode the highlight only ever moves because she moved it.
-        // The clock on screen keeps running; it simply has nothing to advance.
-        if (inputMode == InputMode.Arrows) return
+        // Only scanning has a highlight that moves on its own. The clock on
+        // screen keeps running; it simply has nothing to advance.
+        if (inputMode != InputMode.Scan) return
 
         val before = state
         scanner.tick()
@@ -388,6 +545,7 @@ class ScanController(
 
     /** The writing switch was pressed. */
     fun press() {
+        clearArmed = false
         if (inTutorial) {
             closeTutorial()
             return
@@ -467,6 +625,33 @@ class ScanController(
         }
     }
 
+    /**
+     * She touched the cell at [row], [col]. Ignored unless direct mode is on.
+     *
+     * The whole of direct mode. There is no cursor to move and no rhythm to
+     * follow: the cell she touched is the cell she chose.
+     */
+    fun touchKey(row: Int, col: Int) {
+        if (inputMode != InputMode.Direct || inSettings || inTutorial) return
+        val grid = rows
+        if (row !in grid.indices || col !in grid[row].indices) return
+
+        directLast = Position(row, col)
+        when (val key = grid[row][col]) {
+            Key.OpenPhrases -> openPhrases()
+            Key.Back -> closePhrases()
+            is Key.Phrase -> onSpeak?.invoke(key.text)
+
+            else -> {
+                val textBefore = text
+                apply(key)
+                push(Step.ChangedText(textBefore, row))
+                noticeFinishedWord(textBefore, text)
+                refreshSuggestions()
+            }
+        }
+    }
+
     /** Steer the cursor. Ignored unless arrow mode is on. */
     fun moveUp() = move { cursor.up() }
 
@@ -478,6 +663,8 @@ class ScanController(
 
     private inline fun move(step: () -> Unit) {
         if (inputMode != InputMode.Arrows || inSettings || inTutorial) return
+        // Anything else she does is an answer of "no" to the clear-all button.
+        clearArmed = false
         step()
         state = currentState()
     }
@@ -572,7 +759,7 @@ class ScanController(
     fun changeLanguage(newLanguage: Language) {
         if (newLanguage.code == language.code) return
         language = newLanguage
-        writingGrid = keyboardFor(newLanguage, withDelete = inputMode == InputMode.Arrows)
+        writingGrid = keyboardFor(newLanguage, withDelete = inputMode != InputMode.Scan)
         setPhrases(newLanguage.defaultPhrases)
         inPhrases = false
         rescan(writingGrid)
@@ -616,6 +803,8 @@ class ScanController(
 
     /** Starts afresh over a new layout, from the top left. */
     private fun rescan(layout: List<List<Key>>) {
+        // The cell she last touched belongs to the grid that is going away.
+        directLast = null
         val shape = ScanLayout(layout.map { it.size })
         scanner = Scanner(shape)
         // Rebuilt together, so a cursor can never be left pointing at a cell
@@ -629,6 +818,7 @@ class ScanController(
      * land here by mistake; a carer opens it by touch.
      */
     fun openSettings() {
+        clearArmed = false
         inSettings = true
     }
 
@@ -662,7 +852,7 @@ class ScanController(
     fun useInputMode(mode: InputMode) {
         if (mode == inputMode) return
         inputMode = mode
-        writingGrid = keyboardFor(language, withDelete = mode == InputMode.Arrows)
+        writingGrid = keyboardFor(language, withDelete = mode != InputMode.Scan)
         rescan(if (inPhrases) phrasesGrid else writingGrid)
         justEnteredRow = false
         restartTiming()
@@ -786,7 +976,51 @@ class ScanController(
     /** Swaps in the full model once it has finished loading. */
     fun usePredictor(replacement: Predictor) {
         predictor = replacement
+        applyForgiveness()
         refreshSuggestions()
+    }
+
+    /**
+     * Whether a word with a mistake in it still gets suggestions.
+     *
+     * A press that lands twice, or not at all, or on the neighbouring cell,
+     * used to empty the suggestion row completely — and the row is worth more
+     * to her at that moment than at any other, because finishing the word from
+     * a list is how she gets out of the mistake without erasing back to it.
+     */
+    var forgiveMistakes: Boolean by mutableStateOf(initialForgiveMistakes)
+        private set
+
+    var onForgiveMistakesChanged: ((Boolean) -> Unit)? = null
+
+    fun useForgiveMistakes(enabled: Boolean) {
+        if (enabled == forgiveMistakes) return
+        forgiveMistakes = enabled
+        applyForgiveness()
+        refreshSuggestions()
+        onForgiveMistakesChanged?.invoke(enabled)
+    }
+
+    private fun applyForgiveness() {
+        (predictor as? NgramPredictor)?.forgiving = forgiveMistakes
+    }
+
+    /**
+     * Whether the sentence she is writing is set in bold.
+     *
+     * The grid has always been bold and the sentence has not, which is the
+     * wrong way round: the letters are read one at a time under a highlight,
+     * and the sentence is read across a room by whoever she is talking to.
+     */
+    var boldWriting: Boolean by mutableStateOf(initialBoldWriting)
+        private set
+
+    var onBoldWritingChanged: ((Boolean) -> Unit)? = null
+
+    fun useBoldWriting(enabled: Boolean) {
+        if (enabled == boldWriting) return
+        boldWriting = enabled
+        onBoldWritingChanged?.invoke(enabled)
     }
 
     /** The word shown on a cell right now, in the current language. */
@@ -799,12 +1033,19 @@ class ScanController(
         Key.No -> language.noLabel
         Key.OpenPhrases -> language.phrasesLabel
         Key.Back -> language.backLabel
-        Key.Clear -> "\u00d7"
+        Key.Clear -> language.clearLabel
         Key.Delete -> "\u232b"
     }
 
     /** Should the cell at this position be highlighted right now? */
-    fun isLit(row: Int, col: Int): Boolean = when (val current = state) {
+    fun isLit(row: Int, col: Int): Boolean {
+        if (inputMode == InputMode.Direct) {
+            return directLast?.let { it.row == row && it.col == col } == true
+        }
+        return litByCursor(row, col)
+    }
+
+    private fun litByCursor(row: Int, col: Int): Boolean = when (val current = state) {
         // A whole row lights up before it is entered.
         is ScanState.Row -> current.row == row
         is ScanState.Cell -> current.row == row && current.col == col
@@ -874,15 +1115,24 @@ class ScanController(
     }
 
     private fun refreshSuggestions() {
+        // Three while sí and no hold their own keys; five once those two cells
+        // have been lent to prediction.
+        val wanted = if (yesNoOnGrid) {
+            SUGGESTION_SLOTS
+        } else {
+            SUGGESTION_SLOTS + EXTRA_SUGGESTION_SLOTS
+        }
+
         // A few more than needed, because some get dropped just below.
-        val offered = predictor.predict(text, SUGGESTION_SLOTS + 2)
+        val offered = predictor.predict(text, wanted + 2)
         suggestions = offered
-            // Sí and no have their own keys, so spending a suggestion slot on
-            // them would waste one of the three most valuable cells.
-            .filterNot { Words.fold(it) in alreadyOnGrid() }
+            // Only worth dropping while sí and no are actually on the grid. Once
+            // they are not, they are ordinary words she may well want, and
+            // refusing to offer them would be refusing her two common answers.
+            .filterNot { yesNoOnGrid && Words.fold(it) in alreadyOnGrid() }
             // Upper case throughout, to match the letter keys.
             .map { it.uppercase() }
-            .take(SUGGESTION_SLOTS)
+            .take(wanted)
     }
 
     companion object {
@@ -906,6 +1156,9 @@ class ScanController(
 
         /** Beyond this the first letter feels stuck rather than generous. */
         const val MAX_FIRST_CELL_EXTRA_MS = 3000L
+
+        /** The suggestions, yes, no and the phrases key all live on row 0. */
+        private const val SUGGESTION_ROW = 0
 
         private const val MAX_HISTORY = 100
 
