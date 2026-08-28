@@ -239,3 +239,25 @@ matches most of the dictionary.
 
 Also: the sentence can be set in bold now, which is the one thing on screen read
 by somebody else, from further away.
+
+## Her own phrases, and a full phrases grid (2026-08-28)
+
+Eloi replaced four of the shipped phrases with hers — *L'aigua* rather than
+*tinc set*, because she does not drink water; *vull anar al jardí*, *vull anar
+al menjador*, *em trobo malament* — and added *bon dia* and *aviseu a les meves
+filles*.
+
+TORNA stopped being a bar across the whole top and became the first cell. It was
+the easiest thing on the screen to hit, which is the wrong thing to spend a
+whole row on: leaving is the one action the undo switch can also do, and every
+row spent on it is a row of phrases she cannot see. Fourteen phrases plus TORNA
+is fifteen cells, which is five full rows of three, so every button is now the
+same size. A test fails if a future default list stops dividing by three.
+
+**Changing the defaults alone would have done nothing.** The phrases live in an
+editable file, seeded once and never overwritten, which is correct — a helper's
+edits must survive an update. So `RetiredPhrases` holds every list the app has
+ever shipped, and an update rewrites the file only when it still matches one of
+them word for word, which is proof nobody has touched it. One phrase changed and
+it is somebody's work and is left alone. Add the outgoing list there whenever
+the defaults change again.

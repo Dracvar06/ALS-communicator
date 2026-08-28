@@ -282,7 +282,16 @@ class MainActivity : ComponentActivity() {
         val lines = runCatching { phrasesFile.readLines() }.getOrNull()
             ?.map { it.trim() }
             ?.filter { it.isNotEmpty() }
-        return if (lines.isNullOrEmpty()) fallback else lines
+        if (lines.isNullOrEmpty()) return fallback
+
+        // An untouched file is still the app's own old list rather than
+        // anybody's choices, so an update is allowed to replace it. An edited
+        // one never is. See [RetiredPhrases].
+        if (RetiredPhrases.neverEdited(lines)) {
+            runCatching { phrasesFile.writeText(fallback.joinToString("\n")) }
+            return fallback
+        }
+        return lines
     }
 
     /**

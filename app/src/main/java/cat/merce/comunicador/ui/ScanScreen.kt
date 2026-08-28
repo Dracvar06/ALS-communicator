@@ -379,14 +379,16 @@ private fun BoxScope.GridContent(controller: ScanController, arrows: Boolean) {
         )
     }
 
-    Row(
-        modifier = Modifier.align(Alignment.TopEnd),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        BatteryReadout(controller)
-        // Settings is reached from the writing grid only, as before; the
-        // phrases screen keeps its corner clear for the phrase in it.
-        if (!controller.inPhrases) {
+    // Neither of these on the phrases screen. The writing grid has an empty
+    // corner above the text box to put them in; the phrases screen is cells
+    // edge to edge, and the top right one held a phrase to read. The charge is
+    // one press away on the writing grid, which is where she starts and ends.
+    if (!controller.inPhrases) {
+        Row(
+            modifier = Modifier.align(Alignment.TopEnd),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BatteryReadout(controller)
             SettingsCornerButton(onOpen = controller::openSettings)
         }
     }

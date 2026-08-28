@@ -261,10 +261,11 @@ class ScanControllerTest {
         c.onSpeak = { spoken = it }
 
         c.openPhrasesByScanning()
-        // Row 0 is TORNA; row 1 is the first phrase.
-        c.tick()          // move to row 1
-        c.press()         // enter row 1
-        c.press()         // choose the phrase
+        // TORNA is the first cell of row 0 and the phrases follow it, so the
+        // first phrase is the second cell of the same row.
+        c.press()         // enter row 0
+        c.tick()          // move along to the phrase
+        c.press()         // choose it
         assertEquals("tinc set", spoken)
         assertTrue(c.inPhrases)
     }
@@ -273,9 +274,24 @@ class ScanControllerTest {
     fun `TORNA returns to writing`() {
         val c = ScanController()
         c.openPhrasesByScanning()
-        c.press()   // enter row 0 (TORNA)
-        c.press()   // choose TORNA
+        c.press()   // enter row 0
+        c.press()   // choose its first cell, which is TORNA
         assertFalse(c.inPhrases)
+    }
+
+    @Test
+    fun `the phrases screen wastes no cell on its own layout`() {
+        // TORNA is one cell among the phrases rather than a bar of its own.
+        // Written down because it is the kind of thing that gets quietly
+        // reverted by anyone tidying the grid: a full-width row here is a row
+        // of phrases she cannot see.
+        val c = ScanController()
+        c.setPhrases(listOf("una", "dues", "tres", "quatre", "cinc"))
+        c.openPhrasesByScanning()
+
+        assertEquals(Key.Back, c.rows[0][0])
+        assertEquals(2, c.rows.size)
+        assertEquals(3, c.rows[0].size)
     }
 
     @Test

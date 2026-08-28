@@ -55,15 +55,17 @@ const val SUGGESTION_SLOTS = 3
 const val EXTRA_SUGGESTION_SLOTS = 2
 
 /**
- * Lays the phrases out as a scannable grid: a full-width TORNA to leave, then
- * the phrases three to a row. Built at runtime because the phrases are editable.
+ * Lays the phrases out as a scannable grid, three to a row, with the way back
+ * as the first cell. Built at runtime because the phrases are editable.
+ *
+ * TORNA used to be a bar across the whole top. It was the easiest thing on the
+ * screen to hit, which is the wrong thing to spend a whole row on: leaving is
+ * the one action she can also do with the undo switch, and every row this
+ * screen spends on it is a row of phrases she cannot see. It keeps the first
+ * cell — still the quickest place the scan reaches — and gives back the rest.
  */
-fun phrasesKeyboard(phrases: List<String>): List<List<Key>> {
-    val rows = mutableListOf<List<Key>>(listOf(Key.Back))
-    phrases.chunked(PHRASES_PER_ROW).forEach { chunk ->
-        rows += chunk.map { Key.Phrase(it) }
-    }
-    return rows
-}
+fun phrasesKeyboard(phrases: List<String>): List<List<Key>> =
+    (listOf(Key.Back) + phrases.map { Key.Phrase(it) })
+        .chunked(PHRASES_PER_ROW)
 
 private const val PHRASES_PER_ROW = 3
