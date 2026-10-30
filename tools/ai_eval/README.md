@@ -26,5 +26,16 @@ n-gram words the model may reorder.
 | Gemma 3 1B, blended | 52.0% | ~2 s per keystroke: too slow for a tablet |
 | Gemma 3 1B, once per finished word | 51.2–51.8% | ~330 ms per word, then instant |
 
+```mermaid
+xychart-beta
+    title "Presses saved on the test sentences (%)"
+    x-axis ["n-gram", "270M blend", "270M alone", "Qwen 0.5B", "1B blend", "1B per word"]
+    y-axis "presses saved (%)" 0 --> 60
+    bar [49.9, 50.9, 40.6, 49.6, 52.0, 51.5]
+```
+
+The axis starts at zero on purpose: the gains are small and the chart should
+look it. "1B per word" is the middle of its 51.2–51.8% range.
+
 Small gains, and 30 test sentences is few, so part of any one-point
 difference may be chance. Full tables in `results-*.json`.
