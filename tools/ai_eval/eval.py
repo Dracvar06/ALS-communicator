@@ -10,6 +10,7 @@ each space is one press (one selection on the grid).
     .venv/bin/python -I eval.py [sentences_ca.txt]
 """
 import json
+import os
 import sys
 import time
 import unicodedata
@@ -21,11 +22,9 @@ from tokenizers import Tokenizer
 
 HERE = Path(__file__).resolve().parent
 ASSET = HERE.parent.parent / "app/src/main/assets/ca-model.txt"
-import os
-
 MODEL_NAME = os.environ.get("AI_MODEL", "gemma3-270m")  # a folder in models/
 MODEL = HERE / "models" / MODEL_NAME
-POOL = 30  # n-gram candidates the AI model is allowed to reorder
+POOL = int(os.environ.get("AI_POOL", "30"))  # n-gram candidates the AI model may reorder
 OPENERS = ["vull", "necessito", "ajuda", "gràcies", "si us plau", "aigua", "dolor", "lavabo",
            "menjar", "fred", "calor", "cansada", "espera", "para", "hola", "estic", "tinc",
            "puc", "on", "què"]
@@ -86,7 +85,9 @@ def ngram(context, limit):
 tok = Tokenizer.from_file(str(MODEL / "tokenizer.json"))
 config = json.loads((MODEL / "config.json").read_text())
 opts = ort.SessionOptions()
-opts.intra_op_num_threads = 2  # roughly what an old tablet can spare
+# 2 is roughly what an old tablet can spare; for measuring quality only,
+# AI_THREADS=0 uses every core (speed then says nothing about a tablet)
+opts.intra_op_num_threads = int(os.environ.get("AI_THREADS", "2"))
 onnx_file = next(MODEL / "onnx" / f for f in ("model_int8.onnx", "model_q4.onnx") if (MODEL / "onnx" / f).exists())
 sess = ort.InferenceSession(str(onnx_file), opts)
 inputs = {i.name: i for i in sess.get_inputs()}
@@ -144,14 +145,18 @@ def score_words(context_words, cands):
         batch[j, : len(s)] = s
         mask[j, len(ids): len(ids) + len(s)] = 1
     if ONE_ROW_WITH_CACHE:
-        # this export can't batch on top of a cache: send context + word whole
-        full = np.concatenate([np.tile(np.array(ids, np.int64), (n, 1)), batch], axis=1)
-        empty_n = {k: np.zeros((n, kv_heads, 0, head_dim), np.float32) for k in kv_names}
-        lg, _ = run(full, mask, empty_n)
-        lg = lg[:, len(ids):]
-    else:
-        rep = {k: np.repeat(v, n, axis=0) for k, v in past.items()}
-        lg, _ = run(batch, mask, rep)
+        # this export can't batch on top of a cache, so one candidate at a
+        # time, each on top of the context's cache, scored as it comes
+        scores = []
+        for sq in seqs:
+            out, _ = run(np.array([sq], np.int64), np.ones((1, len(ids) + len(sq)), np.int64), past)
+            lpj = logsoftmax(out[0])
+            total = first[sq[0]] + sum(lpj[k - 1, sq[k]] for k in range(1, len(sq)))
+            total += np.log(np.exp(lpj[len(sq) - 1])[boundary].sum() + 1e-12)
+            scores.append(total)
+        return dict(zip(cands, scores))
+    rep = {k: np.repeat(v, n, axis=0) for k, v in past.items()}
+    lg, _ = run(batch, mask, rep)
     lp = logsoftmax(lg)
     scores = []
     for j, s in enumerate(seqs):

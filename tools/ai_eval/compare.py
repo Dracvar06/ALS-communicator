@@ -13,12 +13,20 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))  # run with -I, which leaves the script's folder off the path
 import eval as ev  # noqa: E402
 
-CACHE = HERE / f"scores-{ev.MODEL_NAME}.json"
+CACHE = HERE / f"scores-{ev.MODEL_NAME}{'' if ev.POOL == 30 else f'-pool{ev.POOL}'}.json"
 
 
 def collect():
     if CACHE.exists():
         return json.loads(CACHE.read_text())
+    wider = HERE / f"scores-{ev.MODEL_NAME}.json"
+    if ev.POOL < 30 and wider.exists():
+        # already scored with a pool of 30: the top POOL of it is the same list
+        rows = json.loads(wider.read_text())
+        for r in rows:
+            for q in r["queries"]:
+                q["pool"] = q["pool"][: ev.POOL]
+        return rows
     sentences = [l.split() for l in (HERE / "sentences_ca.txt").read_text().splitlines() if l.strip()]
     rows = []
     for si, ws in enumerate(sentences):
@@ -98,7 +106,7 @@ def main():
         print(f"{name:45} {a:.1%}  {b:.1%}{'   <- best on tune' if name == best else ''}")
     out = {"tune_sentences": len({r['s'] for r in tune}), "test_sentences": len({r['s'] for r in test}),
            "best": best, "results": {n: {"tune": round(a, 3), "test": round(b, 3)} for n, (a, b) in results.items()}}
-    (HERE / f"compare-{ev.MODEL_NAME}.json").write_text(json.dumps(out, indent=1))
+    (HERE / f"compare-{ev.MODEL_NAME}-pool{ev.POOL}.json").write_text(json.dumps(out, indent=1))
 
 
 if __name__ == "__main__":
