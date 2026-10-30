@@ -17,10 +17,12 @@ EVAL=tools/ai_eval
 MODEL=$EVAL/models/gemma3-270m
 REPO=https://huggingface.co/onnx-community/gemma-3-270m-ONNX/resolve/main
 
-if [ ! -d "$EVAL/.venv" ]; then
+# Checked by importing, not by the folder existing: an install cut short by
+# the network leaves the folder behind with nothing usable in it.
+if ! "$EVAL/.venv/bin/python" -c "import onnxruntime, tokenizers, numpy, onnx" 2>/dev/null; then
     echo "Making a Python environment for the tools..."
     python3 -m venv "$EVAL/.venv"
-    "$EVAL/.venv/bin/pip" install -q onnxruntime tokenizers numpy onnx
+    "$EVAL/.venv/bin/pip" install -q --retries 5 --timeout 60 onnxruntime tokenizers numpy onnx
 fi
 
 mkdir -p "$MODEL/onnx"
