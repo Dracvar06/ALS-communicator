@@ -3,7 +3,13 @@ package cat.merce.comunicador.ui
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import android.os.Handler
+import android.util.Log
+import android.os.Looper
+import android.os.SystemClock
+import cat.merce.comunicador.prediction.AiBlend
 import cat.merce.comunicador.prediction.NgramPredictor
+import cat.merce.comunicador.prediction.WordScorer
 import cat.merce.comunicador.prediction.Predictor
 import cat.merce.comunicador.prediction.WordListPredictor
 import cat.merce.comunicador.prediction.Words
@@ -14,6 +20,8 @@ import cat.merce.comunicador.scan.ScanLayout
 import cat.merce.comunicador.scan.ScanState
 import cat.merce.comunicador.scan.Scanner
 import cat.merce.comunicador.scan.SelectResult
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Joins the scan machine to the screen.
@@ -54,6 +62,7 @@ class ScanController(
     initialArrowShape: ArrowShape = ArrowShape.Separate,
     initialForgiveMistakes: Boolean = true,
     initialBoldWriting: Boolean = true,
+    initialAiSuggestions: Boolean = false,
 ) {
 
     /**
@@ -254,6 +263,44 @@ class ScanController(
      * the grid is usable the instant the app opens.
      */
     private var predictor: Predictor = WordListPredictor()
+
+    /**
+     * The AI build's language model, once a carer has turned it on and it has
+     * loaded. Null otherwise, and null is the app exactly as it always was:
+     * the n-gram suggestions, computed here, shown at once.
+     *
+     * The model never runs on this thread. It gets its own, and its answer is
+     * used only if it arrives quickly and nothing she might be choosing from
+     * would move under her (see [applyAi]).
+     */
+    private var aiScorer: WordScorer? = null
+    // Both made only once the AI is first used, so the standard build, and
+    // the unit tests running on a laptop, never create them.
+    private val aiWorker by lazy {
+        Executors.newSingleThreadExecutor { work ->
+            Thread(work, "ai-suggestions").apply {
+                isDaemon = true
+                // Below the thread drawing the cursor, which must never wait.
+                priority = Thread.MIN_PRIORITY
+            }
+        }
+    }
+    private val mainThread by lazy { Handler(Looper.getMainLooper()) }
+
+    /** Bumped on every keystroke, so an answer to an older text is dropped. */
+    private val aiRequest = AtomicLong()
+    private var aiLateInARow = 0
+    private var aiAnswered = 0
+
+    /** Called when the model was too slow too often and has switched itself off. */
+    var onAiTooSlow: (() -> Unit)? = null
+
+    fun useAiScorer(scorer: WordScorer?) {
+        aiScorer = scorer
+        aiLateInARow = 0
+        aiAnswered = 0
+        refreshSuggestions()
+    }
 
     /** Called when she finishes a word, so it can be remembered. */
     var onWordFinished: ((previous: String, word: String) -> Unit)? = null
@@ -1023,6 +1070,25 @@ class ScanController(
         onBoldWritingChanged?.invoke(enabled)
     }
 
+    /**
+     * Whether the AI build's language model reorders the suggestions. Off on a
+     * fresh install, and only ever offered in the AI build. This is what the
+     * carer chose; whether the model is actually running is [aiStatus].
+     */
+    var aiSuggestions: Boolean by mutableStateOf(initialAiSuggestions)
+        private set
+
+    var onAiSuggestionsChanged: ((Boolean) -> Unit)? = null
+
+    fun useAiSuggestions(enabled: Boolean) {
+        if (enabled == aiSuggestions) return
+        aiSuggestions = enabled
+        onAiSuggestionsChanged?.invoke(enabled)
+    }
+
+    /** What the AI is doing, for the line under the setting. */
+    var aiStatus: AiStatus by mutableStateOf(AiStatus.Off)
+
     /** The word shown on a cell right now, in the current language. */
     fun label(key: Key): String = when (key) {
         is Key.Suggestion -> suggestions.getOrElse(key.slot) { "" }
@@ -1125,7 +1191,12 @@ class ScanController(
 
         // A few more than needed, because some get dropped just below.
         val offered = predictor.predict(text, wanted + 2)
-        suggestions = offered
+        suggestions = shown(offered, wanted)
+        askAi(wanted)
+    }
+
+    private fun shown(offered: List<String>, wanted: Int): List<String> =
+        offered
             // Only worth dropping while sí and no are actually on the grid. Once
             // they are not, they are ordinary words she may well want, and
             // refusing to offer them would be refusing her two common answers.
@@ -1133,6 +1204,81 @@ class ScanController(
             // Upper case throughout, to match the letter keys.
             .map { it.uppercase() }
             .take(wanted)
+
+    /**
+     * Asks the model to reorder a longer n-gram list, in the background. The
+     * n-gram suggestions are already on screen by now; this can only improve
+     * their order a moment later, or do nothing.
+     */
+    private fun askAi(wanted: Int) {
+        val request = aiRequest.incrementAndGet()
+        val scorer = aiScorer ?: return
+        // At the start of a message the hand-picked openers do better.
+        if (!AiBlend.worthAsking(text)) return
+        val asked = text
+        // Read here, not on the model's thread: the n-gram is built to be fast
+        // on this thread, and her personal model is only ever touched from it.
+        val pool = predictor.predict(asked, AI_POOL)
+        if (pool.size < 2) return
+        val previous = AiBlend.previousWords(asked)
+        // Her own words lead the n-gram list; they keep their places.
+        val mine = (predictor as? NgramPredictor)?.personal?.words()?.toHashSet().orEmpty()
+        val keepFirst = pool.takeWhile { it.lowercase() in mine }.size
+        val askedAt = SystemClock.uptimeMillis()
+        aiWorker.execute {
+            // Already typed past this? Then nobody will ever see the answer.
+            if (aiRequest.get() != request) return@execute
+            val scores = runCatching { scorer.score(previous, pool) }.getOrNull()
+            mainThread.post { applyAi(request, asked, askedAt, pool, scores, keepFirst, wanted) }
+        }
+    }
+
+    /**
+     * Uses the model's answer only when it is safe to move the words:
+     *
+     *  - it is for the text on screen now, not one she has typed past;
+     *  - it came within [AI_BUDGET_MS] of the press, so the words change while
+     *    she is still taking in the press, not while she is reading them;
+     *  - the highlight is not inside the suggestion row, where a word could
+     *    move out from under her just as she picks it.
+     *
+     * Too slow too often and the model switches itself off for good, leaving
+     * the n-gram as it always was. A device that cannot keep up is never made
+     * worse than one without the AI at all.
+     */
+    private fun applyAi(
+        request: Long,
+        asked: String,
+        askedAt: Long,
+        pool: List<String>,
+        scores: Map<String, Double>?,
+        keepFirst: Int,
+        wanted: Int,
+    ) {
+        if (aiScorer == null || aiRequest.get() != request || text != asked) return
+        val tookMs = SystemClock.uptimeMillis() - askedAt
+        val late = tookMs > AI_BUDGET_MS
+        // Readable with adb logcat -s ai-suggestions, to see how a device copes.
+        Log.d("ai-suggestions", "answered in $tookMs ms${if (late) ", too late, ignored" else ""}")
+        // The first answers include the model warming up; they do not count.
+        val warmingUp = aiAnswered++ < AI_WARM_UP
+        if (scores == null || late) {
+            if (!warmingUp && ++aiLateInARow >= AI_LATE_LIMIT) {
+                aiScorer = null
+                onAiTooSlow?.invoke()
+            }
+            return
+        }
+        aiLateInARow = 0
+        // Direct touch has no highlight (its state always reads as the first
+        // cell); there, the time budget alone keeps a touch from landing on a
+        // word that has just moved, since reading a word takes longer.
+        val onSuggestionRow = inputMode != InputMode.Direct && when (val at = state) {
+            is ScanState.Cell -> at.row == SUGGESTION_ROW
+            is ScanState.Row -> false
+        }
+        if (onSuggestionRow) return
+        suggestions = shown(AiBlend.reorder(pool, scores, keepFirst), wanted)
     }
 
     companion object {
@@ -1159,6 +1305,21 @@ class ScanController(
 
         /** The suggestions, yes, no and the phrases key all live on row 0. */
         private const val SUGGESTION_ROW = 0
+
+        /** How many n-gram words the model may reorder. */
+        private const val AI_POOL = 15
+
+        /**
+         * An answer later than this after the press is thrown away. Half a
+         * second is about when she has looked up from the letter she chose.
+         */
+        const val AI_BUDGET_MS = 500L
+
+        /** This many late answers in a row and the model switches itself off. */
+        private const val AI_LATE_LIMIT = 8
+
+        /** Answers not counted while the model warms up. */
+        private const val AI_WARM_UP = 3
 
         private const val MAX_HISTORY = 100
 

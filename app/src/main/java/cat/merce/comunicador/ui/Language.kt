@@ -108,6 +108,10 @@ class Language(
 
     val settingsForgiveTitle: String,
     val settingsForgiveDetail: String,
+    val settingsAiTitle: String,
+    val settingsAiDetail: String,
+    /** One line under the AI setting, per [AiStatus]. */
+    val settingsAiStatus: (AiStatus) -> String,
     val settingsBoldWritingTitle: String,
     val settingsBoldWritingDetail: String,
     val settingsArrowShapeTitle: String,
@@ -243,6 +247,18 @@ val CATALAN = Language(
     sectionDeviceDetail = "Es configura un cop, en preparar l'aparell, i no s'hi torna.",
     settingsForgiveTitle = "Perdona les errades",
     settingsForgiveDetail = "Si es repeteix una lletra sense voler, o se n'escapa una, les paraules segueixen sortint. Les que encaixen exactament surten sempre primer.",
+    settingsAiTitle = "Suggeriments amb IA (experimental)",
+    settingsAiDetail = "Un petit model de llenguatge, dins la tauleta i sense internet, reordena les paraules suggerides segons el que s'ha escrit. Les paraules són les mateixes; només en canvia l'ordre. Si la tauleta no és prou ràpida, s'apaga sol.",
+    settingsAiStatus = { status ->
+        when (status) {
+            AiStatus.Off -> "Apagat."
+            AiStatus.Loading -> "Carregant… La primera vegada triga una mica."
+            AiStatus.On -> "Funcionant."
+            AiStatus.NotEnoughMemory -> "Aquesta tauleta no té prou memòria. Els suggeriments normals funcionen igual."
+            AiStatus.Failed -> "No s'ha pogut carregar. Els suggeriments normals funcionen igual."
+            AiStatus.TooSlow -> "S'ha apagat sol: aquesta tauleta era massa lenta. Els suggeriments normals funcionen igual."
+        }
+    },
     settingsBoldWritingTitle = "Frase en negreta",
     settingsBoldWritingDetail = "La frase que escriu, més gruixuda, per llegir-la de lluny.",
     settingsArrowShapeTitle = "Com es veuen les fletxes",
@@ -529,6 +545,18 @@ val ENGLISH = Language(
     sectionDeviceDetail = "Set once, while preparing the device, and then left alone.",
     settingsForgiveTitle = "Forgive mistakes",
     settingsForgiveDetail = "If a letter lands twice, or not at all, words still come up. Exact matches always come first.",
+    settingsAiTitle = "AI suggestions (experimental)",
+    settingsAiDetail = "A small language model, on the tablet and with no internet, reorders the suggested words using what has been written. The words are the same; only their order changes. If the tablet is not fast enough, it turns itself off.",
+    settingsAiStatus = { status ->
+        when (status) {
+            AiStatus.Off -> "Off."
+            AiStatus.Loading -> "Loading… The first time takes a little while."
+            AiStatus.On -> "Working."
+            AiStatus.NotEnoughMemory -> "This tablet does not have enough memory. The normal suggestions work as before."
+            AiStatus.Failed -> "It could not be loaded. The normal suggestions work as before."
+            AiStatus.TooSlow -> "It turned itself off: this tablet was too slow. The normal suggestions work as before."
+        }
+    },
     settingsBoldWritingTitle = "Sentence in bold",
     settingsBoldWritingDetail = "The sentence she is writing, heavier, to be read from across a room.",
     settingsArrowShapeTitle = "How the arrows look",
@@ -817,6 +845,18 @@ val SPANISH = Language(
     sectionDeviceDetail = "Se configura una vez, al preparar el aparato, y no se vuelve.",
     settingsForgiveTitle = "Perdona los errores",
     settingsForgiveDetail = "Si una letra se repite sin querer, o se escapa, las palabras siguen saliendo. Las que encajan exactamente salen siempre primero.",
+    settingsAiTitle = "Sugerencias con IA (experimental)",
+    settingsAiDetail = "Un pequeño modelo de lenguaje, dentro de la tableta y sin internet, reordena las palabras sugeridas según lo escrito. Las palabras son las mismas; solo cambia su orden. Si la tableta no es lo bastante rápida, se apaga sola.",
+    settingsAiStatus = { status ->
+        when (status) {
+            AiStatus.Off -> "Apagado."
+            AiStatus.Loading -> "Cargando… La primera vez tarda un poco."
+            AiStatus.On -> "Funcionando."
+            AiStatus.NotEnoughMemory -> "Esta tableta no tiene suficiente memoria. Las sugerencias normales funcionan igual."
+            AiStatus.Failed -> "No se ha podido cargar. Las sugerencias normales funcionan igual."
+            AiStatus.TooSlow -> "Se ha apagado sola: esta tableta era demasiado lenta. Las sugerencias normales funcionan igual."
+        }
+    },
     settingsBoldWritingTitle = "Frase en negrita",
     settingsBoldWritingDetail = "La frase que escribe, más gruesa, para leerla de lejos.",
     settingsArrowShapeTitle = "Cómo se ven las flechas",

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import cat.merce.comunicador.ai.AiEngine
 import cat.merce.comunicador.BuildConfig
 import cat.merce.comunicador.input.Switch
 import cat.merce.comunicador.input.SwitchFilter
@@ -1740,6 +1741,21 @@ private fun SettingsPanel(controller: ScanController) {
                 titleSize = title,
                 detailSize = detail,
             )
+
+            // Only the AI build has a model to offer; the standard build shows
+            // nothing here at all.
+            if (AiEngine.AVAILABLE) {
+                Spacer(Modifier.height(gap))
+                SettingSwitch(
+                    title = controller.language.settingsAiTitle,
+                    detail = controller.language.settingsAiDetail + "\n" +
+                        controller.language.settingsAiStatus(controller.aiStatus),
+                    checked = controller.aiSuggestions,
+                    onChange = { controller.useAiSuggestions(it) },
+                    titleSize = title,
+                    detailSize = detail,
+                )
+            }
 
             // ----------------------------------------------------------------
             // Switches and controllers
