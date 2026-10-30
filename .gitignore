@@ -19,3 +19,13 @@ __pycache__/
 *.jks
 *.keystore
 keystore.properties
+
+# The AI build's model, about 450 MB: too big for git. Fetched by
+# tools/fetch_ai_model.sh into the ai flavour's assets.
+/app/src/ai/assets/ai-model/
+/tools/ai_eval/.venv/
+/tools/ai_eval/models/
+/tools/ai_eval/scores-*.json
+/tools/ai_eval/phrases-*.json
+/tools/ai_eval/compare-*.json
+/tools/ai_eval/results.json

@@ -16,7 +16,7 @@ AVD="merce_tablet"
 cd "$(dirname "$0")"
 
 echo "Building..."
-./gradlew :app:assembleDebug -q
+./gradlew :app:assembleStandardDebug -q
 
 # Prefer a real device (phone or tablet) plugged in over the emulator.
 DEVICE=$("$ADB" devices | awk '$2=="device" && $1!~/emulator/ {print $1; exit}')
@@ -34,7 +34,7 @@ fi
 echo "Using device: $DEVICE"
 
 echo "Installing..."
-"$ADB" -s "$DEVICE" install -r app/build/outputs/apk/debug/app-debug.apk >/dev/null
+"$ADB" -s "$DEVICE" install -r app/build/outputs/apk/standard/debug/app-standard-debug.apk >/dev/null
 "$ADB" -s "$DEVICE" shell am start -n cat.merce.comunicador/.ui.MainActivity >/dev/null
 
 echo "Running. Click the tablet window, then press the spacebar."
