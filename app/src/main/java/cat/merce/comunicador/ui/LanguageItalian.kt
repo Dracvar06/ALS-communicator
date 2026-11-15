@@ -113,6 +113,8 @@ val ITALIAN = Language(
     },
     settingsBoldWritingTitle = "Frase in grassetto",
     settingsBoldWritingDetail = "La frase che si sta scrivendo, più spessa, per leggerla da lontano.",
+    settingsVowelsTitle = "Vocali colorate",
+    settingsVowelsDetail = "Le vocali di un altro colore, per trovarle a colpo d'occhio.",
     settingsArrowShapeTitle = "Come si vedono le frecce",
     settingsArrowShapeDetail = "Separate, ogni freccia ha il suo pulsante e si vede fin dove arriva. Unite, si vedono come un unico pezzo. Ciò che risponde al tocco è uguale nei due casi.",
     settingsArrowShapeJoined = "Unite",

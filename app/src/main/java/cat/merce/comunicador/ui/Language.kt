@@ -30,6 +30,9 @@ class Language(
      */
     val experimental: Boolean = false,
 
+    /** The letter keys tinted when vowel colours are on. */
+    val vowels: Set<String> = setOf("A", "E", "I", "O", "U"),
+
     /** The prediction model in app assets, built by tools/build_model.py. */
     val modelAsset: String,
 
@@ -124,6 +127,8 @@ class Language(
     val settingsAiStatus: (AiStatus) -> String,
     val settingsBoldWritingTitle: String,
     val settingsBoldWritingDetail: String,
+    val settingsVowelsTitle: String,
+    val settingsVowelsDetail: String,
     val settingsArrowShapeTitle: String,
     val settingsArrowShapeDetail: String,
     val settingsArrowShapeJoined: String,
@@ -275,6 +280,8 @@ val CATALAN = Language(
     },
     settingsBoldWritingTitle = "Frase en negreta",
     settingsBoldWritingDetail = "La frase que s'està escrivint, més gruixuda, per llegir-la de lluny.",
+    settingsVowelsTitle = "Vocals en color",
+    settingsVowelsDetail = "Les vocals, d'un altre color, per trobar-les d'un cop d'ull.",
     settingsArrowShapeTitle = "Com es veuen les fletxes",
     settingsArrowShapeDetail = "Separades, cada fletxa té el seu botó i es veu fins on arriba. En creu es veuen com una sola peça. El que es pot tocar és igual en els dos casos.",
     settingsArrowShapeJoined = "En creu",
@@ -633,6 +640,8 @@ val ENGLISH = Language(
     },
     settingsBoldWritingTitle = "Sentence in bold",
     settingsBoldWritingDetail = "The sentence being written, heavier, to be read from across a room.",
+    settingsVowelsTitle = "Coloured vowels",
+    settingsVowelsDetail = "The vowels in another colour, to find them at a glance.",
     settingsArrowShapeTitle = "How the arrows look",
     settingsArrowShapeDetail = "Separate gives each arrow its own button, so its size is visible. Joined draws them as one shape. What answers to a tap is the same either way.",
     settingsArrowShapeJoined = "Joined",
@@ -987,6 +996,8 @@ val SPANISH = Language(
     },
     settingsBoldWritingTitle = "Frase en negrita",
     settingsBoldWritingDetail = "La frase que se está escribiendo, más gruesa, para leerla de lejos.",
+    settingsVowelsTitle = "Vocales en color",
+    settingsVowelsDetail = "Las vocales, de otro color, para encontrarlas de un vistazo.",
     settingsArrowShapeTitle = "Cómo se ven las flechas",
     settingsArrowShapeDetail = "Separadas, cada flecha tiene su botón y se ve hasta dónde llega. En cruz se ven como una sola pieza. Lo que se puede tocar es igual en los dos casos.",
     settingsArrowShapeJoined = "En cruz",

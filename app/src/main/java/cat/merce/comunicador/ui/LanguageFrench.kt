@@ -113,6 +113,8 @@ val FRENCH = Language(
     },
     settingsBoldWritingTitle = "Phrase en gras",
     settingsBoldWritingDetail = "La phrase en cours d'écriture, en plus épais, pour la lire de loin.",
+    settingsVowelsTitle = "Voyelles en couleur",
+    settingsVowelsDetail = "Les voyelles d'une autre couleur, pour les trouver d'un coup d'œil.",
     settingsArrowShapeTitle = "Aspect des flèches",
     settingsArrowShapeDetail = "Séparées, chaque flèche a son propre bouton et on voit jusqu'où il s'étend. Réunies, elles forment une seule figure. Ce qui répond au toucher est identique dans les deux cas.",
     settingsArrowShapeJoined = "Réunies",

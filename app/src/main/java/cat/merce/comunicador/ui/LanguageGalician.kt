@@ -112,6 +112,8 @@ val GALICIAN = Language(
     },
     settingsBoldWritingTitle = "Frase en negriña",
     settingsBoldWritingDetail = "A frase que escribe a persoa, máis grosa, para lela de lonxe.",
+    settingsVowelsTitle = "Vogais en cor",
+    settingsVowelsDetail = "As vogais, doutra cor, para atopalas dunha ollada.",
     settingsArrowShapeTitle = "Como se ven as frechas",
     settingsArrowShapeDetail = "Separadas, cada frecha ten o seu botón e vese ata onde chega. En cruz vense como unha soa peza. O que responde ao toque é igual nos dous casos.",
     settingsArrowShapeJoined = "En cruz",

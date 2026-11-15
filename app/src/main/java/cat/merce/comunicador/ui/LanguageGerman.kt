@@ -111,6 +111,8 @@ val GERMAN = Language(
     },
     settingsBoldWritingTitle = "Satz in Fettschrift",
     settingsBoldWritingDetail = "Der Satz, den die Person schreibt, in dickerer Schrift, damit man ihn aus der Ferne lesen kann.",
+    settingsVowelsTitle = "Farbige Vokale",
+    settingsVowelsDetail = "Die Vokale in einer anderen Farbe, damit man sie auf einen Blick findet.",
     settingsArrowShapeTitle = "Wie die Pfeile aussehen",
     settingsArrowShapeDetail = "Getrennt gibt jedem Pfeil eine eigene Taste, sodass man seine Größe sieht. Verbunden zeichnet sie als eine Form. Worauf eine Berührung reagiert, ist in beiden Fällen gleich.",
     settingsArrowShapeJoined = "Verbunden",

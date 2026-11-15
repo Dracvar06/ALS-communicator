@@ -114,6 +114,8 @@ val PORTUGUESE = Language(
     },
     settingsBoldWritingTitle = "Frase a negrito",
     settingsBoldWritingDetail = "A frase que está a ser escrita, mais grossa, para ler de longe.",
+    settingsVowelsTitle = "Vogais a cores",
+    settingsVowelsDetail = "As vogais noutra cor, para as encontrar num relance.",
     settingsArrowShapeTitle = "Aspeto das setas",
     settingsArrowShapeDetail = "Separadas, cada seta tem o seu botão e vê-se até onde chega. Juntas, desenham-se como uma só peça. O que responde ao toque é igual nos dois casos.",
     settingsArrowShapeJoined = "Juntas",

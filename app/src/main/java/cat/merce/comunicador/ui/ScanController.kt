@@ -62,6 +62,7 @@ class ScanController(
     initialArrowShape: ArrowShape = ArrowShape.Separate,
     initialForgiveMistakes: Boolean = true,
     initialBoldWriting: Boolean = true,
+    initialVowelColours: Boolean = false,
     initialAiSuggestions: Boolean = false,
 ) {
 
@@ -1278,6 +1279,27 @@ class ScanController(
         private set
 
     var onBoldWritingChanged: ((Boolean) -> Unit)? = null
+
+    /**
+     * Vowel keys in a tint of their own. The letters are in frequency order,
+     * so the vowels end up scattered across the rows; a tint shows at a glance
+     * which row holds the one wanted, which is the first decision in scanning.
+     * Off by default: whether it helps is for the person to find out, and a
+     * grid someone already knows should not change under them.
+     */
+    var vowelColours: Boolean by mutableStateOf(initialVowelColours)
+        private set
+
+    var onVowelColoursChanged: ((Boolean) -> Unit)? = null
+
+    fun useVowelColours(enabled: Boolean) {
+        if (enabled == vowelColours) return
+        vowelColours = enabled
+        onVowelColoursChanged?.invoke(enabled)
+    }
+
+    fun isVowel(key: Key): Boolean =
+        vowelColours && key is Key.Letter && key.char.uppercase() in language.vowels
 
     fun useBoldWriting(enabled: Boolean) {
         if (enabled == boldWriting) return

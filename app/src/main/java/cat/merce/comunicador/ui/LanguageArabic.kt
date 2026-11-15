@@ -4,6 +4,7 @@ package cat.merce.comunicador.ui
 
 val ARABIC = Language(
     code = "ar",
+    vowels = setOf("ا", "و", "ي"),
     experimentalLabel = "تجريبي",
     experimental = true,
     displayName = "العربية",
@@ -112,6 +113,8 @@ val ARABIC = Language(
     },
     settingsBoldWritingTitle = "الجملة بخط عريض",
     settingsBoldWritingDetail = "الجملة التي يكتبها الشخص، بخط أثخن، لتُقرأ من بعيد.",
+    settingsVowelsTitle = "أحرف المد بلون مختلف",
+    settingsVowelsDetail = "أحرف المد (ا و ي) بلون آخر، لإيجادها بنظرة واحدة.",
     settingsArrowShapeTitle = "شكل الأسهم",
     settingsArrowShapeDetail = "المنفصلة تعطي كل سهم زره الخاص، فيظهر حجمه. المتصلة ترسمها شكلا واحدا. ما يستجيب للمس هو نفسه في الحالتين.",
     settingsArrowShapeJoined = "متصلة",

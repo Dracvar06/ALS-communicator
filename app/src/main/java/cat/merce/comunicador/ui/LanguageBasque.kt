@@ -112,6 +112,8 @@ val BASQUE = Language(
     },
     settingsBoldWritingTitle = "Esaldia letra lodiz",
     settingsBoldWritingDetail = "Idazten ari den esaldia, lodiago, urrutitik irakurtzeko.",
+    settingsVowelsTitle = "Bokalak koloretan",
+    settingsVowelsDetail = "Bokalak beste kolore batean, begi-kolpe batez aurkitzeko.",
     settingsArrowShapeTitle = "Nolakoak diren geziak",
     settingsArrowShapeDetail = "Bananduta, gezi bakoitzak bere botoia du eta noraino iristen den ikusten da. Elkartuta, pieza bakar gisa ikusten dira. Ukituari erantzuten diona berdina da bi kasuetan.",
     settingsArrowShapeJoined = "Elkartuta",

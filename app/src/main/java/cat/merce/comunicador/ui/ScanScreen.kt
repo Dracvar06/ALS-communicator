@@ -65,6 +65,10 @@ import kotlin.math.roundToLong
 private val Background = Color(0xFF000000)
 private val CellIdle = Color(0xFF1F1F1F)
 private val CellLit = Color(0xFFD32F2F)
+
+// A dull blue: plainly different from the grey, but far quieter than the red
+// highlight, which must stay the brightest thing on the screen.
+private val CellVowel = Color(0xFF263A5C)
 private val Ink = Color(0xFFFFFFFF)
 private val DimInk = Color(0xFF9E9E9E)
 private val TextAreaBackground = Color(0xFF121212)
@@ -1623,6 +1627,7 @@ private fun WritingGrid(controller: ScanController) {
                     KeyCell(
                         label = controller.label(key),
                         lit = controller.isLit(rowIndex, colIndex),
+                        vowel = controller.isVowel(key),
                         modifier = Modifier.weight(1f).fillMaxHeight(),
                         onTap = if (direct) {
                             { controller.touchKey(rowIndex, colIndex) }
@@ -1981,6 +1986,17 @@ private fun SettingsPanel(controller: ScanController) {
                 detail = controller.language.settingsForgiveDetail,
                 checked = controller.forgiveMistakes,
                 onChange = { controller.useForgiveMistakes(it) },
+                titleSize = title,
+                detailSize = detail,
+            )
+
+            Spacer(Modifier.height(gap))
+
+            SettingSwitch(
+                title = controller.language.settingsVowelsTitle,
+                detail = controller.language.settingsVowelsDetail,
+                checked = controller.vowelColours,
+                onChange = { controller.useVowelColours(it) },
                 titleSize = title,
                 detailSize = detail,
             )
@@ -2425,12 +2441,17 @@ private fun KeyCell(
     onTap: (() -> Unit)? = null,
     debounceMs: Long = 0L,
     antiTremor: Boolean = false,
+    vowel: Boolean = false,
 ) {
     BoxWithConstraints(
         modifier = modifier
             .padding(4.dp)
             .background(
-                color = if (lit) CellLit else CellIdle,
+                color = when {
+                    lit -> CellLit
+                    vowel -> CellVowel
+                    else -> CellIdle
+                },
                 shape = RoundedCornerShape(10.dp)
             )
             .then(tapGuard(onTap, debounceMs, antiTremor)),
