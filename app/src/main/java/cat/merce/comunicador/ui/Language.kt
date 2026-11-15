@@ -1054,6 +1054,17 @@ fun languageForCode(code: String?): Language =
     LANGUAGES.firstOrNull { it.code == code } ?: CATALAN
 
 /**
+ * The language to start in. A saved choice always wins. Before there is one, on
+ * a fresh install, follow the tablet's own language, so a helper setting it up
+ * in English or Spanish reads the walkthrough in a language they understand.
+ * Anything the app does not ship falls back to Catalan.
+ *
+ * @param systemCode the tablet's language, such as "en" (Locale.getDefault().language).
+ */
+fun startingLanguage(savedCode: String?, systemCode: String): Language =
+    languageForCode(savedCode ?: systemCode)
+
+/**
  * Builds the writing grid for a language: the suggestions, yes, no and the
  * phrases key on the fastest row, then space and the letters below.
  *

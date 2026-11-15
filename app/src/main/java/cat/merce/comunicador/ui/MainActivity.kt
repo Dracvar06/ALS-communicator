@@ -118,7 +118,10 @@ class MainActivity : ComponentActivity() {
                 ScanController.DEFAULT_FIRST_CELL_EXTRA_MS
             ),
             initialAntiTremor = settings.getBoolean(KEY_ANTI_TREMOR, false),
-            initialLanguage = languageForCode(settings.getString(KEY_LANGUAGE, null)),
+            initialLanguage = startingLanguage(
+                settings.getString(KEY_LANGUAGE, null),
+                Locale.getDefault().language
+            ),
             initialLocked = settings.getBoolean(KEY_LOCKED, false),
             initialOpenOnBoot = settings.getBoolean(KEY_OPEN_ON_BOOT, false),
             initialInputMode = InputMode.fromCode(settings.getString(KEY_INPUT_MODE, null)),
@@ -238,6 +241,14 @@ class MainActivity : ComponentActivity() {
         if (settings.all.isEmpty()) {
             controller.openTutorial()
             settings.edit(commit = true) { putBoolean(KEY_TUTORIAL_SEEN, true) }
+        }
+
+        // Pin the starting language once it has been picked from the tablet's,
+        // so that changing the tablet's language later never switches her
+        // keyboard under her. Done after the fresh-install check above, which
+        // relies on the settings file still being empty.
+        if (!settings.contains(KEY_LANGUAGE)) {
+            settings.edit(commit = true) { putString(KEY_LANGUAGE, controller.language.code) }
         }
 
         // She cannot wake a sleeping tablet, so it must not sleep.
