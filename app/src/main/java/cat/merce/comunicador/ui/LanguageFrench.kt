@@ -314,6 +314,7 @@ val FRENCH = Language(
             "Toutes les réponses peuvent être modifiées plus tard dans les " +
                 "réglages (⚙, en haut à droite).",
         ),
+        phoneNotice = "Nous recommandons d'utiliser l'application sur une tablette plutôt que sur un téléphone : sur un petit écran, les touches sont trop petites pour être touchées et lues correctement.",
         start = "COMMENCER",
         methodTitle = "Comment la personne choisira-t-elle une lettre ?",
         methodHint = "Vous hésitez ? Commencez par ce qui demande le " +

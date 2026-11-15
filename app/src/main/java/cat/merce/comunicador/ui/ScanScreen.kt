@@ -1,5 +1,6 @@
 package cat.merce.comunicador.ui
 
+import androidx.compose.ui.platform.LocalConfiguration
 import android.os.SystemClock
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -627,6 +628,23 @@ private fun OnboardingPanel(controller: ScanController) {
             OnboardingStep.Welcome -> {
                 OnboardingTitle(text.welcomeTitle)
                 Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                    // Phone-sized screen: say so first. The keys on a phone are
+                    // too small for anyone who needs this app to hit reliably,
+                    // and the helper is the one who can still get a tablet.
+                    if (LocalConfiguration.current.smallestScreenWidthDp < 600) {
+                        Text(
+                            text = text.phoneNotice,
+                            color = Ink,
+                            fontFamily = Hyperlegible,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 24.sp,
+                            lineHeight = 32.sp,
+                            modifier = Modifier
+                                .padding(bottom = 20.dp)
+                                .background(CellLit, RoundedCornerShape(12.dp))
+                                .padding(horizontal = 20.dp, vertical = 14.dp)
+                        )
+                    }
                     for (line in text.welcomeLines) {
                         Row(modifier = Modifier.padding(bottom = 14.dp)) {
                             Text(

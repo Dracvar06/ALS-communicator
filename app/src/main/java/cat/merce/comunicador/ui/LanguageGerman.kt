@@ -311,6 +311,7 @@ val GERMAN = Language(
             "Jede Antwort lässt sich später in den Einstellungen ändern " +
                 "(⚙, oben rechts).",
         ),
+        phoneNotice = "Wir empfehlen, die App auf einem Tablet statt auf einem Handy zu nutzen: Auf einem kleinen Bildschirm sind die Tasten zu klein, um sie sicher zu treffen und zu lesen.",
         start = "LOS",
         methodTitle = "Wie wählt die Person einen Buchstaben?",
         methodHint = "Unsicher? Beginne mit dem, was der Person am wenigsten " +

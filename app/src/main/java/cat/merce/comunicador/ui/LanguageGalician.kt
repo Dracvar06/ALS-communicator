@@ -298,6 +298,7 @@ val GALICIAN = Language(
             "Todas as respostas poden cambiarse despois nos axustes (⚙, " +
                 "arriba á dereita).",
         ),
+        phoneNotice = "Recomendamos usar a aplicación nunha tableta, non nun móbil: nunha pantalla pequena as teclas son demasiado pequenas para acertalas e lelas ben.",
         start = "COMEZAR",
         methodTitle = "Como escollerá a persoa unha letra?",
         methodHint = "Se tes dúbidas, comeza pola opción que lle pida menos. Se " +

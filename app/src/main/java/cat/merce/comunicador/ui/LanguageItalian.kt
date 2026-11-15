@@ -309,6 +309,7 @@ val ITALIAN = Language(
             "Ogni risposta si può cambiare più tardi nelle impostazioni " +
                 "(⚙, in alto a destra).",
         ),
+        phoneNotice = "Consigliamo di usare l'app su un tablet e non su un telefono: su uno schermo piccolo i tasti sono troppo piccoli per essere toccati e letti bene.",
         start = "INIZIA",
         methodTitle = "Come sceglierà una lettera la persona?",
         methodHint = "Non sai quale? Parti da quello che chiede di " +

@@ -297,6 +297,7 @@ val BASQUE = Language(
             "Erantzun guztiak geroago alda daitezke ezarpenetan (⚙, goian " +
                 "eskuinean).",
         ),
+        phoneNotice = "Aplikazioa tableta batean erabiltzea gomendatzen dugu, ez mugikor batean: pantaila txiki batean teklak txikiegiak dira ondo sakatu eta irakurtzeko.",
         start = "HASI",
         methodTitle = "Nola aukeratuko du letra bat?",
         methodHint = "Ez zaude ziur? Hasi gutxien eskatzen diotenarekin. " +

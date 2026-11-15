@@ -468,6 +468,7 @@ val CATALAN = Language(
             "Totes les respostes es poden canviar després als ajustos (⚙, a " +
                 "dalt a la dreta).",
         ),
+        phoneNotice = "Recomanem fer servir l'aplicació en una tauleta, no en un mòbil: en una pantalla petita les tecles són massa petites per encertar-les i llegir-les bé.",
         start = "COMENÇA",
         methodTitle = "Com triarà una lletra la persona?",
         methodHint = "No ho saps? Comença per la manera que demana " +
@@ -828,6 +829,7 @@ val ENGLISH = Language(
                 "who will use it, and it will be set up the way that suits them.",
             "Every answer can be changed later in settings (⚙, top right).",
         ),
+        phoneNotice = "We recommend using the app on a tablet rather than a phone: on a small screen the keys are too small to hit and read reliably.",
         start = "START",
         methodTitle = "How will the person choose a letter?",
         methodHint = "Not sure? Start with the one that asks the least of them. " +
@@ -1189,6 +1191,7 @@ val SPANISH = Language(
             "Todas las respuestas se pueden cambiar después en los ajustes " +
                 "(⚙, arriba a la derecha).",
         ),
+        phoneNotice = "Recomendamos usar la aplicación en una tableta, no en un móvil: en una pantalla pequeña las teclas son demasiado pequeñas para acertarlas y leerlas bien.",
         start = "EMPEZAR",
         methodTitle = "¿Cómo elegirá una letra la persona?",
         methodHint = "¿No lo sabes? Empieza por la forma que menos pida a la " +

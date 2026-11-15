@@ -300,6 +300,7 @@ val ROMANIAN = Language(
             "Orice răspuns se poate schimba mai târziu din setări (⚙, în " +
                 "dreapta sus).",
         ),
+        phoneNotice = "Recomandăm folosirea aplicației pe o tabletă, nu pe un telefon: pe un ecran mic tastele sunt prea mici ca să fie atinse și citite sigur.",
         start = "ÎNCEPE",
         methodTitle = "Cum va alege persoana o literă?",
         methodHint = "Dacă ai dubii, începe cu varianta care îi cere cel mai " +

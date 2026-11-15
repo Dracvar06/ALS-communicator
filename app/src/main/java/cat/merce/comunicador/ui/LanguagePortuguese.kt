@@ -304,6 +304,7 @@ val PORTUGUESE = Language(
             "Todas as respostas podem ser alteradas mais tarde nas " +
                 "definições (⚙, no canto superior direito).",
         ),
+        phoneNotice = "Recomendamos usar a aplicação num tablet e não num telemóvel: num ecrã pequeno as teclas são demasiado pequenas para acertar e ler bem.",
         start = "COMEÇAR",
         methodTitle = "Como vai a pessoa escolher uma letra?",
         methodHint = "Não sabe qual? Comece pela que pede menos à pessoa. " +

@@ -44,6 +44,8 @@ enum class PracticeStep { Write, Undo, Done }
 class OnboardingText(
     val welcomeTitle: String,
     val welcomeLines: List<String>,
+    /** Shown on the welcome screen only when the screen is phone-sized. */
+    val phoneNotice: String,
     val start: String,
 
     val methodTitle: String,
