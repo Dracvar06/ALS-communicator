@@ -188,7 +188,7 @@ class ScanController(
 
     /** The pad's erase buttons are hers, and only while she is writing. */
     private fun canErase(): Boolean =
-        eraseKeys && !inSettings && !inTutorial && !inPhrases
+        eraseKeys && !inSettings && !inTutorial && !inOnboarding && !inPhrases
 
     /**
      * The cell she touched last, in direct mode. Null until she touches one.
@@ -408,8 +408,13 @@ class ScanController(
     var tutorialPage: Int by mutableStateOf(0)
         private set
 
-    /** The pages of the current language's walkthrough. */
-    val tutorialPages: List<TutorialPage> get() = language.tutorial
+    /**
+     * The pages of the current language's walkthrough that are about the way
+     * of choosing a letter that is switched on. The others would teach the
+     * helper something she will never use, and get in the way of what she will.
+     */
+    val tutorialPages: List<TutorialPage>
+        get() = language.tutorial.filter { inputMode in it.modes }
 
     fun openTutorial() {
         tutorialPage = 0
@@ -438,6 +443,92 @@ class ScanController(
         // helper to go and try it, so that is where they should land.
         closeSettings()
         restartTiming()
+    }
+
+    /**
+     * Which onboarding question is showing, or null when none is.
+     *
+     * Asked once, on a fresh install, before the walkthrough. Like settings and
+     * the walkthrough it is for the helper and only reachable by touch; either
+     * switch leaves it, so it can never trap her.
+     */
+    var onboardingStep: OnboardingStep? by mutableStateOf(null)
+        private set
+
+    val inOnboarding: Boolean get() = onboardingStep != null
+
+    /**
+     * Set while onboarding is assigning switches, so that finishing the write
+     * switch moves straight on to the undo switch, and finishing that moves on
+     * to the walkthrough.
+     */
+    private var onboardingPress: ScanPress? = null
+
+    fun openOnboarding() {
+        onboardingPress = null
+        onboardingStep = OnboardingStep.Welcome
+    }
+
+    fun startOnboarding() {
+        if (onboardingStep == OnboardingStep.Welcome) onboardingStep = OnboardingStep.Method
+    }
+
+    fun chooseMethod(mode: InputMode) {
+        if (onboardingStep != OnboardingStep.Method) return
+        useInputMode(mode)
+        when (mode) {
+            InputMode.Scan -> onboardingStep = OnboardingStep.ScanPress
+            InputMode.Arrows -> onboardingStep = OnboardingStep.ArrowPlace
+            // Nothing more to ask: she touches the key she wants.
+            InputMode.Direct -> finishOnboarding()
+        }
+    }
+
+    fun chooseScanPress(press: ScanPress) {
+        if (onboardingStep != OnboardingStep.ScanPress) return
+        when (press) {
+            ScanPress.Screen -> {
+                useTouchInput(true)
+                finishOnboarding()
+            }
+            // Touch stays as it is until a write switch has actually been
+            // assigned. Turning it off first, then having the helper give up
+            // on the switches, would leave a scan nothing can press.
+            ScanPress.Switches, ScanPress.Both -> {
+                onboardingPress = press
+                startBinding(SwitchRole.Write)
+            }
+        }
+    }
+
+    fun chooseArrowPlace(placement: ArrowPlacement) {
+        if (onboardingStep != OnboardingStep.ArrowPlace) return
+        useArrowPlacement(placement)
+        finishOnboarding()
+    }
+
+    fun onboardingBack() {
+        onboardingStep = when (onboardingStep) {
+            OnboardingStep.Method -> OnboardingStep.Welcome
+            OnboardingStep.ScanPress, OnboardingStep.ArrowPlace -> OnboardingStep.Method
+            else -> onboardingStep
+        }
+    }
+
+    /** Leaves onboarding for the grid, keeping whatever was already chosen. */
+    fun closeOnboarding() {
+        if (!inOnboarding) return
+        onboardingStep = null
+        onboardingPress = null
+        closeSettings()
+        restartTiming()
+    }
+
+    /** Answers given: on to the walkthrough, which shows only the pages for them. */
+    private fun finishOnboarding() {
+        onboardingStep = null
+        onboardingPress = null
+        openTutorial()
     }
 
     /** The carer's screen for finding out what a switch interface sends. */
@@ -569,7 +660,7 @@ class ScanController(
     /** The scan interval elapsed. */
     fun tick() {
         // Nothing is scanning while a carer has settings or the guide open.
-        if (inSettings || inTutorial) return
+        if (inSettings || inTutorial || inOnboarding) return
         // Only scanning has a highlight that moves on its own. The clock on
         // screen keeps running; it simply has nothing to advance.
         if (inputMode != InputMode.Scan) return
@@ -593,6 +684,10 @@ class ScanController(
     /** The writing switch was pressed. */
     fun press() {
         clearArmed = false
+        if (inOnboarding) {
+            closeOnboarding()
+            return
+        }
         if (inTutorial) {
             closeTutorial()
             return
@@ -679,7 +774,7 @@ class ScanController(
      * follow: the cell she touched is the cell she chose.
      */
     fun touchKey(row: Int, col: Int) {
-        if (inputMode != InputMode.Direct || inSettings || inTutorial) return
+        if (inputMode != InputMode.Direct || inSettings || inTutorial || inOnboarding) return
         val grid = rows
         if (row !in grid.indices || col !in grid[row].indices) return
 
@@ -709,7 +804,7 @@ class ScanController(
     fun moveRight() = move { cursor.right() }
 
     private inline fun move(step: () -> Unit) {
-        if (inputMode != InputMode.Arrows || inSettings || inTutorial) return
+        if (inputMode != InputMode.Arrows || inSettings || inTutorial || inOnboarding) return
         // Anything else she does is an answer of "no" to the clear-all button.
         clearArmed = false
         step()
@@ -725,6 +820,10 @@ class ScanController(
      * keeps walking back.
      */
     fun undo() {
+        if (inOnboarding) {
+            closeOnboarding()
+            return
+        }
         if (inTutorial) {
             closeTutorial()
             return
@@ -936,6 +1035,9 @@ class ScanController(
     fun cancelBinding() {
         bindingRole = null
         bindingMoreRole = null
+        // Back to the question, with touch left on, so there is still a way
+        // to press.
+        onboardingPress = null
     }
 
     /**
@@ -956,8 +1058,18 @@ class ScanController(
 
     /** From the prompt: done binding this action. */
     fun finishBinding() {
+        val finished = bindingMoreRole
         bindingRole = null
         bindingMoreRole = null
+
+        val press = onboardingPress ?: return
+        if (finished == SwitchRole.Write) {
+            startBinding(SwitchRole.Undo)
+        } else {
+            // Both switches are assigned, so touch can go if it was not wanted.
+            if (press == ScanPress.Switches) useTouchInput(false)
+            finishOnboarding()
+        }
     }
 
     /** The input layer reports the buttons now bound to each action. */

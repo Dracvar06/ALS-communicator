@@ -130,29 +130,17 @@ val BASQUE = Language(
             lines = listOf(
                 "Hitz egin eta eskuak mugitu ezin dituen pertsona batek " +
                     "idatz dezan eta gauzak ozen esan ditzan balio du.",
-                "Hark mugimendu bakarra egiten du: pantaila ukitzea. Gainerako " +
-                    "guztia aplikazioak egin behar du.",
+                "Egin dezakeenaren arabera, letrak ukitzen ditu, koadro bat " +
+                    "geziekin gidatzen du, edo mugimendu bakarra egiten du, " +
+                    "aplikazioak gainerakoa egiten duen bitartean.",
                 "Zu zara prestatzen duena. Gida honek nola funtzionatzen " +
                     "duen azaltzen du, hari ondo azaldu ahal diozun.",
             ),
         ),
         TutorialPage(
-            title = "Letra bat aukeratzeko bi modu",
-            lines = listOf(
-                "Bi daude, eta ezarpenetan aldatzen dira. Bat ere ez da " +
-                    "hobea: pertsonaren araberakoa da.",
-                "ESKANEATZE AUTOMATIKOA: koadro gorria bere kabuz mugitzen " +
-                    "da. Hark itxaron egiten du, eta nahi duenera iristen " +
-                    "denean sakatzen du.",
-                "GEZIAK: koadroa ez da bere kabuz mugitzen. Hark lau " +
-                    "geziekin mugitzen du eta AUKERATU sakatzen du.",
-                "Itxaroteak nekatzen badu, probatu geziak. Une zehatza " +
-                    "asmatzea kostatzen bazaio, ere bai.",
-            ),
-        ),
-        TutorialPage(
             title = "Letrak ez dira botoiak",
             demo = TutorialDemo.Touch,
+            modes = setOf(InputMode.Scan, InputMode.Arrows),
             lines = listOf(
                 "Hau da ulertzeko gehien kostatzen den zatia, eta merezi du " +
                     "bi aldiz irakurtzea.",
@@ -175,6 +163,7 @@ val BASQUE = Language(
         TutorialPage(
             title = "Eskaneatze automatikoa",
             demo = TutorialDemo.Scan,
+            modes = setOf(InputMode.Scan),
             lines = listOf(
                 "Koadro gorria lerroz lerro jaisten da, bere kabuz.",
                 "Hark nahi duen lerroan dagoenean, sakatzen du. Orain " +
@@ -190,6 +179,7 @@ val BASQUE = Language(
         TutorialPage(
             title = "Geziak",
             demo = TutorialDemo.Arrows,
+            modes = setOf(InputMode.Arrows),
             lines = listOf(
                 "Koadroa geldi geratzen da hark mugitu arte. Ez dago ezer " +
                     "itxaroterik eta ezin da berandu iritsi.",
@@ -208,6 +198,20 @@ val BASQUE = Language(
                 "Saretako ⌫ teklak ere letra bat ezabatzen du.",
                 "Gezien arteko tarteek ere balio dute: bi gezi artean " +
                     "erortzen den ukitu bat hurbilenera doa.",
+            ),
+        ),
+        TutorialPage(
+            title = "Letrak ukitu",
+            modes = setOf(InputMode.Direct),
+            lines = listOf(
+                "Hemen soilik dira letrak botoiak: nahi duena ukitzen du eta " +
+                    "idatzi egiten da.",
+                "Alde handiz modurik azkarrena da, baina hatza tekla jakin " +
+                    "baten gainean jarri ahal duen bitartean soilik. Ukituak " +
+                    "alboko teklan erortzen hasten badira, probatu geziak.",
+                "Saretako ⌫ teklak azken letra ezabatzen du.",
+                "Ezarpenetako DARDARAK EZ KONTUAN HARTU aukerak segidako " +
+                    "ukitu sorta batek behin bakarrik balio dezan egiten du.",
             ),
         ),
         TutorialPage(
@@ -277,6 +281,43 @@ val BASQUE = Language(
                     "FUNTZIONATZEN DEN.",
             ),
         ),
+    ),
+    onboarding = OnboardingText(
+        welcomeTitle = "Prestatzen",
+        welcomeLines = listOf(
+            "Aplikazio honekin, hitz egin eta eskuz idatzi ezin duen " +
+                "pertsona batek esaldiak osatu eta ozen esan ditzake.",
+            "Hainbat modutan erabil daiteke. Hari buruzko bi galdera, eta " +
+                "berari egokitzen zaion moduan prestatuko da.",
+            "Erantzun guztiak geroago alda daitezke ezarpenetan (⚙, goian " +
+                "eskuinean).",
+        ),
+        start = "HASI",
+        skip = "SALTATU",
+        methodTitle = "Nola aukeratuko du letra bat?",
+        methodHint = "Ez zaude ziur? Hasi gutxien eskatzen diotenarekin. " +
+            "Itxaroteak nekatzen badu, edo une egokia asmatzea zaila bada, " +
+            "probatu geziak.",
+        methodDirectDetail = "Tekla jakin bat ziurtasunez ukitu dezake. " +
+            "Modurik azkarrena, balio duen bitartean.",
+        methodArrowsDetail = "Botoi handi batzuk ukitu ditzake, baina ez " +
+            "tekla txikiak. Ezer ez da mugitzen berak mugitu arte.",
+        methodScanDetail = "Mugimendu bakarra egin dezake, sakagailu batekin " +
+            "edo ukitu batekin. Markatzailea bere kabuz mugitzen da, eta " +
+            "nahi duenera iristen denean sakatzen du.",
+        pressTitle = "Zer sakatuko du?",
+        pressHint = "Sakagailua Bluetooth bidez tabletarekin konektatzen den " +
+            "botoi bat da. Lehenik parekatu tabletaren Bluetooth " +
+            "ezarpenetan.",
+        pressScreen = "Pantaila",
+        pressScreenDetail = "Pantailaren eskuineko erdiak idazten du, " +
+            "ezkerrekoak desegiten du. Ez da sakagailurik behar.",
+        pressSwitches = "Sakagailuak",
+        pressSwitchesDetail = "Sakagailu batek idazten du, beste batek " +
+            "desegiten du. Pantaila ukitzeak ez du ezer egiten, beraz " +
+            "gainean pausatutako besoak ez du kalterik egiten.",
+        pressBoth = "Biak",
+        pressBothDetail = "Sakagailuak, eta pantailaren erdiak ere bai.",
     ),
     bindPressFor = "Sakatu botoia honetarako:",
     bindButtonFor = "Botoia honetarako:",

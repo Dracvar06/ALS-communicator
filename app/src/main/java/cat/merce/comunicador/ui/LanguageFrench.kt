@@ -132,29 +132,17 @@ val FRENCH = Language(
             lines = listOf(
                 "Cela permet à une personne qui ne peut ni parler ni bouger " +
                     "les mains d'écrire et de dire des choses à voix haute.",
-                "Elle ne fait qu'un seul mouvement : toucher l'écran. Tout le " +
-                    "reste doit être fait par l'application.",
+                "Selon ce qu'elle peut faire, elle touche les lettres, déplace " +
+                    "une surbrillance avec des flèches, ou fait un seul " +
+                    "mouvement pendant que l'application fait le reste.",
                 "C'est vous qui la préparez. Ce guide explique comment elle " +
                     "fonctionne, pour que vous puissiez bien la lui expliquer.",
             ),
         ),
         TutorialPage(
-            title = "Deux façons de choisir une lettre",
-            lines = listOf(
-                "Il y en a deux, et on passe de l'une à l'autre dans les " +
-                    "réglages. Aucune n'est meilleure : cela dépend de la personne.",
-                "BALAYAGE AUTOMATIQUE : la surbrillance rouge se déplace " +
-                    "toute seule. Elle attend, et appuie quand elle arrive sur " +
-                    "ce qu'elle veut.",
-                "FLÈCHES : la surbrillance ne bouge pas toute seule. Elle la " +
-                    "déplace avec quatre flèches et appuie sur CHOISIR.",
-                "Si attendre la fatigue, essayez les flèches. Si le plus " +
-                    "difficile est de choisir le bon moment, essayez aussi les flèches.",
-            ),
-        ),
-        TutorialPage(
             title = "Les lettres ne sont pas des boutons",
             demo = TutorialDemo.Touch,
+            modes = setOf(InputMode.Scan, InputMode.Arrows),
             lines = listOf(
                 "C'est la partie que l'on comprend le moins bien, et elle " +
                     "mérite d'être lue deux fois.",
@@ -181,6 +169,7 @@ val FRENCH = Language(
         TutorialPage(
             title = "Balayage automatique",
             demo = TutorialDemo.Scan,
+            modes = setOf(InputMode.Scan),
             lines = listOf(
                 "La surbrillance rouge descend rangée par rangée, toute seule.",
                 "Quand elle est sur la rangée voulue, elle appuie. La " +
@@ -197,6 +186,7 @@ val FRENCH = Language(
         TutorialPage(
             title = "Flèches",
             demo = TutorialDemo.Arrows,
+            modes = setOf(InputMode.Arrows),
             lines = listOf(
                 "La surbrillance reste immobile tant qu'elle ne la déplace " +
                     "pas. Il n'y a rien à attendre et on ne peut pas être en retard.",
@@ -215,6 +205,21 @@ val FRENCH = Language(
                 "La touche ⌫ de la grille efface aussi une lettre.",
                 "Les espaces entre les flèches comptent aussi : un toucher qui " +
                     "tombe entre deux va vers la plus proche.",
+            ),
+        ),
+        TutorialPage(
+            title = "Toucher les lettres",
+            modes = setOf(InputMode.Direct),
+            lines = listOf(
+                "Ici, et seulement ici, les lettres sont des boutons : elle " +
+                    "touche celle qu'elle veut et elle s'écrit.",
+                "C'est de loin la façon la plus rapide, mais seulement tant " +
+                    "qu'elle peut poser un doigt sur une touche précise. Si " +
+                    "les appuis se mettent à tomber sur la touche voisine, " +
+                    "essayez les flèches.",
+                "La touche ⌫ de la grille efface la dernière lettre.",
+                "IGNORER LES TREMBLEMENTS, dans les réglages, fait qu'une " +
+                    "rafale d'appuis rapprochés ne compte qu'une fois.",
             ),
         ),
         TutorialPage(
@@ -290,6 +295,46 @@ val FRENCH = Language(
                     "ÇA MARCHE.",
             ),
         ),
+    ),
+    onboarding = OnboardingText(
+        welcomeTitle = "La préparer",
+        welcomeLines = listOf(
+            "Cette application permet à une personne qui ne peut ni parler " +
+                "ni écrire à la main de composer des phrases et de les dire " +
+                "à voix haute.",
+            "Il y a plusieurs façons de l'utiliser. Deux questions sur " +
+                "elle, et l'application sera réglée comme il lui convient.",
+            "Toutes les réponses peuvent être modifiées plus tard dans les " +
+                "réglages (⚙, en haut à droite).",
+        ),
+        start = "COMMENCER",
+        skip = "PASSER",
+        methodTitle = "Comment choisira-t-elle une lettre ?",
+        methodHint = "Vous hésitez ? Commencez par ce qui lui demande le " +
+            "moins. Si l'attente la fatigue, ou s'il est difficile de " +
+            "viser le bon moment, essayez les flèches.",
+        methodDirectDetail = "Elle peut toucher à coup sûr une touche " +
+            "précise. La façon la plus rapide, tant que cela dure.",
+        methodArrowsDetail = "Elle peut toucher quelques gros boutons, mais " +
+            "pas de petites touches. Rien ne bouge tant qu'elle ne le " +
+            "déplace pas.",
+        methodScanDetail = "Elle peut faire un seul mouvement, avec un " +
+            "contacteur ou en touchant l'écran. Une surbrillance avance " +
+            "toute seule et elle appuie quand elle arrive sur ce qu'elle " +
+            "veut.",
+        pressTitle = "Sur quoi appuiera-t-elle ?",
+        pressHint = "Un contacteur est un bouton relié à la tablette par " +
+            "Bluetooth. Il faut d'abord l'appairer dans les réglages " +
+            "Bluetooth de la tablette.",
+        pressScreen = "L'écran",
+        pressScreenDetail = "La moitié droite de l'écran écrit, la moitié " +
+            "gauche annule. Aucun contacteur n'est nécessaire.",
+        pressSwitches = "Contacteurs",
+        pressSwitchesDetail = "Un contacteur écrit, un autre annule. " +
+            "Toucher l'écran ne fait rien, donc un bras posé dessus ne " +
+            "gêne pas.",
+        pressBoth = "Les deux",
+        pressBothDetail = "Les contacteurs, et aussi les moitiés de l'écran.",
     ),
     bindPressFor = "Appuyez sur le bouton pour",
     bindButtonFor = "Bouton pour",

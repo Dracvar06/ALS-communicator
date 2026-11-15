@@ -207,6 +207,7 @@ fun ScanScreen(controller: ScanController) {
         when {
             controller.bindingRole != null || controller.bindingMoreRole != null ->
                 BindingPanel(controller)
+            controller.inOnboarding -> OnboardingPanel(controller)
             controller.inTutorial -> TutorialPanel(controller)
             controller.inDiagnostics -> DiagnosticsPanel(controller)
             controller.inSettings -> SettingsPanel(controller)
@@ -527,6 +528,181 @@ private fun TutorialPanel(controller: ScanController) {
                     text = controller.language.settingsClose,
                     onTap = controller::closeTutorial,
                 )
+            }
+        }
+    }
+}
+
+/**
+ * The questions a fresh install asks the helper: how she will choose a letter,
+ * then, for scanning, what she will press, or for arrows, where they go.
+ *
+ * Each answer is a big card with a line saying who it suits, because the
+ * helper is choosing for somebody else and the names alone ("arrows",
+ * "scanning") mean nothing to someone who has never seen them.
+ */
+@Composable
+private fun OnboardingPanel(controller: ScanController) {
+    val language = controller.language
+    val text = language.onboarding
+    val step = controller.onboardingStep ?: return
+
+    Column(modifier = Modifier.fillMaxSize().padding(40.dp)) {
+        when (step) {
+            OnboardingStep.Welcome -> {
+                OnboardingTitle(text.welcomeTitle)
+                Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                    for (line in text.welcomeLines) {
+                        Row(modifier = Modifier.padding(bottom = 14.dp)) {
+                            Text(
+                                text = "\u2022",
+                                color = CellLit,
+                                fontFamily = Hyperlegible,
+                                fontSize = 24.sp,
+                                modifier = Modifier.width(24.dp)
+                            )
+                            Text(
+                                text = line,
+                                color = Ink,
+                                fontFamily = Hyperlegible,
+                                fontSize = 24.sp,
+                                lineHeight = 32.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            OnboardingStep.Method -> {
+                OnboardingTitle(text.methodTitle, text.methodHint)
+                OnboardingChoices(
+                    modifier = Modifier.weight(1f),
+                    choices = listOf(
+                        Triple(language.settingsModeDirect, text.methodDirectDetail) {
+                            controller.chooseMethod(InputMode.Direct)
+                        },
+                        Triple(language.settingsModeArrows, text.methodArrowsDetail) {
+                            controller.chooseMethod(InputMode.Arrows)
+                        },
+                        Triple(language.settingsModeScan, text.methodScanDetail) {
+                            controller.chooseMethod(InputMode.Scan)
+                        },
+                    ),
+                )
+            }
+
+            OnboardingStep.ScanPress -> {
+                OnboardingTitle(text.pressTitle, text.pressHint)
+                OnboardingChoices(
+                    modifier = Modifier.weight(1f),
+                    choices = listOf(
+                        Triple(text.pressScreen, text.pressScreenDetail) {
+                            controller.chooseScanPress(ScanPress.Screen)
+                        },
+                        Triple(text.pressSwitches, text.pressSwitchesDetail) {
+                            controller.chooseScanPress(ScanPress.Switches)
+                        },
+                        Triple(text.pressBoth, text.pressBothDetail) {
+                            controller.chooseScanPress(ScanPress.Both)
+                        },
+                    ),
+                )
+            }
+
+            OnboardingStep.ArrowPlace -> {
+                OnboardingTitle(language.settingsArrowPlaceTitle, language.settingsArrowPlaceDetail)
+                OnboardingChoices(
+                    modifier = Modifier.weight(1f),
+                    choices = listOf(
+                        Triple(language.settingsArrowRight, "") {
+                            controller.chooseArrowPlace(ArrowPlacement.Right)
+                        },
+                        Triple(language.settingsArrowLeft, "") {
+                            controller.chooseArrowPlace(ArrowPlacement.Left)
+                        },
+                        Triple(language.settingsArrowBottom, "") {
+                            controller.chooseArrowPlace(ArrowPlacement.Bottom)
+                        },
+                    ),
+                )
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (step == OnboardingStep.Welcome) {
+                TouchButton(text = text.start, onTap = controller::startOnboarding)
+            } else {
+                TouchButton(text = language.tutorialBack, onTap = controller::onboardingBack)
+            }
+            Spacer(Modifier.weight(1f))
+            TouchButton(text = text.skip, onTap = controller::closeOnboarding)
+        }
+    }
+}
+
+@Composable
+private fun OnboardingTitle(title: String, hint: String? = null) {
+    Text(
+        text = title,
+        color = Ink,
+        fontFamily = Hyperlegible,
+        fontWeight = FontWeight.Bold,
+        fontSize = 40.sp
+    )
+    if (hint != null) {
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = hint,
+            color = DimInk,
+            fontFamily = Hyperlegible,
+            fontSize = 22.sp,
+            lineHeight = 30.sp
+        )
+    }
+    Spacer(Modifier.height(24.dp))
+}
+
+/**
+ * Side by side cards, one per answer. Touch only, like every carer control:
+ * a focusable button here would let her switch pick an answer.
+ */
+@Composable
+private fun OnboardingChoices(
+    choices: List<Triple<String, String, () -> Unit>>,
+    modifier: Modifier = Modifier,
+) {
+    Row(modifier = modifier.fillMaxWidth()) {
+        choices.forEachIndexed { index, (title, detail, onTap) ->
+            if (index > 0) Spacer(Modifier.width(20.dp))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .background(CellIdle, RoundedCornerShape(16.dp))
+                    .pointerInput(onTap) { detectTapGestures { onTap() } }
+                    .padding(28.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                Text(
+                    text = title,
+                    color = Ink,
+                    fontFamily = Hyperlegible,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 32.sp,
+                    lineHeight = 38.sp
+                )
+                if (detail.isNotEmpty()) {
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        text = detail,
+                        color = DimInk,
+                        fontFamily = Hyperlegible,
+                        fontSize = 22.sp,
+                        lineHeight = 30.sp
+                    )
+                }
             }
         }
     }

@@ -132,28 +132,17 @@ val ITALIAN = Language(
             lines = listOf(
                 "Permette a una persona che non può parlare né muovere le " +
                     "mani di scrivere e di dire le cose ad alta voce.",
-                "Lei fa un solo movimento: toccare lo schermo. Tutto il " +
-                    "resto deve farlo l'app.",
+                "A seconda di ciò che riesce a fare, lei tocca le lettere, " +
+                    "sposta un'evidenziazione con le frecce, o fa un solo " +
+                    "movimento mentre l'app fa il resto.",
                 "Sei tu a prepararla. Questa guida spiega come funziona, " +
                     "così potrai spiegarglielo bene.",
             ),
         ),
         TutorialPage(
-            title = "Due modi per scegliere una lettera",
-            lines = listOf(
-                "Ce ne sono due, e si cambiano nelle impostazioni. Nessuno " +
-                    "dei due è migliore: dipende dalla persona.",
-                "SCANSIONE AUTOMATICA: l'evidenziazione rossa si muove da " +
-                    "sola. Lei aspetta e preme quando arriva su ciò che vuole.",
-                "FRECCE: l'evidenziazione non si muove da sola. Lei la muove " +
-                    "con quattro frecce e preme SCEGLI.",
-                "Se aspettare la stanca, prova le frecce. Se la difficoltà è " +
-                    "cogliere il momento giusto, prova comunque le frecce.",
-            ),
-        ),
-        TutorialPage(
             title = "Le lettere non sono pulsanti",
             demo = TutorialDemo.Touch,
+            modes = setOf(InputMode.Scan, InputMode.Arrows),
             lines = listOf(
                 "È la parte che si capisce meno, e vale la pena leggerla " +
                     "due volte.",
@@ -180,6 +169,7 @@ val ITALIAN = Language(
         TutorialPage(
             title = "Scansione automatica",
             demo = TutorialDemo.Scan,
+            modes = setOf(InputMode.Scan),
             lines = listOf(
                 "L'evidenziazione rossa scende riga per riga, da sola.",
                 "Quando è sulla riga che lei vuole, preme. Ora " +
@@ -196,6 +186,7 @@ val ITALIAN = Language(
         TutorialPage(
             title = "Frecce",
             demo = TutorialDemo.Arrows,
+            modes = setOf(InputMode.Arrows),
             lines = listOf(
                 "L'evidenziazione resta ferma finché lei non la muove. Non " +
                     "c'è nulla da aspettare e non si può arrivare in ritardo.",
@@ -214,6 +205,21 @@ val ITALIAN = Language(
                 "Anche il tasto ⌫ sulla griglia cancella una lettera.",
                 "Contano anche gli spazi tra le frecce: un tocco che cade " +
                     "tra due va a quella più vicina.",
+            ),
+        ),
+        TutorialPage(
+            title = "Toccare le lettere",
+            modes = setOf(InputMode.Direct),
+            lines = listOf(
+                "Qui, e solo qui, le lettere sono pulsanti: lei tocca quella " +
+                    "che vuole e viene scritta.",
+                "È di gran lunga il modo più veloce, ma solo finché riesce a " +
+                    "posare un dito su un tasto preciso. Se i tocchi " +
+                    "cominciano a finire sul tasto accanto, prova con le " +
+                    "frecce.",
+                "Il tasto ⌫ sulla griglia cancella l'ultima lettera.",
+                "IGNORA I TREMORI, nelle impostazioni, fa sì che una raffica " +
+                    "di tocchi ravvicinati conti una volta sola.",
             ),
         ),
         TutorialPage(
@@ -288,6 +294,43 @@ val ITALIAN = Language(
                     "FUNZIONA.",
             ),
         ),
+    ),
+    onboarding = OnboardingText(
+        welcomeTitle = "Prepararla",
+        welcomeLines = listOf(
+            "Questa app permette a una persona che non può parlare né " +
+                "scrivere a mano di comporre frasi e dirle ad alta voce.",
+            "Ci sono diversi modi di usarla. Due domande su di lei, e " +
+                "l'app sarà impostata nel modo che le è più adatto.",
+            "Ogni risposta si può cambiare più tardi nelle impostazioni " +
+                "(⚙, in alto a destra).",
+        ),
+        start = "INIZIA",
+        skip = "SALTA",
+        methodTitle = "Come sceglierà una lettera?",
+        methodHint = "Non sai quale? Parti da quello che le chiede di " +
+            "meno. Se aspettare la stanca, o se è difficile cogliere il " +
+            "momento giusto, prova con le frecce.",
+        methodDirectDetail = "Riesce a toccare con sicurezza un tasto " +
+            "preciso. Il modo più veloce, finché dura.",
+        methodArrowsDetail = "Riesce a toccare pochi pulsanti grandi, ma " +
+            "non tasti piccoli. Niente si muove finché non lo muove lei.",
+        methodScanDetail = "Riesce a fare un solo movimento, con un " +
+            "pulsante o con un tocco. Un'evidenziazione si muove da sola e " +
+            "lei preme quando arriva su ciò che vuole.",
+        pressTitle = "Cosa premerà?",
+        pressHint = "Un pulsante esterno si collega al tablet via " +
+            "Bluetooth. Prima va abbinato nelle impostazioni Bluetooth del " +
+            "tablet.",
+        pressScreen = "Lo schermo",
+        pressScreenDetail = "La metà destra dello schermo scrive, la metà " +
+            "sinistra annulla. Non serve nessun pulsante.",
+        pressSwitches = "Pulsanti",
+        pressSwitchesDetail = "Un pulsante scrive, un altro annulla. " +
+            "Toccare lo schermo non fa nulla, quindi un braccio appoggiato " +
+            "sopra non dà fastidio.",
+        pressBoth = "Entrambi",
+        pressBothDetail = "I pulsanti, e anche le metà dello schermo.",
     ),
     bindPressFor = "Premi il pulsante per",
     bindButtonFor = "Pulsante per",

@@ -232,14 +232,15 @@ class MainActivity : ComponentActivity() {
         if (controller.aiSuggestions) loadAi()
 
         // A completely empty settings file means nobody has ever touched this
-        // install, so whoever is holding the device is setting it up. Show them
-        // how it works once, without being asked: the app failing because the
+        // install, so whoever is holding the device is setting it up. Ask them
+        // how she will use it, then show them how that works, once, without
+        // being asked: the app failing because the
         // person explaining it had it wrong is a real way for it to fail, and
         // the helper who most needs the guide is the one who does not know it
         // is there. Only ever on a fresh install, so it cannot interrupt her
         // mid-sentence later on.
         if (settings.all.isEmpty()) {
-            controller.openTutorial()
+            controller.openOnboarding()
             settings.edit(commit = true) { putBoolean(KEY_TUTORIAL_SEEN, true) }
         }
 

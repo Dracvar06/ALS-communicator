@@ -11,11 +11,15 @@ package cat.merce.comunicador.ui
  *
  * @param demo a small moving picture of the thing being described. Some of this
  *   cannot be explained in words to somebody who has never seen it happen.
+ * @param modes the ways of choosing a letter this page is about. The
+ *   walkthrough only shows the pages for the way that is switched on, so a
+ *   helper setting up arrows is not taught scanning first.
  */
 class TutorialPage(
     val title: String,
     val lines: List<String>,
     val demo: TutorialDemo? = null,
+    val modes: Set<InputMode> = InputMode.entries.toSet(),
 )
 
 /** The moving picture a page is showing. */

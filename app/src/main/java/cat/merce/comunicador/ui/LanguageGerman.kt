@@ -130,30 +130,18 @@ val GERMAN = Language(
             lines = listOf(
                 "Sie ermöglicht es einem Menschen, der nicht sprechen und die " +
                     "Hände nicht bewegen kann, zu schreiben und Dinge laut zu sagen.",
-                "Sie macht nur eine einzige Bewegung: den Bildschirm berühren. " +
-                    "Alles andere muss die App übernehmen.",
+                "Je nachdem, was sie kann, berührt sie die Buchstaben, lenkt " +
+                    "eine Markierung mit Pfeilen oder macht eine einzige " +
+                    "Bewegung, während die App den Rest übernimmt.",
                 "Du bist die Person, die sie einrichtet. Diese Anleitung " +
                     "erklärt, wie alles funktioniert, damit du es ihr gut " +
                     "erklären kannst.",
             ),
         ),
         TutorialPage(
-            title = "Zwei Arten, einen Buchstaben zu wählen",
-            lines = listOf(
-                "Es gibt zwei, und man wechselt zwischen ihnen in den " +
-                    "Einstellungen. Keine ist besser: es hängt von der Person ab.",
-                "AUTOMATISCHES SCANNEN: die rote Markierung bewegt sich von " +
-                    "selbst. Sie wartet und drückt, wenn die Markierung bei " +
-                    "dem ist, was sie möchte.",
-                "PFEILE: die Markierung bewegt sich nicht von selbst. Sie " +
-                    "bewegt sie mit vier Pfeilen und drückt WÄHLEN.",
-                "Wenn Warten sie ermüdet, probiere Pfeile. Wenn es ihr " +
-                    "schwerfällt, den richtigen Moment zu treffen, ebenfalls.",
-            ),
-        ),
-        TutorialPage(
             title = "Die Buchstaben sind keine Tasten",
             demo = TutorialDemo.Touch,
+            modes = setOf(InputMode.Scan, InputMode.Arrows),
             lines = listOf(
                 "Das ist der Teil, den man am leichtesten falsch versteht. " +
                     "Es lohnt sich, ihn zweimal zu lesen.",
@@ -180,6 +168,7 @@ val GERMAN = Language(
         TutorialPage(
             title = "Automatisches Scannen",
             demo = TutorialDemo.Scan,
+            modes = setOf(InputMode.Scan),
             lines = listOf(
                 "Die rote Markierung wandert von selbst Zeile für Zeile nach unten.",
                 "Wenn sie bei der gewünschten Zeile ist, drückt sie. Jetzt " +
@@ -197,6 +186,7 @@ val GERMAN = Language(
         TutorialPage(
             title = "Pfeile",
             demo = TutorialDemo.Arrows,
+            modes = setOf(InputMode.Arrows),
             lines = listOf(
                 "Die Markierung bleibt stehen, bis sie sie bewegt. Es gibt " +
                     "nichts abzuwarten, und man kann nicht zu spät sein.",
@@ -215,6 +205,22 @@ val GERMAN = Language(
                 "Die Taste ⌫ im Raster entfernt ebenfalls einen Buchstaben.",
                 "Auch die Lücken zwischen den Pfeilen zählen: eine " +
                     "Berührung zwischen zwei Pfeilen geht an den näheren.",
+            ),
+        ),
+        TutorialPage(
+            title = "Buchstaben berühren",
+            modes = setOf(InputMode.Direct),
+            lines = listOf(
+                "Nur hier sind die Buchstaben Tasten: sie berührt den, den " +
+                    "sie möchte, und er wird geschrieben.",
+                "Es ist mit Abstand der schnellste Weg, aber nur, solange sie " +
+                    "einen Finger genau auf eine bestimmte Taste setzen kann. " +
+                    "Wenn die Berührungen anfangen, auf der Nachbartaste zu " +
+                    "landen, probiere stattdessen Pfeile.",
+                "Die Taste ⌫ im Raster entfernt den letzten Buchstaben.",
+                "ZITTERN IGNORIEREN in den Einstellungen sorgt dafür, dass " +
+                    "mehrere schnelle Berührungen hintereinander nur einmal " +
+                    "zählen.",
             ),
         ),
         TutorialPage(
@@ -290,6 +296,43 @@ val GERMAN = Language(
                     "FUNKTIONIERT ES.",
             ),
         ),
+    ),
+    onboarding = OnboardingText(
+        welcomeTitle = "Einrichten",
+        welcomeLines = listOf(
+            "Mit dieser App kann jemand, der nicht sprechen und nicht mit " +
+                "der Hand schreiben kann, Sätze bilden und laut sagen.",
+            "Es gibt mehrere Wege, sie zu benutzen. Zwei Fragen zu ihr, und " +
+                "die App wird so eingerichtet, wie es zu ihr passt.",
+            "Jede Antwort lässt sich später in den Einstellungen ändern " +
+                "(⚙, oben rechts).",
+        ),
+        start = "LOS",
+        skip = "ÜBERSPRINGEN",
+        methodTitle = "Wie wählt sie einen Buchstaben?",
+        methodHint = "Unsicher? Beginne mit dem, was am wenigsten von ihr " +
+            "verlangt. Wenn das Warten sie ermüdet oder der richtige " +
+            "Moment schwer zu treffen ist, probiere Pfeile.",
+        methodDirectDetail = "Sie kann zuverlässig eine bestimmte Taste " +
+            "berühren. Der schnellste Weg, solange es geht.",
+        methodArrowsDetail = "Sie kann ein paar große Tasten berühren, aber " +
+            "keine kleinen. Nichts bewegt sich, bis sie es bewegt.",
+        methodScanDetail = "Sie kann eine einzige Bewegung machen, mit einem " +
+            "Taster oder durch Berühren. Eine Markierung bewegt sich von " +
+            "selbst, und sie drückt, wenn sie bei dem ist, was sie möchte.",
+        pressTitle = "Was drückt sie?",
+        pressHint = "Ein Taster ist eine Taste, die per Bluetooth mit dem " +
+            "Tablet verbunden wird. Koppele ihn zuerst in den " +
+            "Bluetooth-Einstellungen des Tablets.",
+        pressScreen = "Der Bildschirm",
+        pressScreenDetail = "Die rechte Hälfte des Bildschirms schreibt, " +
+            "die linke macht rückgängig. Kein Taster nötig.",
+        pressSwitches = "Taster",
+        pressSwitchesDetail = "Ein Taster schreibt, ein anderer macht " +
+            "rückgängig. Eine Berührung des Bildschirms bewirkt nichts, ein " +
+            "darauf ruhender Arm schadet also nicht.",
+        pressBoth = "Beides",
+        pressBothDetail = "Taster, und zusätzlich die Bildschirmhälften.",
     ),
     bindPressFor = "Drücke die Taste für",
     bindButtonFor = "Taste für",

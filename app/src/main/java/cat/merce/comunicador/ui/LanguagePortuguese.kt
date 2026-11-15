@@ -133,28 +133,17 @@ val PORTUGUESE = Language(
             lines = listOf(
                 "Serve para que uma pessoa que não pode falar nem mexer as " +
                     "mãos possa escrever e dizer coisas em voz alta.",
-                "Ela faz um único movimento: tocar no ecrã. Tudo o resto " +
-                    "tem de ser feito pela aplicação.",
+                "Conforme o que ela consiga fazer, ela toca nas letras, " +
+                    "move um destaque com setas, ou faz um único movimento " +
+                    "enquanto a aplicação faz o resto.",
                 "É você quem a prepara. Este guia explica como funciona, " +
                     "para que lho possa explicar bem.",
             ),
         ),
         TutorialPage(
-            title = "Duas formas de escolher uma letra",
-            lines = listOf(
-                "Há duas, e mudam-se nas definições. Nenhuma é melhor: " +
-                    "depende da pessoa.",
-                "VARREDURA AUTOMÁTICA: o destaque vermelho move-se sozinho. " +
-                    "Ela espera e carrega quando chega ao que quer.",
-                "SETAS: o destaque não se move sozinho. Ela move-o com " +
-                    "quatro setas e carrega em ESCOLHER.",
-                "Se esperar a cansa, experimente as setas. Se o difícil é " +
-                    "acertar no momento, experimente também as setas.",
-            ),
-        ),
-        TutorialPage(
             title = "As letras não são botões",
             demo = TutorialDemo.Touch,
+            modes = setOf(InputMode.Scan, InputMode.Arrows),
             lines = listOf(
                 "Esta é a parte que mais custa a perceber, e vale a pena lê-la " +
                     "duas vezes.",
@@ -179,6 +168,7 @@ val PORTUGUESE = Language(
         TutorialPage(
             title = "Varredura automática",
             demo = TutorialDemo.Scan,
+            modes = setOf(InputMode.Scan),
             lines = listOf(
                 "O destaque vermelho desce fila a fila, sozinho.",
                 "Quando está na fila que ela quer, carrega. Agora o destaque " +
@@ -193,6 +183,7 @@ val PORTUGUESE = Language(
         TutorialPage(
             title = "Setas",
             demo = TutorialDemo.Arrows,
+            modes = setOf(InputMode.Arrows),
             lines = listOf(
                 "O destaque fica parado até ela o mover. Não há nada para " +
                     "esperar e não se pode chegar tarde.",
@@ -211,6 +202,21 @@ val PORTUGUESE = Language(
                 "A tecla ⌫ da grelha também apaga uma letra.",
                 "Os espaços entre as setas também contam: um toque que caia " +
                     "entre duas vai para a mais próxima.",
+            ),
+        ),
+        TutorialPage(
+            title = "Tocar nas letras",
+            modes = setOf(InputMode.Direct),
+            lines = listOf(
+                "Aqui, e só aqui, as letras são botões: ela toca na que " +
+                    "quer e fica escrita.",
+                "É de longe a forma mais rápida, mas só enquanto ela " +
+                    "conseguir pousar o dedo numa tecla concreta. Se os " +
+                    "toques começarem a cair na tecla ao lado, experimente " +
+                    "as setas.",
+                "A tecla ⌫ da grelha apaga a última letra.",
+                "IGNORAR TREMORES, nas definições, faz com que uma rajada " +
+                    "de toques seguidos conte uma só vez.",
             ),
         ),
         TutorialPage(
@@ -283,6 +289,43 @@ val PORTUGUESE = Language(
                     "FUNCIONA.",
             ),
         ),
+    ),
+    onboarding = OnboardingText(
+        welcomeTitle = "Prepará-la",
+        welcomeLines = listOf(
+            "Esta aplicação permite que uma pessoa que não pode falar nem " +
+                "escrever à mão construa frases e as diga em voz alta.",
+            "Há várias formas de a usar. Com duas perguntas sobre ela, " +
+                "fica preparada da maneira que lhe convém.",
+            "Todas as respostas podem ser alteradas mais tarde nas " +
+                "definições (⚙, no canto superior direito).",
+        ),
+        start = "COMEÇAR",
+        skip = "SALTAR",
+        methodTitle = "Como vai ela escolher uma letra?",
+        methodHint = "Não sabe qual? Comece pela que lhe pede menos. Se " +
+            "esperar a cansa, ou se é difícil acertar no momento, " +
+            "experimente as setas.",
+        methodDirectDetail = "Consegue tocar de forma fiável numa tecla " +
+            "concreta. A forma mais rápida, enquanto durar.",
+        methodArrowsDetail = "Consegue tocar em alguns botões grandes, mas " +
+            "não em teclas pequenas. Nada se mexe até ela o mexer.",
+        methodScanDetail = "Consegue fazer um único movimento, com um " +
+            "interruptor ou com um toque. Um destaque move-se sozinho e " +
+            "ela carrega quando chega ao que quer.",
+        pressTitle = "O que vai ela carregar?",
+        pressHint = "Um interruptor é um botão que se liga ao tablet por " +
+            "Bluetooth. Primeiro é preciso emparelhá-lo nas definições de " +
+            "Bluetooth do tablet.",
+        pressScreen = "O ecrã",
+        pressScreenDetail = "A metade direita do ecrã escreve, a metade " +
+            "esquerda desfaz. Não é preciso nenhum interruptor.",
+        pressSwitches = "Interruptores",
+        pressSwitchesDetail = "Um interruptor escreve, outro desfaz. Tocar " +
+            "no ecrã não faz nada, por isso um braço pousado em cima não " +
+            "faz mal.",
+        pressBoth = "Ambos",
+        pressBothDetail = "Os interruptores, e também as metades do ecrã.",
     ),
     bindPressFor = "Carregue no botão para",
     bindButtonFor = "Botão para",
