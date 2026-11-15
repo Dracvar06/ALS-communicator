@@ -4,6 +4,8 @@ package cat.merce.comunicador.ui
 // in Spanish; Basque has no accented letters to reach through suggestions.
 val BASQUE = Language(
     code = "eu",
+    experimentalLabel = "esperimentala",
+    experimental = true,
     displayName = "Euskara",
     modelAsset = "eu-model.txt",
     ttsLocale = "eu",

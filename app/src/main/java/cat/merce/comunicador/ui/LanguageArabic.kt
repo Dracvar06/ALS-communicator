@@ -4,6 +4,8 @@ package cat.merce.comunicador.ui
 
 val ARABIC = Language(
     code = "ar",
+    experimentalLabel = "تجريبي",
+    experimental = true,
     displayName = "العربية",
     modelAsset = "ar-model.txt",
     ttsLocale = "ar",

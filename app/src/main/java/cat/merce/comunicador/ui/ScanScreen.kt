@@ -1416,7 +1416,11 @@ private fun LanguageChooser(current: Language, onChoose: (Language) -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = current.displayName,
+                text = if (current.experimental) {
+                    "${current.displayName} (${current.experimentalLabel})"
+                } else {
+                    current.displayName
+                },
                 color = Ink,
                 fontFamily = Hyperlegible,
                 fontWeight = FontWeight.Bold,
@@ -1443,7 +1447,11 @@ private fun LanguageChooser(current: Language, onChoose: (Language) -> Unit) {
                     },
                     text = {
                         Text(
-                            text = language.displayName,
+                            text = if (language.experimental) {
+                                "${language.displayName} (${current.experimentalLabel})"
+                            } else {
+                                language.displayName
+                            },
                             color = if (selected) CellLit else Ink,
                             fontFamily = Hyperlegible,
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,

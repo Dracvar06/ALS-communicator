@@ -20,6 +20,16 @@ class Language(
     /** Shown in settings, in its own language. */
     val displayName: String,
 
+    /** The word for "experimental" in this language, shown beside unfinished ones. */
+    val experimentalLabel: String,
+
+    /**
+     * Not yet ready to depend on: a thin prediction corpus, a translation no
+     * native speaker has checked, or a layout that does not suit the script.
+     * Still offered, but marked, so nobody picks it expecting it to be finished.
+     */
+    val experimental: Boolean = false,
+
     /** The prediction model in app assets, built by tools/build_model.py. */
     val modelAsset: String,
 
@@ -163,6 +173,7 @@ class Language(
 
 val CATALAN = Language(
     code = "ca",
+    experimentalLabel = "experimental",
     displayName = "Català",
     modelAsset = "ca-model.txt",
     ttsLocale = "ca",
@@ -515,6 +526,7 @@ val CATALAN = Language(
  */
 val ENGLISH = Language(
     code = "en",
+    experimentalLabel = "experimental",
     displayName = "English",
     modelAsset = "en-model.txt",
     ttsLocale = "en",
@@ -868,6 +880,7 @@ val ENGLISH = Language(
  */
 val SPANISH = Language(
     code = "es",
+    experimentalLabel = "experimental",
     displayName = "Español",
     modelAsset = "es-model.txt",
     ttsLocale = "es",

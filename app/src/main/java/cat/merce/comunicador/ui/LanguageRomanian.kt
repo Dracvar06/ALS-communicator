@@ -4,6 +4,7 @@ package cat.merce.comunicador.ui
 
 val ROMANIAN = Language(
     code = "ro",
+    experimentalLabel = "experimental",
     displayName = "Română",
     modelAsset = "ro-model.txt",
     ttsLocale = "ro",

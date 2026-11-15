@@ -4,6 +4,7 @@ package cat.merce.comunicador.ui
 // the suggestions, like the accents of the other languages.
 val GERMAN = Language(
     code = "de",
+    experimentalLabel = "experimentell",
     displayName = "Deutsch",
     modelAsset = "de-model.txt",
     ttsLocale = "de",

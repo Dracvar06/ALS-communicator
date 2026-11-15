@@ -6,6 +6,7 @@ package cat.merce.comunicador.ui
  */
 val FRENCH = Language(
     code = "fr",
+    experimentalLabel = "expérimental",
     displayName = "Français",
     modelAsset = "fr-model.txt",
     ttsLocale = "fr",

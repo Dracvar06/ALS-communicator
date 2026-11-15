@@ -4,6 +4,8 @@ package cat.merce.comunicador.ui
 // through the suggestions; the Ñ has its own key, as in Spanish.
 val GALICIAN = Language(
     code = "gl",
+    experimentalLabel = "experimental",
+    experimental = true,
     displayName = "Galego",
     modelAsset = "gl-model.txt",
     ttsLocale = "gl",
