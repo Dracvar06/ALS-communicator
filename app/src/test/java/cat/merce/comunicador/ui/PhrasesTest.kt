@@ -100,7 +100,7 @@ class PhrasesTest {
 
         val spoken = c.rows.flatten().filterIsInstance<Key.Phrase>().map { it.text }
         assertTrue(spoken.contains("Bon dia"))
-        assertTrue(spoken.contains("Aviseu a les meves filles"))
+        assertTrue(spoken.contains("Aviseu la meva família"))
         assertTrue(spoken.contains("Vull anar al jardí"))
         assertTrue(spoken.contains("Vull anar al menjador"))
         assertTrue(spoken.contains("Em trobo malament"))

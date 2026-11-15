@@ -183,8 +183,8 @@ val CATALAN = Language(
         "Tinc fred",
         "Tinc calor",
         "Necessito anar al lavabo",
-        "Aviseu a les meves filles",
-        "Truca a la infermera",
+        "Aviseu la meva família",
+        "Demaneu ajuda, si us plau",
         "Espera un moment",
         "Estic bé",
         "Gràcies",
@@ -263,7 +263,7 @@ val CATALAN = Language(
         }
     },
     settingsBoldWritingTitle = "Frase en negreta",
-    settingsBoldWritingDetail = "La frase que escriu, més gruixuda, per llegir-la de lluny.",
+    settingsBoldWritingDetail = "La frase que s'està escrivint, més gruixuda, per llegir-la de lluny.",
     settingsArrowShapeTitle = "Com es veuen les fletxes",
     settingsArrowShapeDetail = "Separades, cada fletxa té el seu botó i es veu fins on arriba. En creu es veuen com una sola peça. El que es pot tocar és igual en els dos casos.",
     settingsArrowShapeJoined = "En creu",
@@ -284,11 +284,11 @@ val CATALAN = Language(
             lines = listOf(
                 "Serveix perquè una persona que no pot parlar ni moure les mans " +
                     "pugui escriure i dir coses.",
-                "Segons el que pugui fer, ella toca les lletres, mou un " +
-                    "requadre amb fletxes, o fa un sol moviment i l'aplicació " +
-                    "fa la resta.",
-                "Tu ets qui la prepara. Aquesta guia explica com funciona, " +
-                    "perquè puguis explicar-l'hi bé.",
+                "Segons el que pugui fer la persona, toca les lletres, mou " +
+                    "un requadre amb fletxes, o fa un sol moviment i " +
+                    "l'aplicació fa la resta.",
+                "Tu ets qui prepara l'aplicació. Aquesta guia explica com " +
+                    "funciona, perquè puguis explicar-ho bé a la persona.",
             ),
         ),
         TutorialPage(
@@ -299,14 +299,15 @@ val CATALAN = Language(
                 "Això és el que costa més d'entendre, i val la pena llegir-ho " +
                     "dues vegades.",
                 "Les lletres de la pantalla NO són botons. Tocar la lletra que " +
-                    "vol no fa res. Serveixen per llegir-les, no per prémer-les.",
+                    "es vol no fa res. Serveixen per llegir-les, no per prémer-les.",
                 "Amb l'escaneig automàtic, els botons són dos i ocupen mitja " +
                     "pantalla cadascun: tota la meitat DRETA escriu, tota la " +
                     "meitat ESQUERRA desfà.",
                 "No es veuen, i és a posta: la graella és per mirar-la, i unes " +
                     "línies al damunt només taparien lletres.",
-                "Això vol dir que ella pot tocar on li vagi bé de la meitat " +
-                    "que sigui. No ha d'encertar res, i no pot fallar el botó.",
+                "Això vol dir que es pot tocar on vagi millor dins de la " +
+                    "meitat que sigui. No cal encertar res, i no es pot " +
+                    "fallar el botó.",
                 "Amb fletxes és diferent: allà els botons sí que es veuen, són " +
                     "les quatre fletxes i TRIA. Les lletres segueixen sense " +
                     "ser botons.",
@@ -320,11 +321,11 @@ val CATALAN = Language(
             modes = setOf(InputMode.Scan),
             lines = listOf(
                 "El requadre vermell baixa fila per fila, tot sol.",
-                "Quan és a la fila que ella vol, prem. Ara el requadre es mou " +
+                "Quan és a la fila que la persona vol, prem. Ara el requadre es mou " +
                     "de lletra en lletra dins d'aquella fila.",
                 "Quan és a la lletra que vol, torna a prémer. La lletra " +
                     "s'escriu i tot torna a començar de dalt.",
-                "Si se li passa la lletra no cal fer res: després de dues " +
+                "Si la lletra passa de llarg no cal fer res: després de dues " +
                     "voltes la fila es deixa sola i torna a baixar.",
                 "Tocar la meitat esquerra de la pantalla desfà l'última cosa.",
             ),
@@ -334,7 +335,7 @@ val CATALAN = Language(
             demo = TutorialDemo.Arrows,
             modes = setOf(InputMode.Arrows),
             lines = listOf(
-                "El requadre es queda quiet fins que ella el mou. No hi ha " +
+                "El requadre es queda quiet fins que la persona el mou. No hi ha " +
                     "res a esperar i no es pot arribar tard.",
                 "Les quatre fletxes el mouen una casella cada vegada. TRIA " +
                     "escriu la lletra que hi ha marcada.",
@@ -347,7 +348,7 @@ val CATALAN = Language(
                     "lletra, i ESBORRA TOT, que buida la frase sencera. " +
                     "ESBORRA TOT es prem dues vegades: la primera passa a dir " +
                     "SEGUR? i es posa vermell, i només la segona buida. " +
-                    "Qualsevol altra cosa que faci ho anul·la.",
+                    "Qualsevol altra acció ho anul·la.",
                 "La tecla ⌫ de la graella també esborra una lletra.",
                 "Els espais entre les fletxes també compten: un toc que cau " +
                     "entre dues va a la més propera.",
@@ -357,10 +358,10 @@ val CATALAN = Language(
             title = "Tocar les lletres",
             modes = setOf(InputMode.Direct),
             lines = listOf(
-                "Aquí, i només aquí, les lletres són botons: ella toca la " +
-                    "que vol i s'escriu.",
+                "Aquí, i només aquí, les lletres són botons: es toca la " +
+                    "que es vol i s'escriu.",
                 "És la manera més ràpida amb diferència, però només mentre " +
-                    "pugui posar el dit sobre una tecla concreta. Si els tocs " +
+                    "la persona pugui posar el dit sobre una tecla concreta. Si els tocs " +
                     "comencen a caure a la tecla del costat, prova amb " +
                     "fletxes.",
                 "La tecla ⌫ de la graella esborra l'última lletra.",
@@ -377,7 +378,7 @@ val CATALAN = Language(
                     "escriure, aquelles dues caselles passen a ser dues " +
                     "paraules suggerides més: cinc en comptes de tres. Tornen " +
                     "soles quan la frase s'esborra.",
-                "Les paraules suggerides canvien mentre ella escriu. Triar-ne " +
+                "Les paraules suggerides canvien mentre s'escriu. Triar-ne " +
                     "una escriu la paraula sencera i l'espai: sovint és el " +
                     "camí més curt.",
                 "També perdona errades: si una lletra es repeteix sense voler " +
@@ -400,9 +401,9 @@ val CATALAN = Language(
         TutorialPage(
             title = "Els ajustos que importen",
             lines = listOf(
-                "VELOCITAT DE L'ESCANEIG: quant dura cada pas. Si se li " +
-                    "escapen lletres, fes-lo més lent.",
-                "TEMPS EXTRA A LA PRIMERA LLETRA: en entrar a una fila, li " +
+                "VELOCITAT DE L'ESCANEIG: quant dura cada pas. Si a la persona " +
+                    "se li escapen lletres, fes-lo més lent.",
+                "TEMPS EXTRA A LA PRIMERA LLETRA: en entrar a una fila, " +
                     "dona un moment més per reaccionar.",
                 "TEMPS MÍNIM ENTRE POLSACIONS: si una sola premuda escriu " +
                     "dues lletres, puja'l.",
@@ -428,37 +429,36 @@ val CATALAN = Language(
         TutorialPage(
             title = "Ja està",
             lines = listOf(
-                "Tanca això i prova-ho tu, uns minuts, abans d'explicar-l'hi " +
-                    "a ella. És la millor manera d'explicar-ho bé.",
-                "Si alguna cosa no li va bé, gairebé sempre és un ajust i no " +
+                "Tanca això i prova-ho tu, uns minuts, abans d'explicar-ho " +
+                    "a la persona. És la millor manera d'explicar-ho bé.",
+                "Si alguna cosa no va bé a la persona, gairebé sempre és un ajust i no " +
                     "l'aplicació. Comença per la velocitat.",
                 "Pots tornar a obrir aquesta guia quan vulguis: ⚙ → COM FUNCIONA.",
             ),
         ),
     ),
     onboarding = OnboardingText(
-        welcomeTitle = "Posar-la en marxa",
+        welcomeTitle = "Posar-ho en marxa",
         welcomeLines = listOf(
             "Aquesta aplicació permet que una persona que no pot parlar ni " +
                 "escriure a mà construeixi frases i les digui en veu alta.",
             "Es pot fer servir de diverses maneres. Amb dues preguntes sobre " +
-                "ella, es deixarà preparada tal com li convingui.",
+                "qui l'utilitzarà, es deixarà preparada tal com convingui.",
             "Totes les respostes es poden canviar després als ajustos (⚙, a " +
                 "dalt a la dreta).",
         ),
         start = "COMENÇA",
-        skip = "SALTA",
-        methodTitle = "Com triarà una lletra?",
-        methodHint = "No ho saps? Comença per la manera que li demana " +
-            "menys. Si esperar la cansa, o li costa encertar el moment, " +
-            "prova amb fletxes.",
+        methodTitle = "Com triarà una lletra la persona?",
+        methodHint = "No ho saps? Comença per la manera que demana " +
+            "menys a la persona. Si esperar cansa, o costa encertar el " +
+            "moment, prova amb fletxes.",
         methodDirectDetail = "Pot tocar sempre una tecla concreta. És la " +
             "manera més ràpida, mentre es pugui.",
         methodArrowsDetail = "Pot tocar uns quants botons grans, però no " +
-            "tecles petites. El requadre no es mou fins que ella el mou.",
+            "tecles petites. El requadre no es mou fins que la persona el mou.",
         methodScanDetail = "Pot fer un sol moviment, amb un polsador o amb " +
-            "un toc. Un requadre es mou sol i ella prem quan arriba a " +
-            "allò que vol.",
+            "un toc. Un requadre es mou sol i es prem quan arriba a " +
+            "allò que es vol.",
         pressTitle = "Què premerà?",
         pressHint = "Un polsador és un botó que es connecta a la tauleta " +
             "per Bluetooth. Primer cal aparellar-lo als ajustos de " +
@@ -472,6 +472,22 @@ val CATALAN = Language(
             "fa cap mal.",
         pressBoth = "Les dues coses",
         pressBothDetail = "Els polsadors, i també les meitats de la pantalla.",
+        practiceWord = "HOLA",
+        practiceWrite = "Prova: escriure",
+        practiceWriteScan = "Espera que el requadre arribi a la fila, prem, i " +
+            "torna a prémer sobre la lletra.",
+        practiceWriteArrows = "Mou el requadre amb les fletxes i prem TRIA a " +
+            "cada lletra.",
+        practiceWriteDirect = "Toca cada lletra, una per una.",
+        practiceUndo = "Ara desfés una lletra",
+        practiceUndoScan = "Prem el polsador de desfer, o toca la meitat " +
+            "esquerra de la pantalla si el toc està activat.",
+        practiceUndoArrows = "Prem ⌫ LLETRA al costat de TRIA, o la tecla ⌫ de " +
+            "la graella.",
+        practiceUndoDirect = "Toca la tecla ⌫.",
+        practiceDone = "Fet. Això és tot el que la persona farà servir.",
+        practiceFinish = "ACABA",
+        practiceAgain = "PRACTICA",
     ),
     bindPressFor = "Prem el botó per a",
     bindButtonFor = "Botó per a",
@@ -524,8 +540,8 @@ val ENGLISH = Language(
         "I am cold",
         "I am too warm",
         "I need the toilet",
-        "Please tell my daughters",
-        "Please call the nurse",
+        "Please tell my family",
+        "Please get help",
         "Wait a moment",
         "I am fine",
         "Thank you",
@@ -604,7 +620,7 @@ val ENGLISH = Language(
         }
     },
     settingsBoldWritingTitle = "Sentence in bold",
-    settingsBoldWritingDetail = "The sentence she is writing, heavier, to be read from across a room.",
+    settingsBoldWritingDetail = "The sentence being written, heavier, to be read from across a room.",
     settingsArrowShapeTitle = "How the arrows look",
     settingsArrowShapeDetail = "Separate gives each arrow its own button, so its size is visible. Joined draws them as one shape. What answers to a tap is the same either way.",
     settingsArrowShapeJoined = "Joined",
@@ -625,11 +641,11 @@ val ENGLISH = Language(
             lines = listOf(
                 "It lets someone who cannot speak and cannot move their hands " +
                     "write things and say them out loud.",
-                "Depending on what she can do, she touches the letters, " +
-                    "steers a highlight with arrows, or makes one movement " +
+                "Depending on what the person can do, they touch the letters, " +
+                    "steer a highlight with arrows, or make one movement " +
                     "while the app does the rest.",
                 "You are the person setting it up. This guide explains how it " +
-                    "works, so that you can explain it to her properly.",
+                    "works, so that you can explain it to them properly.",
             ),
         ),
         TutorialPage(
@@ -640,15 +656,15 @@ val ENGLISH = Language(
                 "This is the part people get wrong, and it is worth reading " +
                     "twice.",
                 "The letters on the screen are NOT buttons. Tapping the letter " +
-                    "she wants does nothing. They are there to be read, not " +
+                    "they want does nothing. They are there to be read, not " +
                     "pressed.",
                 "With automatic scanning there are two buttons and they are " +
                     "half the screen each: the whole RIGHT half writes, the " +
                     "whole LEFT half undoes.",
                 "They are invisible on purpose: the grid is there to be looked " +
                     "at, and lines drawn over it would only cover letters.",
-                "Which means she can touch wherever suits her within the right " +
-                    "half. There is nothing to aim at, and she cannot miss.",
+                "Which means they can touch wherever suits them within the right " +
+                    "half. There is nothing to aim at, and they cannot miss.",
                 "Arrows are different: there the buttons are visible — the " +
                     "four arrows and CHOOSE. The letters still are not buttons.",
                 "You can switch this off in settings, under TOUCH THE SCREEN " +
@@ -662,11 +678,11 @@ val ENGLISH = Language(
             modes = setOf(InputMode.Scan),
             lines = listOf(
                 "The red highlight moves down the rows, one at a time, on its own.",
-                "When it is on the row she wants, she presses. The highlight " +
+                "When it is on the row they want, they press. The highlight " +
                     "now moves letter by letter along that row.",
-                "When it is on the letter she wants, she presses again. The " +
+                "When it is on the letter they want, they press again. The " +
                     "letter is written and it all starts again from the top.",
-                "If the letter goes past, she does not have to do anything: " +
+                "If the letter goes past, they do not have to do anything: " +
                     "after two passes the row lets go by itself.",
                 "Touching the left half of the screen undoes the last thing.",
             ),
@@ -676,7 +692,7 @@ val ENGLISH = Language(
             demo = TutorialDemo.Arrows,
             modes = setOf(InputMode.Arrows),
             lines = listOf(
-                "The highlight stays still until she moves it. There is " +
+                "The highlight stays still until they move it. There is " +
                     "nothing to wait for and nothing to be late for.",
                 "The four arrows move it one cell at a time. CHOOSE writes " +
                     "whichever letter is highlighted.",
@@ -689,7 +705,7 @@ val ENGLISH = Language(
                     "letter, and CLEAR ALL, which empties the whole sentence. " +
                     "CLEAR ALL takes two presses: the first turns it red and " +
                     "makes it say SURE?, and only the second empties it. " +
-                    "Anything else she does cancels it.",
+                    "Anything else they do cancels it.",
                 "The ⌫ key on the grid removes one letter too.",
                 "The gaps between the arrows count too: a tap that lands " +
                     "between two goes to the nearer one.",
@@ -699,9 +715,9 @@ val ENGLISH = Language(
             title = "Touching the letters",
             modes = setOf(InputMode.Direct),
             lines = listOf(
-                "Here, and only here, the letters are buttons: she touches the " +
-                    "one she wants and it is written.",
-                "It is by far the quickest way, but only while she can land a " +
+                "Here, and only here, the letters are buttons: the person touches " +
+                    "the one they want and it is written.",
+                "It is by far the quickest way, but only while they can land a " +
                     "finger on one particular key. If touches start landing on " +
                     "the key next door, try arrows instead.",
                 "The ⌫ key on the grid removes the last letter.",
@@ -715,10 +731,10 @@ val ENGLISH = Language(
                 "Top row: words the app is suggesting, then YES, NO and " +
                     "PHRASES.",
                 "YES and NO are only there while the sentence is empty. Once " +
-                    "she starts writing, those two cells become two more " +
+                    "they start writing, those two cells become two more " +
                     "suggested words — five instead of three. They come back " +
                     "on their own when the sentence is cleared.",
-                "The suggested words change as she writes. Taking one writes " +
+                "The suggested words change as they write. Taking one writes " +
                     "the whole word and the space after it, which is often " +
                     "much the shortest route.",
                 "It also forgives mistakes: if a letter lands twice, or not at " +
@@ -744,9 +760,9 @@ val ENGLISH = Language(
             title = "The settings that matter",
             lines = listOf(
                 "SCANNING SPEED: how long each step lasts. If letters are " +
-                    "getting away from her, make it slower.",
-                "EXTRA TIME ON THE FIRST LETTER: gives her a moment longer to " +
-                    "react just after she has entered a row.",
+                    "getting away from them, make it slower.",
+                "EXTRA TIME ON THE FIRST LETTER: gives them a moment longer to " +
+                    "react just after they have entered a row.",
                 "MINIMUM TIME BETWEEN PRESSES: if one press is writing two " +
                     "letters, raise it.",
                 "IGNORE TREMORS: a burst of taps close together counts once.",
@@ -770,8 +786,8 @@ val ENGLISH = Language(
             title = "That is all",
             lines = listOf(
                 "Close this and try it yourself for a few minutes before you " +
-                    "explain it to her. It is the only way to explain it well.",
-                "If something is not working for her it is almost always a " +
+                    "explain it to them. It is the only way to explain it well.",
+                "If something is not working for them it is almost always a " +
                     "setting rather than the app. Start with the speed.",
                 "You can open this guide again whenever you like: ⚙ → HOW IT " +
                     "WORKS.",
@@ -783,24 +799,23 @@ val ENGLISH = Language(
         welcomeLines = listOf(
             "This app lets someone who cannot speak or write by hand put " +
                 "sentences together and say them out loud.",
-            "There are a few ways to use it. Two questions about her, and it " +
-                "will be set up the way that suits her.",
+            "There are a few ways to use it. Two questions about the person " +
+                "who will use it, and it will be set up the way that suits them.",
             "Every answer can be changed later in settings (⚙, top right).",
         ),
         start = "START",
-        skip = "SKIP",
-        methodTitle = "How will she choose a letter?",
-        methodHint = "Not sure? Start with the one that asks the least of her. " +
-            "If waiting tires her, or getting the moment right is hard, " +
+        methodTitle = "How will the person choose a letter?",
+        methodHint = "Not sure? Start with the one that asks the least of them. " +
+            "If waiting tires them, or getting the moment right is hard, " +
             "try arrows.",
-        methodDirectDetail = "She can reliably touch one particular key. " +
+        methodDirectDetail = "They can reliably touch one particular key. " +
             "The quickest way, while it lasts.",
-        methodArrowsDetail = "She can touch a few big buttons, but not small " +
-            "keys. Nothing moves until she moves it.",
-        methodScanDetail = "She can make one movement, with a switch or a " +
-            "touch. A highlight moves by itself and she presses when it " +
-            "reaches what she wants.",
-        pressTitle = "What will she press?",
+        methodArrowsDetail = "They can touch a few big buttons, but not small " +
+            "keys. Nothing moves until they move it.",
+        methodScanDetail = "They can make one movement, with a switch or a " +
+            "touch. A highlight moves by itself and they press when it " +
+            "reaches what they want.",
+        pressTitle = "What will they press?",
         pressHint = "A switch is a button that connects to the tablet by " +
             "Bluetooth. Pair it in the tablet's Bluetooth settings first.",
         pressScreen = "The screen",
@@ -811,6 +826,21 @@ val ENGLISH = Language(
             "the screen does nothing, so an arm resting on it is harmless.",
         pressBoth = "Both",
         pressBothDetail = "Switches, and the screen halves as well.",
+        practiceWord = "HELLO",
+        practiceWrite = "Practice: write",
+        practiceWriteScan = "Wait for the highlight to reach the row, press, then " +
+            "press again on the letter.",
+        practiceWriteArrows = "Move the highlight with the arrows, then press CHOOSE " +
+            "on each letter.",
+        practiceWriteDirect = "Touch each letter in turn.",
+        practiceUndo = "Now take one letter back",
+        practiceUndoScan = "Press the undo switch, or touch the left half of the " +
+            "screen if touch is on.",
+        practiceUndoArrows = "Press ⌫ LETTER beside CHOOSE, or the ⌫ key on the grid.",
+        practiceUndoDirect = "Touch the ⌫ key.",
+        practiceDone = "Done. That is everything they will use.",
+        practiceFinish = "FINISH",
+        practiceAgain = "PRACTISE",
     ),
     bindPressFor = "Press the button for",
     bindButtonFor = "Button for",
@@ -851,7 +881,7 @@ val SPANISH = Language(
     openers = listOf(
         "quiero", "necesito", "ayuda", "gracias", "por favor",
         "agua", "dolor", "baño", "comer", "frío",
-        "calor", "cansada", "espera", "para", "hola",
+        "calor", "descansar", "espera", "para", "hola",
         "estoy", "tengo", "puedo", "dónde", "qué",
     ),
     defaultPhrases = listOf(
@@ -863,8 +893,8 @@ val SPANISH = Language(
         "Tengo frío",
         "Tengo calor",
         "Necesito ir al baño",
-        "Avisad a mis hijas",
-        "Llama a la enfermera",
+        "Avisad a mi familia",
+        "Pedid ayuda, por favor",
         "Espera un momento",
         "Estoy bien",
         "Gracias",
@@ -943,7 +973,7 @@ val SPANISH = Language(
         }
     },
     settingsBoldWritingTitle = "Frase en negrita",
-    settingsBoldWritingDetail = "La frase que escribe, más gruesa, para leerla de lejos.",
+    settingsBoldWritingDetail = "La frase que se está escribiendo, más gruesa, para leerla de lejos.",
     settingsArrowShapeTitle = "Cómo se ven las flechas",
     settingsArrowShapeDetail = "Separadas, cada flecha tiene su botón y se ve hasta dónde llega. En cruz se ven como una sola pieza. Lo que se puede tocar es igual en los dos casos.",
     settingsArrowShapeJoined = "En cruz",
@@ -964,11 +994,12 @@ val SPANISH = Language(
             lines = listOf(
                 "Sirve para que una persona que no puede hablar ni mover las " +
                     "manos pueda escribir y decir cosas.",
-                "Según lo que pueda hacer, ella toca las letras, mueve un " +
-                    "recuadro con flechas, o hace un solo movimiento y la " +
-                    "aplicación hace el resto.",
-                "Tú eres quien la prepara. Esta guía explica cómo funciona, " +
-                    "para que puedas explicárselo bien.",
+                "Según lo que pueda hacer la persona, toca las letras, " +
+                    "mueve un recuadro con flechas, o hace un solo " +
+                    "movimiento y la aplicación hace el resto.",
+                "Tú eres quien prepara la aplicación. Esta guía explica " +
+                    "cómo funciona, para que puedas explicarlo bien a la " +
+                    "persona.",
             ),
         ),
         TutorialPage(
@@ -979,16 +1010,16 @@ val SPANISH = Language(
                 "Esto es lo que más cuesta entender, y vale la pena leerlo dos " +
                     "veces.",
                 "Las letras de la pantalla NO son botones. Tocar la letra que " +
-                    "ella quiere no hace nada. Están para leerlas, no para " +
+                    "se quiere no hace nada. Están para leerlas, no para " +
                     "pulsarlas.",
                 "Con el escaneo automático hay dos botones y ocupan media " +
                     "pantalla cada uno: toda la mitad DERECHA escribe, toda la " +
                     "mitad IZQUIERDA deshace.",
                 "No se ven, y es a propósito: la cuadrícula está para mirarla, " +
                     "y unas líneas encima solo taparían letras.",
-                "Eso quiere decir que puede tocar donde le vaya bien de la " +
-                    "mitad que sea. No tiene que acertar nada, y no puede " +
-                    "fallar el botón.",
+                "Eso quiere decir que se puede tocar donde mejor venga " +
+                    "dentro de la mitad que sea. No hay que acertar nada, y " +
+                    "no se puede fallar el botón.",
                 "Con flechas es distinto: allí los botones sí se ven, son las " +
                     "cuatro flechas y ELIGE. Las letras siguen sin ser botones.",
                 "Se puede desactivar en los ajustes, en TOCAR LA PANTALLA PARA " +
@@ -1001,11 +1032,11 @@ val SPANISH = Language(
             modes = setOf(InputMode.Scan),
             lines = listOf(
                 "El recuadro rojo baja fila por fila, él solo.",
-                "Cuando está en la fila que ella quiere, pulsa. Ahora el " +
+                "Cuando está en la fila que la persona quiere, pulsa. Ahora el " +
                     "recuadro se mueve de letra en letra dentro de esa fila.",
                 "Cuando está en la letra que quiere, vuelve a pulsar. La letra " +
                     "se escribe y todo empieza otra vez desde arriba.",
-                "Si se le pasa la letra no hace falta nada: después de dos " +
+                "Si la letra pasa de largo no hace falta nada: después de dos " +
                     "vueltas la fila se suelta sola.",
                 "Tocar la mitad izquierda de la pantalla deshace lo último.",
             ),
@@ -1015,7 +1046,7 @@ val SPANISH = Language(
             demo = TutorialDemo.Arrows,
             modes = setOf(InputMode.Arrows),
             lines = listOf(
-                "El recuadro se queda quieto hasta que ella lo mueve. No hay " +
+                "El recuadro se queda quieto hasta que la persona lo mueve. No hay " +
                     "nada que esperar y no se puede llegar tarde.",
                 "Las cuatro flechas lo mueven una casilla cada vez. ELIGE " +
                     "escribe la letra marcada.",
@@ -1027,8 +1058,8 @@ val SPANISH = Language(
                 "Junto a ELIGE están ⌫ LETRA, que borra la última letra, " +
                     "y BORRA TODO, que vacía la frase entera. BORRA TODO se " +
                     "pulsa dos veces: la primera se pone roja y dice " +
-                    "¿SEGURO?, y solo la segunda vacía. Cualquier otra cosa " +
-                    "que haga lo anula.",
+                    "¿SEGURO?, y solo la segunda vacía. Cualquier otra " +
+                    "acción lo anula.",
                 "La tecla ⌫ de la cuadrícula también borra una letra.",
                 "Los espacios entre las flechas también cuentan: un toque que " +
                     "cae entre dos va a la más cercana.",
@@ -1038,10 +1069,10 @@ val SPANISH = Language(
             title = "Tocar las letras",
             modes = setOf(InputMode.Direct),
             lines = listOf(
-                "Aquí, y solo aquí, las letras son botones: ella toca la que " +
-                    "quiere y se escribe.",
+                "Aquí, y solo aquí, las letras son botones: se toca la que " +
+                    "se quiere y se escribe.",
                 "Es la forma más rápida con diferencia, pero solo mientras " +
-                    "pueda poner el dedo en una tecla concreta. Si los toques " +
+                    "la persona pueda poner el dedo en una tecla concreta. Si los toques " +
                     "empiezan a caer en la tecla de al lado, prueba con " +
                     "flechas.",
                 "La tecla ⌫ de la cuadrícula borra la última letra.",
@@ -1058,7 +1089,7 @@ val SPANISH = Language(
                     "esas dos casillas pasan a ser dos palabras sugeridas más: " +
                     "cinco en vez de tres. Vuelven solas cuando se borra la " +
                     "frase.",
-                "Las palabras sugeridas cambian mientras ella escribe. Elegir " +
+                "Las palabras sugeridas cambian mientras se escribe. Elegir " +
                     "una escribe la palabra entera y el espacio: casi siempre " +
                     "es el camino más corto.",
                 "También perdona errores: si una letra se repite sin querer o " +
@@ -1082,9 +1113,9 @@ val SPANISH = Language(
         TutorialPage(
             title = "Los ajustes que importan",
             lines = listOf(
-                "VELOCIDAD DEL ESCANEO: cuánto dura cada paso. Si se le " +
-                    "escapan letras, hazlo más lento.",
-                "TIEMPO EXTRA EN LA PRIMERA LETRA: al entrar en una fila, le " +
+                "VELOCIDAD DEL ESCANEO: cuánto dura cada paso. Si a la persona " +
+                    "se le escapan letras, hazlo más lento.",
+                "TIEMPO EXTRA EN LA PRIMERA LETRA: al entrar en una fila, " +
                     "da un momento más para reaccionar.",
                 "TIEMPO MÍNIMO ENTRE PULSACIONES: si una sola pulsación " +
                     "escribe dos letras, súbelo.",
@@ -1110,9 +1141,9 @@ val SPANISH = Language(
         TutorialPage(
             title = "Ya está",
             lines = listOf(
-                "Cierra esto y pruébalo tú unos minutos antes de explicárselo " +
-                    "a ella. Es la mejor manera de explicarlo bien.",
-                "Si algo no le va bien, casi siempre es un ajuste y no la " +
+                "Cierra esto y pruébalo tú unos minutos antes de explicarlo " +
+                    "a la persona. Es la mejor manera de explicarlo bien.",
+                "Si algo no va bien a la persona, casi siempre es un ajuste y no la " +
                     "aplicación. Empieza por la velocidad.",
                 "Puedes volver a abrir esta guía cuando quieras: ⚙ → CÓMO " +
                     "FUNCIONA.",
@@ -1120,28 +1151,27 @@ val SPANISH = Language(
         ),
     ),
     onboarding = OnboardingText(
-        welcomeTitle = "Prepararla",
+        welcomeTitle = "Ponerla en marcha",
         welcomeLines = listOf(
             "Esta aplicación permite que una persona que no puede hablar ni " +
                 "escribir a mano construya frases y las diga en voz alta.",
-            "Se puede usar de varias maneras. Con dos preguntas sobre ella, " +
-                "quedará preparada como mejor le convenga.",
+            "Se puede usar de varias maneras. Con dos preguntas sobre quien la va a usar, " +
+                "quedará preparada como mejor convenga.",
             "Todas las respuestas se pueden cambiar después en los ajustes " +
                 "(⚙, arriba a la derecha).",
         ),
         start = "EMPEZAR",
-        skip = "OMITIR",
-        methodTitle = "¿Cómo elegirá una letra?",
-        methodHint = "¿No lo sabes? Empieza por la forma que menos le pida. " +
-            "Si esperar la cansa, o le cuesta acertar el momento, prueba " +
-            "con flechas.",
+        methodTitle = "¿Cómo elegirá una letra la persona?",
+        methodHint = "¿No lo sabes? Empieza por la forma que menos pida a la " +
+            "persona. Si esperar cansa, o cuesta acertar el momento, " +
+            "prueba con flechas.",
         methodDirectDetail = "Puede tocar siempre una tecla concreta. Es la " +
             "forma más rápida, mientras dure.",
         methodArrowsDetail = "Puede tocar unos pocos botones grandes, pero " +
-            "no teclas pequeñas. Nada se mueve hasta que ella lo mueve.",
+            "no teclas pequeñas. Nada se mueve hasta que la persona lo mueve.",
         methodScanDetail = "Puede hacer un solo movimiento, con un pulsador " +
-            "o con un toque. Un recuadro se mueve solo y ella pulsa cuando " +
-            "llega a lo que quiere.",
+            "o con un toque. Un recuadro se mueve solo y se pulsa cuando " +
+            "llega a lo que se quiere.",
         pressTitle = "¿Qué pulsará?",
         pressHint = "Un pulsador es un botón que se conecta a la tableta " +
             "por Bluetooth. Primero hay que emparejarlo en los ajustes de " +
@@ -1156,6 +1186,22 @@ val SPANISH = Language(
         pressBoth = "Las dos",
         pressBothDetail = "Los pulsadores, y también las mitades de la " +
             "pantalla.",
+        practiceWord = "HOLA",
+        practiceWrite = "Práctica: escribir",
+        practiceWriteScan = "Espera a que el recuadro llegue a la fila, pulsa, " +
+            "y vuelve a pulsar sobre la letra.",
+        practiceWriteArrows = "Mueve el recuadro con las flechas y pulsa ELIGE " +
+            "en cada letra.",
+        practiceWriteDirect = "Toca cada letra, una por una.",
+        practiceUndo = "Ahora deshaz una letra",
+        practiceUndoScan = "Pulsa el pulsador de deshacer, o toca la mitad " +
+            "izquierda de la pantalla si el toque está activado.",
+        practiceUndoArrows = "Pulsa ⌫ LETRA junto a ELIGE, o la tecla ⌫ de la " +
+            "cuadrícula.",
+        practiceUndoDirect = "Toca la tecla ⌫.",
+        practiceDone = "Hecho. Eso es todo lo que la persona usará.",
+        practiceFinish = "TERMINAR",
+        practiceAgain = "PRACTICAR",
     ),
     bindPressFor = "Pulsa el botón para",
     bindButtonFor = "Botón para",

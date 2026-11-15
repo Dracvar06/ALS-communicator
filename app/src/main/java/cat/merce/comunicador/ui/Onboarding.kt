@@ -37,12 +37,14 @@ enum class ScanPress {
     Both,
 }
 
+/** Where the practice round has got to. */
+enum class PracticeStep { Write, Undo, Done }
+
 /** The words on the onboarding screens, for one language. */
 class OnboardingText(
     val welcomeTitle: String,
     val welcomeLines: List<String>,
     val start: String,
-    val skip: String,
 
     val methodTitle: String,
     val methodHint: String,
@@ -58,4 +60,20 @@ class OnboardingText(
     val pressSwitchesDetail: String,
     val pressBoth: String,
     val pressBothDetail: String,
+
+    /** A short, common word for the practice round, in capitals. */
+    val practiceWord: String,
+    /** "Practice: write" — followed on screen by the word itself. */
+    val practiceWrite: String,
+    val practiceWriteScan: String,
+    val practiceWriteArrows: String,
+    val practiceWriteDirect: String,
+    val practiceUndo: String,
+    val practiceUndoScan: String,
+    val practiceUndoArrows: String,
+    val practiceUndoDirect: String,
+    val practiceDone: String,
+    val practiceFinish: String,
+    /** The settings button that starts a practice round on its own. */
+    val practiceAgain: String,
 )

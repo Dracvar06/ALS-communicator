@@ -29,8 +29,8 @@ val BASQUE = Language(
         "Hotz dut",
         "Bero dut",
         "Komunera joan behar dut",
-        "Abisatu nire alabei",
-        "Deitu erizainari",
+        "Abisatu nire familiari",
+        "Eskatu laguntza, mesedez",
         "Itxaron une bat",
         "Ondo nago",
         "Eskerrik asko",
@@ -293,7 +293,6 @@ val BASQUE = Language(
                 "eskuinean).",
         ),
         start = "HASI",
-        skip = "SALTATU",
         methodTitle = "Nola aukeratuko du letra bat?",
         methodHint = "Ez zaude ziur? Hasi gutxien eskatzen diotenarekin. " +
             "Itxaroteak nekatzen badu, edo une egokia asmatzea zaila bada, " +
@@ -318,6 +317,22 @@ val BASQUE = Language(
             "gainean pausatutako besoak ez du kalterik egiten.",
         pressBoth = "Biak",
         pressBothDetail = "Sakagailuak, eta pantailaren erdiak ere bai.",
+        practiceWord = "KAIXO",
+        practiceWrite = "Praktika: idatzi",
+        practiceWriteScan = "Itxaron koadroa lerrora iritsi arte, sakatu, eta " +
+            "gero sakatu berriz letran.",
+        practiceWriteArrows = "Mugitu koadroa geziekin, eta sakatu AUKERATU " +
+            "letra bakoitzean.",
+        practiceWriteDirect = "Ukitu letra bakoitza, banan-banan.",
+        practiceUndo = "Orain desegin letra bat",
+        practiceUndoScan = "Sakatu desegiteko sakagailua, edo ukitu " +
+            "pantailaren ezkerreko erdia, ukitzea aktibatuta badago.",
+        practiceUndoArrows = "Sakatu AUKERATUren ondoko ⌫ LETRA, edo " +
+            "saretako ⌫ tekla.",
+        practiceUndoDirect = "Ukitu ⌫ tekla.",
+        practiceDone = "Eginda. Pertsonak erabiliko duen guztia da hori.",
+        practiceFinish = "AMAITU",
+        practiceAgain = "PRAKTIKATU",
     ),
     bindPressFor = "Sakatu botoia honetarako:",
     bindButtonFor = "Botoia honetarako:",

@@ -29,8 +29,8 @@ val GERMAN = Language(
         "Mir ist kalt",
         "Mir ist zu warm",
         "Ich muss auf die Toilette",
-        "Sagt bitte meinen Töchtern Bescheid",
-        "Bitte ruf die Pflegekraft",
+        "Sagt bitte meiner Familie Bescheid",
+        "Bitte hol Hilfe",
         "Einen Moment bitte",
         "Mir geht es gut",
         "Danke",
@@ -109,7 +109,7 @@ val GERMAN = Language(
         }
     },
     settingsBoldWritingTitle = "Satz in Fettschrift",
-    settingsBoldWritingDetail = "Der Satz, den sie schreibt, in dickerer Schrift, damit man ihn aus der Ferne lesen kann.",
+    settingsBoldWritingDetail = "Der Satz, den die Person schreibt, in dickerer Schrift, damit man ihn aus der Ferne lesen kann.",
     settingsArrowShapeTitle = "Wie die Pfeile aussehen",
     settingsArrowShapeDetail = "Getrennt gibt jedem Pfeil eine eigene Taste, sodass man seine Größe sieht. Verbunden zeichnet sie als eine Form. Worauf eine Berührung reagiert, ist in beiden Fällen gleich.",
     settingsArrowShapeJoined = "Verbunden",
@@ -130,11 +130,11 @@ val GERMAN = Language(
             lines = listOf(
                 "Sie ermöglicht es einem Menschen, der nicht sprechen und die " +
                     "Hände nicht bewegen kann, zu schreiben und Dinge laut zu sagen.",
-                "Je nachdem, was sie kann, berührt sie die Buchstaben, lenkt " +
-                    "eine Markierung mit Pfeilen oder macht eine einzige " +
-                    "Bewegung, während die App den Rest übernimmt.",
-                "Du bist die Person, die sie einrichtet. Diese Anleitung " +
-                    "erklärt, wie alles funktioniert, damit du es ihr gut " +
+                "Je nachdem, was die Person kann, berührt sie die Buchstaben, " +
+                    "lenkt eine Markierung mit Pfeilen oder macht eine " +
+                    "einzige Bewegung, während die App den Rest übernimmt.",
+                "Du richtest die App für die Person ein. Diese Anleitung " +
+                    "erklärt, wie alles funktioniert, damit du es gut " +
                     "erklären kannst.",
             ),
         ),
@@ -154,9 +154,9 @@ val GERMAN = Language(
                 "Sie sind absichtlich unsichtbar: das Raster ist zum " +
                     "Anschauen da, und Linien darüber würden nur Buchstaben " +
                     "verdecken.",
-                "Das heißt, sie kann innerhalb der Hälfte berühren, wo es " +
-                    "ihr passt. Es gibt nichts zu treffen, und sie kann die " +
-                    "Taste nicht verfehlen.",
+                "Das heißt, die Person kann innerhalb der Hälfte berühren, " +
+                    "wo es passt. Es gibt nichts zu treffen, und die Taste " +
+                    "lässt sich nicht verfehlen.",
                 "Bei Pfeilen ist es anders: dort sind die Tasten sichtbar, " +
                     "nämlich die vier Pfeile und WÄHLEN. Die Buchstaben sind " +
                     "trotzdem keine Tasten.",
@@ -171,13 +171,13 @@ val GERMAN = Language(
             modes = setOf(InputMode.Scan),
             lines = listOf(
                 "Die rote Markierung wandert von selbst Zeile für Zeile nach unten.",
-                "Wenn sie bei der gewünschten Zeile ist, drückt sie. Jetzt " +
-                    "wandert die Markierung Buchstabe für Buchstabe durch " +
-                    "diese Zeile.",
-                "Wenn sie beim gewünschten Buchstaben ist, drückt sie noch " +
-                    "einmal. Der Buchstabe wird geschrieben und alles beginnt " +
+                "Wenn die Markierung bei der gewünschten Zeile ist, drückt " +
+                    "die Person. Jetzt wandert die Markierung Buchstabe für " +
+                    "Buchstabe durch diese Zeile.",
+                "Wenn die Markierung beim gewünschten Buchstaben ist, " +
+                    "drückt die Person noch einmal. Der Buchstabe wird geschrieben und alles beginnt " +
                     "wieder oben.",
-                "Wenn der Buchstabe vorbeigeht, muss sie nichts tun: nach " +
+                "Wenn der Buchstabe vorbeigeht, muss die Person nichts tun: nach " +
                     "zwei Durchgängen verlässt die Markierung die Zeile von " +
                     "selbst und läuft wieder nach unten.",
                 "Die linke Bildschirmhälfte zu berühren macht das Letzte rückgängig.",
@@ -188,7 +188,7 @@ val GERMAN = Language(
             demo = TutorialDemo.Arrows,
             modes = setOf(InputMode.Arrows),
             lines = listOf(
-                "Die Markierung bleibt stehen, bis sie sie bewegt. Es gibt " +
+                "Die Markierung bleibt stehen, bis die Person sie bewegt. Es gibt " +
                     "nichts abzuwarten, und man kann nicht zu spät sein.",
                 "Die vier Pfeile bewegen sie ein Feld weiter. WÄHLEN " +
                     "schreibt den Buchstaben, der markiert ist.",
@@ -201,7 +201,7 @@ val GERMAN = Language(
                     "entfernt, und ALLES LÖSCHEN, das den ganzen Satz leert. " +
                     "ALLES LÖSCHEN braucht zwei Drücke: der erste färbt es " +
                     "rot und lässt es SICHER? anzeigen, erst der zweite leert " +
-                    "den Satz. Alles andere, was sie tut, bricht es ab.",
+                    "den Satz. Alles andere, was die Person tut, bricht es ab.",
                 "Die Taste ⌫ im Raster entfernt ebenfalls einen Buchstaben.",
                 "Auch die Lücken zwischen den Pfeilen zählen: eine " +
                     "Berührung zwischen zwei Pfeilen geht an den näheren.",
@@ -211,10 +211,10 @@ val GERMAN = Language(
             title = "Buchstaben berühren",
             modes = setOf(InputMode.Direct),
             lines = listOf(
-                "Nur hier sind die Buchstaben Tasten: sie berührt den, den " +
-                    "sie möchte, und er wird geschrieben.",
-                "Es ist mit Abstand der schnellste Weg, aber nur, solange sie " +
-                    "einen Finger genau auf eine bestimmte Taste setzen kann. " +
+                "Nur hier sind die Buchstaben Tasten: die Person berührt den, " +
+                    "den sie möchte, und er wird geschrieben.",
+                "Es ist mit Abstand der schnellste Weg, aber nur, solange " +
+                    "die Person einen Finger genau auf eine bestimmte Taste setzen kann. " +
                     "Wenn die Berührungen anfangen, auf der Nachbartaste zu " +
                     "landen, probiere stattdessen Pfeile.",
                 "Die Taste ⌫ im Raster entfernt den letzten Buchstaben.",
@@ -229,11 +229,11 @@ val GERMAN = Language(
                 "Oberste Zeile: Wörter, die die App vorschlägt, dann JA, " +
                     "NEIN und PHRASEN.",
                 "JA und NEIN sind nur da, solange der Satz leer ist. Sobald " +
-                    "sie zu schreiben beginnt, werden diese beiden Felder zu " +
+                    "die Person zu schreiben beginnt, werden diese beiden Felder zu " +
                     "zwei weiteren Wortvorschlägen: fünf statt drei. Sie " +
                     "kommen von selbst wieder, wenn der Satz gelöscht wird.",
-                "Die vorgeschlagenen Wörter ändern sich, während sie " +
-                    "schreibt. Ein Wort zu wählen schreibt das ganze Wort und " +
+                "Die vorgeschlagenen Wörter ändern sich, während die " +
+                    "Person schreibt. Ein Wort zu wählen schreibt das ganze Wort und " +
                     "das Leerzeichen danach, was oft der kürzeste Weg ist.",
                 "Es verzeiht auch Fehler: wenn ein Buchstabe doppelt oder " +
                     "gar nicht ankommt, erscheinen trotzdem weiter Wörter. " +
@@ -260,10 +260,10 @@ val GERMAN = Language(
             title = "Die wichtigen Einstellungen",
             lines = listOf(
                 "SCAN-GESCHWINDIGKEIT: wie lange jeder Schritt dauert. Wenn " +
-                    "ihr Buchstaben entgehen, stelle es langsamer.",
-                "EXTRA-ZEIT BEIM ERSTEN BUCHSTABEN: gibt ihr einen Moment " +
-                    "mehr zum Reagieren, gleich nachdem sie eine Zeile " +
-                    "betreten hat.",
+                    "der Person Buchstaben entgehen, stelle es langsamer.",
+                "EXTRA-ZEIT BEIM ERSTEN BUCHSTABEN: gibt der Person einen " +
+                    "Moment mehr zum Reagieren, gleich nachdem eine Zeile " +
+                    "betreten wurde.",
                 "MINDESTZEIT ZWISCHEN ZWEI TASTENDRÜCKEN: wenn ein einziger " +
                     "Druck zwei Buchstaben schreibt, erhöhe sie.",
                 "ZITTERN IGNORIEREN: mehrere schnelle Berührungen " +
@@ -288,8 +288,8 @@ val GERMAN = Language(
             title = "Das war alles",
             lines = listOf(
                 "Schließe das hier und probiere es selbst ein paar Minuten " +
-                    "aus, bevor du es ihr erklärst. Nur so erklärt man es gut.",
-                "Wenn etwas bei ihr nicht klappt, liegt es fast immer an " +
+                    "aus, bevor du es der Person erklärst. Nur so erklärt man es gut.",
+                "Wenn etwas bei der Person nicht klappt, liegt es fast immer an " +
                     "einer Einstellung und nicht an der App. Fange mit der " +
                     "Geschwindigkeit an.",
                 "Du kannst diese Anleitung jederzeit wieder öffnen: ⚙ → SO " +
@@ -302,25 +302,25 @@ val GERMAN = Language(
         welcomeLines = listOf(
             "Mit dieser App kann jemand, der nicht sprechen und nicht mit " +
                 "der Hand schreiben kann, Sätze bilden und laut sagen.",
-            "Es gibt mehrere Wege, sie zu benutzen. Zwei Fragen zu ihr, und " +
-                "die App wird so eingerichtet, wie es zu ihr passt.",
+            "Es gibt mehrere Wege, sie zu benutzen. Zwei Fragen zur Person, " +
+                "und die App wird so eingerichtet, wie es zu ihr passt.",
             "Jede Antwort lässt sich später in den Einstellungen ändern " +
                 "(⚙, oben rechts).",
         ),
         start = "LOS",
-        skip = "ÜBERSPRINGEN",
-        methodTitle = "Wie wählt sie einen Buchstaben?",
-        methodHint = "Unsicher? Beginne mit dem, was am wenigsten von ihr " +
-            "verlangt. Wenn das Warten sie ermüdet oder der richtige " +
+        methodTitle = "Wie wählt die Person einen Buchstaben?",
+        methodHint = "Unsicher? Beginne mit dem, was der Person am wenigsten " +
+            "abverlangt. Wenn das Warten sie ermüdet oder der richtige " +
             "Moment schwer zu treffen ist, probiere Pfeile.",
-        methodDirectDetail = "Sie kann zuverlässig eine bestimmte Taste " +
+        methodDirectDetail = "Die Person kann zuverlässig eine bestimmte Taste " +
             "berühren. Der schnellste Weg, solange es geht.",
-        methodArrowsDetail = "Sie kann ein paar große Tasten berühren, aber " +
-            "keine kleinen. Nichts bewegt sich, bis sie es bewegt.",
-        methodScanDetail = "Sie kann eine einzige Bewegung machen, mit einem " +
-            "Taster oder durch Berühren. Eine Markierung bewegt sich von " +
-            "selbst, und sie drückt, wenn sie bei dem ist, was sie möchte.",
-        pressTitle = "Was drückt sie?",
+        methodArrowsDetail = "Die Person kann ein paar große Tasten berühren, " +
+            "aber keine kleinen. Nichts bewegt sich, bis sie es bewegt.",
+        methodScanDetail = "Die Person kann eine einzige Bewegung machen, " +
+            "mit einem Taster oder durch Berühren. Eine Markierung bewegt " +
+            "sich von selbst, und die Person drückt, wenn die Markierung " +
+            "bei dem ist, was sie möchte.",
+        pressTitle = "Was drückt die Person?",
         pressHint = "Ein Taster ist eine Taste, die per Bluetooth mit dem " +
             "Tablet verbunden wird. Koppele ihn zuerst in den " +
             "Bluetooth-Einstellungen des Tablets.",
@@ -333,6 +333,22 @@ val GERMAN = Language(
             "darauf ruhender Arm schadet also nicht.",
         pressBoth = "Beides",
         pressBothDetail = "Taster, und zusätzlich die Bildschirmhälften.",
+        practiceWord = "HALLO",
+        practiceWrite = "Übung: schreiben",
+        practiceWriteScan = "Warte, bis die Markierung die Zeile erreicht, " +
+            "drücke, und drücke dann noch einmal beim Buchstaben.",
+        practiceWriteArrows = "Bewege die Markierung mit den Pfeilen und " +
+            "drücke bei jedem Buchstaben WÄHLEN.",
+        practiceWriteDirect = "Berühre nacheinander jeden Buchstaben.",
+        practiceUndo = "Nimm jetzt einen Buchstaben zurück",
+        practiceUndoScan = "Drücke den Taster für Rückgängig, oder berühre " +
+            "die linke Bildschirmhälfte, wenn Berühren eingeschaltet ist.",
+        practiceUndoArrows = "Drücke ⌫ ZEICHEN neben WÄHLEN oder die Taste " +
+            "⌫ im Raster.",
+        practiceUndoDirect = "Berühre die Taste ⌫.",
+        practiceDone = "Geschafft. Das ist alles, was die Person benutzen wird.",
+        practiceFinish = "FERTIG",
+        practiceAgain = "NOCHMAL ÜBEN",
     ),
     bindPressFor = "Drücke die Taste für",
     bindButtonFor = "Taste für",

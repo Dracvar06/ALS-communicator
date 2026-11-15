@@ -17,7 +17,7 @@ val ROMANIAN = Language(
     openers = listOf(
         "vreau", "am", "ajutor", "te rog", "mulțumesc",
         "apă", "durere", "toaletă", "mâncare", "frig",
-        "cald", "obosită", "așteaptă", "stop", "bună",
+        "cald", "oboseală", "așteaptă", "stop", "bună",
         "sunt", "pot", "unde", "ce", "da",
     ),
     defaultPhrases = listOf(
@@ -29,8 +29,8 @@ val ROMANIAN = Language(
         "Mi-e frig",
         "Mi-e prea cald",
         "Trebuie să merg la toaletă",
-        "Te rog să le spui fiicelor mele",
-        "Te rog să chemi asistenta",
+        "Te rog să le spui celor din familia mea",
+        "Te rog, cheamă ajutor",
         "Așteaptă o clipă",
         "Sunt bine",
         "Mulțumesc",
@@ -109,7 +109,7 @@ val ROMANIAN = Language(
         }
     },
     settingsBoldWritingTitle = "Fraza îngroșată",
-    settingsBoldWritingDetail = "Fraza pe care o scrie, mai groasă, ca să se citească de departe.",
+    settingsBoldWritingDetail = "Fraza pe care o scrie persoana, mai groasă, ca să se citească de departe.",
     settingsArrowShapeTitle = "Cum arată săgețile",
     settingsArrowShapeDetail = "Separate, fiecare săgeată are butonul ei și se vede cât de mare este. Unite, sunt desenate ca o singură formă. Ce răspunde la atingere este la fel în ambele cazuri.",
     settingsArrowShapeJoined = "Unite",
@@ -130,11 +130,11 @@ val ROMANIAN = Language(
             lines = listOf(
                 "Ajută o persoană care nu poate vorbi și nu își poate mișca " +
                     "mâinile să scrie și să spună lucruri cu voce tare.",
-                "În funcție de ce poate face, ea atinge literele, mută un " +
-                    "chenar cu săgeți sau face o singură mișcare, în timp ce " +
-                    "aplicația face restul.",
-                "Tu ești cel care o pregătește. Acest ghid explică cum " +
-                    "funcționează, ca să i-o poți explica bine.",
+                "În funcție de ce poate face persoana, aceasta atinge " +
+                    "literele, mută un chenar cu săgeți sau face o singură " +
+                    "mișcare, în timp ce aplicația face restul.",
+                "Tu pregătești aplicația. Acest ghid explică cum " +
+                    "funcționează, ca să o poți explica bine.",
             ),
         ),
         TutorialPage(
@@ -144,15 +144,15 @@ val ROMANIAN = Language(
             lines = listOf(
                 "Aici greșesc cei mai mulți și merită citit de " +
                     "două ori.",
-                "Literele de pe ecran NU sunt butoane. Dacă atinge litera " +
-                    "pe care o vrea, nu se întâmplă nimic. Sunt acolo ca să " +
+                "Literele de pe ecran NU sunt butoane. Dacă persoana atinge " +
+                    "litera pe care o vrea, nu se întâmplă nimic. Sunt acolo ca să " +
                     "fie citite, nu apăsate.",
                 "La scanarea automată sunt două butoane și fiecare ocupă " +
                     "jumătate de ecran: toată jumătatea DREAPTĂ scrie, " +
                     "toată jumătatea STÂNGĂ anulează.",
                 "Nu se văd, și e intenționat: grila este pentru privit, " +
                     "iar niște linii deasupra ar acoperi doar litere.",
-                "Asta înseamnă că poate atinge oriunde i se potrivește în " +
+                "Asta înseamnă că persoana poate atinge oriunde i se potrivește în " +
                     "jumătatea respectivă. Nu are ce ținti și nu poate rata butonul.",
                 "La săgeți e altfel: acolo butoanele se văd, sunt cele " +
                     "patru săgeți și ALEGE. Literele tot nu sunt butoane.",
@@ -166,11 +166,13 @@ val ROMANIAN = Language(
             modes = setOf(InputMode.Scan),
             lines = listOf(
                 "Chenarul roșu coboară singur, rând cu rând.",
-                "Când ajunge la rândul pe care îl vrea, ea apasă. Acum " +
-                    "chenarul merge literă cu literă pe acel rând.",
-                "Când ajunge la litera pe care o vrea, apasă din nou. " +
+                "Când chenarul ajunge la rândul pe care îl vrea persoana, " +
+                    "aceasta apasă. Acum chenarul merge literă cu literă pe " +
+                    "acel rând.",
+                "Când chenarul ajunge la litera pe care o vrea, persoana " +
+                    "apasă din nou. " +
                     "Litera se scrie și totul începe iar de sus.",
-                "Dacă litera trece, nu trebuie să facă nimic: după două " +
+                "Dacă litera trece, persoana nu trebuie să facă nimic: după două " +
                     "treceri rândul se lasă singur și chenarul coboară din nou.",
                 "Atingerea jumătății stângi a ecranului anulează ultimul lucru.",
             ),
@@ -180,7 +182,7 @@ val ROMANIAN = Language(
             demo = TutorialDemo.Arrows,
             modes = setOf(InputMode.Arrows),
             lines = listOf(
-                "Chenarul stă pe loc până îl mută ea. Nu e nimic de " +
+                "Chenarul stă pe loc până îl mută persoana. Nu e nimic de " +
                     "așteptat și nu se poate întârzia.",
                 "Cele patru săgeți îl mută câte o căsuță. ALEGE scrie " +
                     "litera marcată.",
@@ -193,7 +195,7 @@ val ROMANIAN = Language(
                     "ȘTERGE TOT, care golește toată fraza. " +
                     "ȘTERGE TOT cere două apăsări: prima îl face roșu și " +
                     "scrie SIGUR?, iar abia a doua golește fraza. " +
-                    "Orice altceva face ea îl anulează.",
+                    "Orice altceva face persoana îl anulează.",
                 "Tasta ⌫ de pe grilă șterge și ea o literă.",
                 "Spațiile dintre săgeți contează și ele: o atingere care " +
                     "cade între două merge la cea mai apropiată.",
@@ -203,9 +205,9 @@ val ROMANIAN = Language(
             title = "Atinge literele",
             modes = setOf(InputMode.Direct),
             lines = listOf(
-                "Aici, și numai aici, literele sunt butoane: ea o atinge pe " +
-                    "cea pe care o vrea și se scrie.",
-                "Este de departe cea mai rapidă cale, dar numai cât timp ea " +
+                "Aici, și numai aici, literele sunt butoane: persoana o atinge " +
+                    "pe cea pe care o vrea și se scrie.",
+                "Este de departe cea mai rapidă cale, dar numai cât timp persoana " +
                     "poate pune degetul pe o anumită tastă. Dacă atingerile " +
                     "încep să nimerească tasta de alături, încearcă săgețile.",
                 "Tasta ⌫ de pe grilă șterge ultima literă.",
@@ -219,10 +221,10 @@ val ROMANIAN = Language(
                 "Rândul de sus: cuvinte sugerate de aplicație, apoi " +
                     "DA, NU și FRAZE.",
                 "DA și NU sunt acolo doar cât fraza este goală. Când " +
-                    "începe să scrie, acele două căsuțe devin două cuvinte " +
+                    "persoana începe să scrie, acele două căsuțe devin două cuvinte " +
                     "sugerate în plus: cinci în loc de trei. Se întorc " +
                     "singure când fraza este ștearsă.",
-                "Cuvintele sugerate se schimbă pe măsură ce scrie. " +
+                "Cuvintele sugerate se schimbă pe măsură ce persoana scrie. " +
                     "Alegerea unuia scrie tot cuvântul și spațiul de după el, " +
                     "ceea ce e adesea cel mai scurt drum.",
                 "Iartă și greșelile: dacă o literă se repetă fără să vrea " +
@@ -273,9 +275,9 @@ val ROMANIAN = Language(
         TutorialPage(
             title = "Asta e tot",
             lines = listOf(
-                "Închide asta și încearcă tu câteva minute înainte să i-o " +
-                    "explici ei. Este singurul mod de a o explica bine.",
-                "Dacă ceva nu merge pentru ea, aproape întotdeauna este o " +
+                "Închide asta și încearcă tu câteva minute înainte să o " +
+                    "explici persoanei. Este singurul mod de a o explica bine.",
+                "Dacă ceva nu merge pentru persoană, aproape întotdeauna este o " +
                     "setare, nu aplicația. Începe cu viteza.",
                 "Poți deschide din nou acest ghid oricând: ⚙ → CUM " +
                     "FUNCȚIONEAZĂ.",
@@ -289,22 +291,21 @@ val ROMANIAN = Language(
                 "poate scrie de mână poate alcătui propoziții și le poate " +
                 "spune cu voce tare.",
             "Există mai multe moduri de a o folosi. Două întrebări despre " +
-                "ea și aplicația se configurează cum i se potrivește.",
+                "persoană și aplicația se configurează cum i se potrivește.",
             "Orice răspuns se poate schimba mai târziu din setări (⚙, în " +
                 "dreapta sus).",
         ),
         start = "ÎNCEPE",
-        skip = "SARI PESTE",
-        methodTitle = "Cum va alege o literă?",
-        methodHint = "Nu ești sigur? Începe cu varianta care îi cere cel mai " +
-            "puțin. Dacă așteptarea o obosește sau îi e greu să nimerească " +
-            "momentul, încearcă săgețile.",
+        methodTitle = "Cum va alege persoana o literă?",
+        methodHint = "Dacă ai dubii, începe cu varianta care îi cere cel mai " +
+            "puțin. Dacă așteptarea obosește persoana sau îi e greu să " +
+            "nimerească momentul, încearcă săgețile.",
         methodDirectDetail = "Poate atinge sigur o anumită tastă. Cea mai " +
             "rapidă cale, cât timp se poate.",
         methodArrowsDetail = "Poate atinge câteva butoane mari, dar nu taste " +
-            "mici. Nimic nu se mișcă până nu mută ea.",
+            "mici. Nimic nu se mișcă până nu mută persoana.",
         methodScanDetail = "Poate face o singură mișcare, cu un buton sau cu " +
-            "o atingere. Un marcaj se mișcă singur, iar ea apasă când ajunge " +
+            "o atingere. Un marcaj se mișcă singur, iar persoana apasă când ajunge " +
             "la ce vrea.",
         pressTitle = "Ce va apăsa?",
         pressHint = "Butonul se conectează la tabletă prin Bluetooth. " +
@@ -318,6 +319,22 @@ val ROMANIAN = Language(
             "deranjează.",
         pressBoth = "Amândouă",
         pressBothDetail = "Butoanele și, în plus, jumătățile ecranului.",
+        practiceWord = "BUNĂ",
+        practiceWrite = "Exercițiu: scrie",
+        practiceWriteScan = "Așteaptă până când chenarul ajunge la rând, " +
+            "apasă, apoi apasă din nou pe literă.",
+        practiceWriteArrows = "Mută chenarul cu săgețile, apoi apasă ALEGE " +
+            "pe fiecare literă.",
+        practiceWriteDirect = "Atinge pe rând fiecare literă.",
+        practiceUndo = "Acum anulează o literă",
+        practiceUndoScan = "Apasă butonul de anulare sau atinge jumătatea " +
+            "stângă a ecranului, dacă atingerea este activată.",
+        practiceUndoArrows = "Apasă ⌫ LITERĂ lângă ALEGE sau tasta ⌫ de pe " +
+            "grilă.",
+        practiceUndoDirect = "Atinge tasta ⌫.",
+        practiceDone = "Gata. Asta e tot ce va folosi persoana.",
+        practiceFinish = "GATA",
+        practiceAgain = "EXERSEAZĂ",
     ),
     bindPressFor = "Apasă butonul pentru",
     bindButtonFor = "Butonul pentru",

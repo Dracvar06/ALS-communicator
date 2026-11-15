@@ -17,7 +17,7 @@ val GALICIAN = Language(
     openers = listOf(
         "quero", "preciso", "axuda", "grazas", "por favor",
         "auga", "dor", "baño", "comer", "frío",
-        "calor", "canso", "agarda", "para", "ola",
+        "calor", "cansazo", "agarda", "para", "ola",
         "estou", "teño", "podo", "onde", "que",
     ),
     defaultPhrases = listOf(
@@ -29,8 +29,8 @@ val GALICIAN = Language(
         "Teño frío",
         "Teño calor",
         "Necesito ir ao baño",
-        "Avisade ás miñas fillas",
-        "Chama á enfermeira",
+        "Avisade á miña familia",
+        "Pedide axuda, por favor",
         "Agarda un momento",
         "Estou ben",
         "Grazas",
@@ -109,7 +109,7 @@ val GALICIAN = Language(
         }
     },
     settingsBoldWritingTitle = "Frase en negriña",
-    settingsBoldWritingDetail = "A frase que escribe, máis grosa, para lela de lonxe.",
+    settingsBoldWritingDetail = "A frase que escribe a persoa, máis grosa, para lela de lonxe.",
     settingsArrowShapeTitle = "Como se ven as frechas",
     settingsArrowShapeDetail = "Separadas, cada frecha ten o seu botón e vese ata onde chega. En cruz vense como unha soa peza. O que responde ao toque é igual nos dous casos.",
     settingsArrowShapeJoined = "En cruz",
@@ -130,11 +130,11 @@ val GALICIAN = Language(
             lines = listOf(
                 "Serve para que unha persoa que non pode falar nin mover as " +
                     "mans poida escribir e dicir cousas.",
-                "Segundo o que ela poida facer, toca as letras, move un cadro " +
-                    "coas frechas ou fai un só movemento mentres a aplicación " +
-                    "fai o demais.",
-                "Ti es quen a prepara. Esta guía explica como funciona, " +
-                    "para que llo poidas explicar ben.",
+                "Segundo o que a persoa poida facer, toca as letras, move un " +
+                    "cadro coas frechas ou fai un só movemento mentres a " +
+                    "aplicación fai o demais.",
+                "Ti es quen prepara a aplicación. Esta guía explica como " +
+                    "funciona, para que o poidas explicar ben.",
             ),
         ),
         TutorialPage(
@@ -145,15 +145,15 @@ val GALICIAN = Language(
                 "Esta é a parte que máis custa de entender, e paga a pena " +
                     "lela dúas veces.",
                 "As letras da pantalla NON son botóns. Tocar a letra que " +
-                    "quere non fai nada. Están para lelas, non para premelas.",
+                    "se desexa non fai nada. Están para lelas, non para premelas.",
                 "Co escaneo automático, os botóns son dous e ocupan media " +
                     "pantalla cada un: toda a metade DEREITA escribe, toda a " +
                     "metade ESQUERDA desfai.",
                 "Non se ven, e é adrede: a grella é para mirala, e unhas " +
                     "liñas por riba só taparían letras.",
-                "Isto quere dicir que ela pode tocar onde lle veña ben de " +
-                    "cada metade. Non ten que acertar en nada, e non pode " +
-                    "fallar o botón.",
+                "Isto quere dicir que a persoa pode tocar onde lle veña ben " +
+                    "de cada metade. Non hai que acertar en nada, e non se " +
+                    "pode fallar o botón.",
                 "Coas frechas é distinto: alí os botóns si se ven, son as " +
                     "catro frechas e ESCOLLE. As letras seguen sen ser botóns.",
                 "Pódese desactivar nos axustes, en TOCAR A PANTALLA PARA " +
@@ -166,9 +166,10 @@ val GALICIAN = Language(
             modes = setOf(InputMode.Scan),
             lines = listOf(
                 "O cadro vermello baixa fila por fila, el só.",
-                "Cando está na fila que ela quere, preme. Agora o cadro " +
-                    "móvese de letra en letra dentro desa fila.",
-                "Cando está na letra que quere, volve premer. A letra " +
+                "Cando o cadro está na fila que a persoa quere, esta preme. " +
+                    "Agora o cadro móvese de letra en letra dentro desa fila.",
+                "Cando o cadro está na letra que quere, a persoa volve " +
+                    "premer. A letra " +
                     "escríbese e todo comeza de novo desde arriba.",
                 "Se se lle pasa a letra, non hai que facer nada: despois de " +
                     "dúas voltas a fila déixase soa e volve baixar.",
@@ -180,7 +181,7 @@ val GALICIAN = Language(
             demo = TutorialDemo.Arrows,
             modes = setOf(InputMode.Arrows),
             lines = listOf(
-                "O cadro queda quieto ata que ela o move. Non hai nada que " +
+                "O cadro queda quieto ata que a persoa o move. Non hai nada que " +
                     "esperar e non se pode chegar tarde.",
                 "As catro frechas móvenno unha casa cada vez. ESCOLLE " +
                     "escribe a letra que está marcada.",
@@ -193,7 +194,7 @@ val GALICIAN = Language(
                     "e BORRAR TUDO, que baleira a frase enteira. BORRAR TUDO " +
                     "prémese dúas veces: a primeira pasa a dicir SEGURO? e " +
                     "ponse vermella, e só a segunda baleira. Calquera outra " +
-                    "cousa que faga a anula.",
+                    "cousa que faga a persoa a anula.",
                 "A tecla ⌫ da grella tamén borra unha letra.",
                 "Os espazos entre as frechas tamén contan: un toque que cae " +
                     "entre dúas vai á máis próxima.",
@@ -203,9 +204,9 @@ val GALICIAN = Language(
             title = "Tocar as letras",
             modes = setOf(InputMode.Direct),
             lines = listOf(
-                "Aquí, e só aquí, as letras son botóns: ela toca a que quere " +
-                    "e escríbese.",
-                "É con moito o xeito máis rápido, pero só mentres ela poida " +
+                "Aquí, e só aquí, as letras son botóns: a persoa toca a que " +
+                    "quere e escríbese.",
+                "É con moito o xeito máis rápido, pero só mentres a persoa poida " +
                     "pousar o dedo nunha tecla concreta. Se os toques empezan " +
                     "a caer na tecla do lado, proba as frechas.",
                 "A tecla ⌫ da grella borra a última letra.",
@@ -221,7 +222,7 @@ val GALICIAN = Language(
                 "SI e NON só están coa frase baleira. Ao comezar a escribir, " +
                     "esas dúas casas pasan a ser dúas palabras suxeridas máis: " +
                     "cinco en vez de tres. Volven soas cando a frase se borra.",
-                "As palabras suxeridas cambian mentres ela escribe. Escoller " +
+                "As palabras suxeridas cambian mentres a persoa escribe. Escoller " +
                     "unha escribe a palabra enteira e o espazo: moitas veces " +
                     "é o camiño máis curto.",
                 "Tamén perdoa erros: se unha letra se repite sen querer ou " +
@@ -273,8 +274,8 @@ val GALICIAN = Language(
         TutorialPage(
             title = "Isto é todo",
             lines = listOf(
-                "Pecha isto e próbao ti, uns minutos, antes de explicarllo a " +
-                    "ela. É a mellor maneira de explicalo ben.",
+                "Pecha isto e próbao ti, uns minutos, antes de explicalo á " +
+                    "persoa. É a mellor maneira de explicalo ben.",
                 "Se algo non lle vai ben, case sempre é un axuste e non a " +
                     "aplicación. Comeza pola velocidade.",
                 "Podes volver abrir esta guía cando queiras: ⚙ → COMO " +
@@ -287,23 +288,23 @@ val GALICIAN = Language(
         welcomeLines = listOf(
             "Esta aplicación serve para que unha persoa que non pode falar " +
                 "nin escribir a man constrúa frases e as diga en voz alta.",
-            "Hai varias maneiras de usala. Dúas preguntas sobre ela, e " +
-                "queda preparada como lle veña ben.",
+            "Hai varias maneiras de usala. Dúas preguntas sobre a persoa, " +
+                "e a aplicación queda preparada como lle veña ben.",
             "Todas as respostas poden cambiarse despois nos axustes (⚙, " +
                 "arriba á dereita).",
         ),
         start = "COMEZAR",
-        skip = "SALTAR",
-        methodTitle = "Como escollerá unha letra?",
-        methodHint = "Non estás seguro? Comeza pola que lle pida menos. Se " +
-            "esperar a cansa, ou lle custa acertar co momento, proba as " +
-            "frechas.",
+        methodTitle = "Como escollerá a persoa unha letra?",
+        methodHint = "Se tes dúbidas, comeza pola opción que lle pida menos. Se " +
+            "esperar cansa a persoa, ou lle custa acertar co momento, " +
+            "proba as frechas.",
         methodDirectDetail = "Pode tocar con seguridade unha tecla concreta. " +
             "O xeito máis rápido, mentres dure.",
         methodArrowsDetail = "Pode tocar uns poucos botóns grandes, pero non " +
-            "teclas pequenas. Nada se move ata que ela o move.",
+            "teclas pequenas. Nada se move ata que a persoa o move.",
         methodScanDetail = "Pode facer un só movemento, cun pulsador ou cun " +
-            "toque. O marcador móvese só e ela preme cando chega ao que quere.",
+            "toque. O marcador móvese só e a persoa preme cando chega ao " +
+            "que quere.",
         pressTitle = "Que premerá?",
         pressHint = "Un pulsador é un botón que se conecta á tableta por " +
             "Bluetooth. Primeiro emparéllao nos axustes de Bluetooth da tableta.",
@@ -315,6 +316,22 @@ val GALICIAN = Language(
             "pantalla non fai nada, así que un brazo apoiado nela non molesta.",
         pressBoth = "Os dous",
         pressBothDetail = "Pulsadores, e tamén as metades da pantalla.",
+        practiceWord = "OLA",
+        practiceWrite = "Práctica: escribe",
+        practiceWriteScan = "Espera a que o cadro chegue á fila, preme, e " +
+            "despois preme outra vez na letra.",
+        practiceWriteArrows = "Move o cadro coas frechas e preme ESCOLLE en " +
+            "cada letra.",
+        practiceWriteDirect = "Toca cada letra, unha tras outra.",
+        practiceUndo = "Agora desfai unha letra",
+        practiceUndoScan = "Preme o pulsador de desfacer, ou toca a metade " +
+            "esquerda da pantalla se o toque está activado.",
+        practiceUndoArrows = "Preme ⌫ LETRA ao carón de ESCOLLE, ou a tecla " +
+            "⌫ da grella.",
+        practiceUndoDirect = "Toca a tecla ⌫.",
+        practiceDone = "Feito. Isto é todo o que a persoa vai usar.",
+        practiceFinish = "ACABAR",
+        practiceAgain = "PRACTICAR",
     ),
     bindPressFor = "Preme o botón para",
     bindButtonFor = "Botón para",

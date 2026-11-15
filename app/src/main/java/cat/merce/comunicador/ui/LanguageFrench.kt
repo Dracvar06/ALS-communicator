@@ -19,7 +19,7 @@ val FRENCH = Language(
     openers = listOf(
         "je", "veux", "besoin", "aide", "s'il",
         "eau", "mal", "toilettes", "manger", "froid",
-        "chaud", "fatiguée", "attends", "stop", "bonjour",
+        "chaud", "repos", "attends", "stop", "bonjour",
         "oui", "merci", "peux", "où", "quoi",
     ),
     defaultPhrases = listOf(
@@ -31,8 +31,8 @@ val FRENCH = Language(
         "J'ai froid",
         "J'ai chaud",
         "J'ai besoin d'aller aux toilettes",
-        "Prévenez mes filles",
-        "Appelez l'infirmière",
+        "Prévenez ma famille",
+        "Appelez de l'aide, s'il vous plaît",
         "Attendez un instant",
         "Je vais bien",
         "Merci",
@@ -111,7 +111,7 @@ val FRENCH = Language(
         }
     },
     settingsBoldWritingTitle = "Phrase en gras",
-    settingsBoldWritingDetail = "La phrase qu'elle écrit, en plus épais, pour la lire de loin.",
+    settingsBoldWritingDetail = "La phrase en cours d'écriture, en plus épais, pour la lire de loin.",
     settingsArrowShapeTitle = "Aspect des flèches",
     settingsArrowShapeDetail = "Séparées, chaque flèche a son propre bouton et on voit jusqu'où il s'étend. Réunies, elles forment une seule figure. Ce qui répond au toucher est identique dans les deux cas.",
     settingsArrowShapeJoined = "Réunies",
@@ -132,11 +132,12 @@ val FRENCH = Language(
             lines = listOf(
                 "Cela permet à une personne qui ne peut ni parler ni bouger " +
                     "les mains d'écrire et de dire des choses à voix haute.",
-                "Selon ce qu'elle peut faire, elle touche les lettres, déplace " +
-                    "une surbrillance avec des flèches, ou fait un seul " +
-                    "mouvement pendant que l'application fait le reste.",
-                "C'est vous qui la préparez. Ce guide explique comment elle " +
-                    "fonctionne, pour que vous puissiez bien la lui expliquer.",
+                "Selon ce que la personne peut faire, elle touche les lettres, " +
+                    "déplace une surbrillance avec des flèches, ou fait un " +
+                    "seul mouvement pendant que l'application fait le reste.",
+                "C'est vous qui préparez l'application. Ce guide explique " +
+                    "comment elle fonctionne, pour que vous puissiez bien " +
+                    "l'expliquer à la personne.",
             ),
         ),
         TutorialPage(
@@ -147,7 +148,7 @@ val FRENCH = Language(
                 "C'est la partie que l'on comprend le moins bien, et elle " +
                     "mérite d'être lue deux fois.",
                 "Les lettres à l'écran ne sont PAS des boutons. Toucher la " +
-                    "lettre qu'elle veut ne fait rien. Elles sont là pour être " +
+                    "lettre voulue ne fait rien. Elles sont là pour être " +
                     "lues, pas pour être pressées.",
                 "Avec le balayage automatique, il y a deux boutons qui " +
                     "occupent chacun la moitié de l'écran : toute la moitié " +
@@ -155,9 +156,9 @@ val FRENCH = Language(
                 "Ils sont invisibles exprès : la grille est faite pour être " +
                     "regardée, et des lignes tracées par-dessus ne feraient que " +
                     "cacher des lettres.",
-                "Cela veut dire qu'elle peut toucher où cela lui convient dans " +
-                    "la moitié voulue. Il n'y a rien à viser, et elle ne peut " +
-                    "pas rater le bouton.",
+                "Cela veut dire que l'on peut toucher où l'on veut dans la " +
+                    "moitié voulue. Il n'y a rien à viser, et on ne peut pas " +
+                    "rater le bouton.",
                 "Avec les flèches, c'est différent : là, les boutons sont " +
                     "visibles — les quatre flèches et CHOISIR. Les lettres ne " +
                     "sont toujours pas des boutons.",
@@ -172,12 +173,13 @@ val FRENCH = Language(
             modes = setOf(InputMode.Scan),
             lines = listOf(
                 "La surbrillance rouge descend rangée par rangée, toute seule.",
-                "Quand elle est sur la rangée voulue, elle appuie. La " +
-                    "surbrillance avance alors lettre par lettre le long de " +
-                    "cette rangée.",
-                "Quand elle est sur la lettre voulue, elle appuie de nouveau. " +
-                    "La lettre est écrite et tout recommence par le haut.",
-                "Si la lettre passe, elle n'a rien à faire : après deux " +
+                "Quand la surbrillance est sur la rangée voulue, la personne " +
+                    "appuie. La surbrillance avance alors lettre par lettre " +
+                    "le long de cette rangée.",
+                "Quand elle est sur la lettre voulue, la personne appuie de " +
+                    "nouveau. La lettre est écrite et tout recommence par le " +
+                    "haut.",
+                "Si la lettre passe, il n'y a rien à faire : après deux " +
                     "passages, la rangée se relâche toute seule et la " +
                     "surbrillance redescend.",
                 "Toucher la moitié gauche de l'écran annule la dernière action.",
@@ -188,8 +190,8 @@ val FRENCH = Language(
             demo = TutorialDemo.Arrows,
             modes = setOf(InputMode.Arrows),
             lines = listOf(
-                "La surbrillance reste immobile tant qu'elle ne la déplace " +
-                    "pas. Il n'y a rien à attendre et on ne peut pas être en retard.",
+                "La surbrillance reste immobile tant que la personne ne la " +
+                    "déplace pas. Il n'y a rien à attendre et on ne peut pas être en retard.",
                 "Les quatre flèches la déplacent d'une case à la fois. " +
                     "CHOISIR écrit la lettre en surbrillance.",
                 "Cela fait le tour : depuis la première lettre d'une rangée, " +
@@ -201,7 +203,7 @@ val FRENCH = Language(
                     "lettre, et TOUT EFFACER, qui vide la phrase entière. " +
                     "TOUT EFFACER demande deux appuis : le premier le fait " +
                     "passer au rouge et afficher SÛR ?, et seul le second vide " +
-                    "la phrase. Toute autre action de sa part l'annule.",
+                    "la phrase. Toute autre action l'annule.",
                 "La touche ⌫ de la grille efface aussi une lettre.",
                 "Les espaces entre les flèches comptent aussi : un toucher qui " +
                     "tombe entre deux va vers la plus proche.",
@@ -211,10 +213,10 @@ val FRENCH = Language(
             title = "Toucher les lettres",
             modes = setOf(InputMode.Direct),
             lines = listOf(
-                "Ici, et seulement ici, les lettres sont des boutons : elle " +
-                    "touche celle qu'elle veut et elle s'écrit.",
+                "Ici, et seulement ici, les lettres sont des boutons : on " +
+                    "touche la lettre voulue et elle s'écrit.",
                 "C'est de loin la façon la plus rapide, mais seulement tant " +
-                    "qu'elle peut poser un doigt sur une touche précise. Si " +
+                    "que la personne peut poser un doigt sur une touche précise. Si " +
                     "les appuis se mettent à tomber sur la touche voisine, " +
                     "essayez les flèches.",
                 "La touche ⌫ de la grille efface la dernière lettre.",
@@ -228,10 +230,10 @@ val FRENCH = Language(
                 "Rangée du haut : les mots que l'application suggère, puis " +
                     "OUI, NON et PHRASES.",
                 "OUI et NON ne sont là que lorsque la phrase est vide. Dès " +
-                    "qu'elle commence à écrire, ces deux cases deviennent deux " +
+                    "que l'on commence à écrire, ces deux cases deviennent deux " +
                     "mots suggérés de plus : cinq au lieu de trois. Elles " +
                     "reviennent toutes seules quand la phrase est effacée.",
-                "Les mots suggérés changent pendant qu'elle écrit. En choisir " +
+                "Les mots suggérés changent pendant que l'on écrit. En choisir " +
                     "un écrit le mot entier et l'espace qui suit, ce qui est " +
                     "souvent de loin le chemin le plus court.",
                 "Cela pardonne aussi les erreurs : si une lettre est répétée " +
@@ -258,9 +260,9 @@ val FRENCH = Language(
             title = "Les réglages qui comptent",
             lines = listOf(
                 "VITESSE DU BALAYAGE : la durée de chaque pas. Si des lettres " +
-                    "lui échappent, ralentissez-la.",
-                "TEMPS SUPPLÉMENTAIRE SUR LA PREMIÈRE LETTRE : lui laisse un " +
-                    "instant de plus pour réagir juste après être entrée dans " +
+                    "échappent à la personne, ralentissez-la.",
+                "TEMPS SUPPLÉMENTAIRE SUR LA PREMIÈRE LETTRE : laisse un " +
+                    "instant de plus pour réagir juste après l'entrée dans " +
                     "une rangée.",
                 "TEMPS MINIMUM ENTRE DEUX APPUIS : si un seul appui écrit deux " +
                     "lettres, augmentez-le.",
@@ -287,9 +289,9 @@ val FRENCH = Language(
             title = "C'est tout",
             lines = listOf(
                 "Fermez ceci et essayez vous-même pendant quelques minutes " +
-                    "avant de la lui expliquer. C'est la seule façon de bien " +
-                    "l'expliquer.",
-                "Si quelque chose ne lui convient pas, c'est presque toujours " +
+                    "avant de l'expliquer à la personne. C'est la seule façon de " +
+                    "bien l'expliquer.",
+                "Si quelque chose ne convient pas à la personne, c'est presque toujours " +
                     "un réglage et non l'application. Commencez par la vitesse.",
                 "Vous pouvez rouvrir ce guide quand vous voulez : ⚙ → COMMENT " +
                     "ÇA MARCHE.",
@@ -297,32 +299,32 @@ val FRENCH = Language(
         ),
     ),
     onboarding = OnboardingText(
-        welcomeTitle = "La préparer",
+        welcomeTitle = "La mise en route",
         welcomeLines = listOf(
             "Cette application permet à une personne qui ne peut ni parler " +
                 "ni écrire à la main de composer des phrases et de les dire " +
                 "à voix haute.",
             "Il y a plusieurs façons de l'utiliser. Deux questions sur " +
-                "elle, et l'application sera réglée comme il lui convient.",
+                "la personne qui l'utilisera, et l'application sera réglée " +
+                "comme il lui convient.",
             "Toutes les réponses peuvent être modifiées plus tard dans les " +
                 "réglages (⚙, en haut à droite).",
         ),
         start = "COMMENCER",
-        skip = "PASSER",
-        methodTitle = "Comment choisira-t-elle une lettre ?",
-        methodHint = "Vous hésitez ? Commencez par ce qui lui demande le " +
-            "moins. Si l'attente la fatigue, ou s'il est difficile de " +
-            "viser le bon moment, essayez les flèches.",
-        methodDirectDetail = "Elle peut toucher à coup sûr une touche " +
+        methodTitle = "Comment la personne choisira-t-elle une lettre ?",
+        methodHint = "Vous hésitez ? Commencez par ce qui demande le " +
+            "moins à la personne. Si l'attente fatigue, ou s'il est " +
+            "difficile de viser le bon moment, essayez les flèches.",
+        methodDirectDetail = "La personne peut toucher à coup sûr une touche " +
             "précise. La façon la plus rapide, tant que cela dure.",
-        methodArrowsDetail = "Elle peut toucher quelques gros boutons, mais " +
-            "pas de petites touches. Rien ne bouge tant qu'elle ne le " +
+        methodArrowsDetail = "La personne peut toucher quelques gros boutons, " +
+            "mais pas de petites touches. Rien ne bouge tant qu'on ne le " +
             "déplace pas.",
-        methodScanDetail = "Elle peut faire un seul mouvement, avec un " +
+        methodScanDetail = "La personne peut faire un seul mouvement, avec un " +
             "contacteur ou en touchant l'écran. Une surbrillance avance " +
-            "toute seule et elle appuie quand elle arrive sur ce qu'elle " +
+            "toute seule et on appuie quand elle arrive sur ce que l'on " +
             "veut.",
-        pressTitle = "Sur quoi appuiera-t-elle ?",
+        pressTitle = "Sur quoi la personne appuiera-t-elle ?",
         pressHint = "Un contacteur est un bouton relié à la tablette par " +
             "Bluetooth. Il faut d'abord l'appairer dans les réglages " +
             "Bluetooth de la tablette.",
@@ -335,6 +337,22 @@ val FRENCH = Language(
             "gêne pas.",
         pressBoth = "Les deux",
         pressBothDetail = "Les contacteurs, et aussi les moitiés de l'écran.",
+        practiceWord = "SALUT",
+        practiceWrite = "Essai : écrire",
+        practiceWriteScan = "Attendez que la surbrillance arrive sur la rangée, " +
+            "appuyez, puis appuyez de nouveau sur la lettre.",
+        practiceWriteArrows = "Déplacez la surbrillance avec les flèches, puis " +
+            "appuyez sur CHOISIR pour chaque lettre.",
+        practiceWriteDirect = "Touchez chaque lettre à tour de rôle.",
+        practiceUndo = "Maintenant, annulez une lettre",
+        practiceUndoScan = "Appuyez sur le contacteur d'annulation, ou touchez " +
+            "la moitié gauche de l'écran si le toucher est activé.",
+        practiceUndoArrows = "Appuyez sur ⌫ LETTRE à côté de CHOISIR, ou sur la " +
+            "touche ⌫ de la grille.",
+        practiceUndoDirect = "Touchez la touche ⌫.",
+        practiceDone = "Terminé. Voilà tout ce dont la personne se servira.",
+        practiceFinish = "TERMINER",
+        practiceAgain = "S'ENTRAÎNER",
     ),
     bindPressFor = "Appuyez sur le bouton pour",
     bindButtonFor = "Bouton pour",

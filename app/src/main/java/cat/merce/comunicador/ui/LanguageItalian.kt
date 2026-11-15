@@ -19,7 +19,7 @@ val ITALIAN = Language(
     openers = listOf(
         "voglio", "ho", "bisogno", "aiuto", "per",
         "acqua", "dolore", "bagno", "mangiare", "freddo",
-        "caldo", "stanca", "aspetta", "basta", "ciao",
+        "caldo", "riposo", "aspetta", "basta", "ciao",
         "sì", "grazie", "posso", "dove", "cosa",
     ),
     defaultPhrases = listOf(
@@ -31,8 +31,8 @@ val ITALIAN = Language(
         "Ho freddo",
         "Ho caldo",
         "Ho bisogno di andare in bagno",
-        "Avvisate le mie figlie",
-        "Chiamate l'infermiera",
+        "Avvisate la mia famiglia",
+        "Chiamate aiuto, per favore",
         "Aspetta un momento",
         "Sto bene",
         "Grazie",
@@ -111,7 +111,7 @@ val ITALIAN = Language(
         }
     },
     settingsBoldWritingTitle = "Frase in grassetto",
-    settingsBoldWritingDetail = "La frase che sta scrivendo, più spessa, per leggerla da lontano.",
+    settingsBoldWritingDetail = "La frase che si sta scrivendo, più spessa, per leggerla da lontano.",
     settingsArrowShapeTitle = "Come si vedono le frecce",
     settingsArrowShapeDetail = "Separate, ogni freccia ha il suo pulsante e si vede fin dove arriva. Unite, si vedono come un unico pezzo. Ciò che risponde al tocco è uguale nei due casi.",
     settingsArrowShapeJoined = "Unite",
@@ -132,11 +132,11 @@ val ITALIAN = Language(
             lines = listOf(
                 "Permette a una persona che non può parlare né muovere le " +
                     "mani di scrivere e di dire le cose ad alta voce.",
-                "A seconda di ciò che riesce a fare, lei tocca le lettere, " +
-                    "sposta un'evidenziazione con le frecce, o fa un solo " +
-                    "movimento mentre l'app fa il resto.",
-                "Sei tu a prepararla. Questa guida spiega come funziona, " +
-                    "così potrai spiegarglielo bene.",
+                "A seconda di ciò che la persona riesce a fare, tocca le " +
+                    "lettere, sposta un'evidenziazione con le frecce, o fa un " +
+                    "solo movimento mentre l'app fa il resto.",
+                "Sei tu a preparare l'app. Questa guida spiega come " +
+                    "funziona, così potrai spiegarlo bene alla persona.",
             ),
         ),
         TutorialPage(
@@ -147,7 +147,7 @@ val ITALIAN = Language(
                 "È la parte che si capisce meno, e vale la pena leggerla " +
                     "due volte.",
                 "Le lettere sullo schermo NON sono pulsanti. Toccare la " +
-                    "lettera che vuole non fa nulla. Servono per essere lette, " +
+                    "lettera desiderata non fa nulla. Servono per essere lette, " +
                     "non per essere premute.",
                 "Con la scansione automatica i pulsanti sono due e occupano " +
                     "metà schermo ciascuno: tutta la metà DESTRA scrive, tutta " +
@@ -155,9 +155,9 @@ val ITALIAN = Language(
                 "Sono invisibili di proposito: la griglia serve per essere " +
                     "guardata, e delle linee disegnate sopra coprirebbero solo " +
                     "delle lettere.",
-                "Questo significa che lei può toccare dove le è più comodo " +
-                    "della metà giusta. Non c'è nulla da centrare e non può " +
-                    "sbagliare pulsante.",
+                "Questo significa che si può toccare dove è più comodo " +
+                    "nella metà giusta. Non c'è nulla da centrare e non si " +
+                    "può sbagliare pulsante.",
                 "Con le frecce è diverso: lì i pulsanti si vedono, sono le " +
                     "quattro frecce e SCEGLI. Le lettere continuano a non " +
                     "essere pulsanti.",
@@ -172,12 +172,12 @@ val ITALIAN = Language(
             modes = setOf(InputMode.Scan),
             lines = listOf(
                 "L'evidenziazione rossa scende riga per riga, da sola.",
-                "Quando è sulla riga che lei vuole, preme. Ora " +
+                "Quando è sulla riga desiderata, la persona preme. Ora " +
                     "l'evidenziazione si muove lettera per lettera lungo " +
                     "quella riga.",
-                "Quando è sulla lettera che vuole, preme di nuovo. La " +
+                "Quando è sulla lettera desiderata, preme di nuovo. La " +
                     "lettera viene scritta e tutto ricomincia dall'alto.",
-                "Se la lettera passa, lei non deve fare nulla: dopo due " +
+                "Se la lettera passa, non c'è bisogno di fare nulla: dopo due " +
                     "giri la riga si lascia da sola e l'evidenziazione " +
                     "ricomincia a scendere.",
                 "Toccare la metà sinistra dello schermo annulla l'ultima cosa.",
@@ -188,7 +188,7 @@ val ITALIAN = Language(
             demo = TutorialDemo.Arrows,
             modes = setOf(InputMode.Arrows),
             lines = listOf(
-                "L'evidenziazione resta ferma finché lei non la muove. Non " +
+                "L'evidenziazione resta ferma finché la persona non la muove. Non " +
                     "c'è nulla da aspettare e non si può arrivare in ritardo.",
                 "Le quattro frecce la spostano di una casella alla volta. " +
                     "SCEGLI scrive la lettera evidenziata.",
@@ -201,7 +201,7 @@ val ITALIAN = Language(
                     "lettera, e CANCELLA TUTTO, che svuota l'intera frase. " +
                     "CANCELLA TUTTO si preme due volte: la prima diventa " +
                     "rosso e mostra SICURO?, e solo la seconda svuota la " +
-                    "frase. Qualsiasi altra cosa lei faccia lo annulla.",
+                    "frase. Qualsiasi altra azione lo annulla.",
                 "Anche il tasto ⌫ sulla griglia cancella una lettera.",
                 "Contano anche gli spazi tra le frecce: un tocco che cade " +
                     "tra due va a quella più vicina.",
@@ -211,9 +211,9 @@ val ITALIAN = Language(
             title = "Toccare le lettere",
             modes = setOf(InputMode.Direct),
             lines = listOf(
-                "Qui, e solo qui, le lettere sono pulsanti: lei tocca quella " +
-                    "che vuole e viene scritta.",
-                "È di gran lunga il modo più veloce, ma solo finché riesce a " +
+                "Qui, e solo qui, le lettere sono pulsanti: basta toccare " +
+                    "quella voluta e viene scritta.",
+                "È di gran lunga il modo più veloce, ma solo finché la persona riesce a " +
                     "posare un dito su un tasto preciso. Se i tocchi " +
                     "cominciano a finire sul tasto accanto, prova con le " +
                     "frecce.",
@@ -227,11 +227,11 @@ val ITALIAN = Language(
             lines = listOf(
                 "Riga in alto: parole che l'app suggerisce, poi SÌ, NO e " +
                     "FRASI.",
-                "SÌ e NO ci sono solo quando la frase è vuota. Appena lei " +
+                "SÌ e NO ci sono solo quando la frase è vuota. Appena si " +
                     "inizia a scrivere, quelle due caselle diventano due " +
                     "parole suggerite in più: cinque invece di tre. Tornano da " +
                     "sole quando la frase viene cancellata.",
-                "Le parole suggerite cambiano mentre lei scrive. Sceglierne " +
+                "Le parole suggerite cambiano mentre si scrive. Sceglierne " +
                     "una scrive la parola intera e lo spazio dopo, e spesso è " +
                     "di gran lunga la strada più breve.",
                 "Perdona anche gli errori: se una lettera viene ripetuta o " +
@@ -257,10 +257,10 @@ val ITALIAN = Language(
         TutorialPage(
             title = "Le impostazioni che contano",
             lines = listOf(
-                "VELOCITÀ DELLA SCANSIONE: quanto dura ogni passo. Se le " +
-                    "lettere le sfuggono, rendila più lenta.",
-                "TEMPO EXTRA SULLA PRIMA LETTERA: le dà un momento in più " +
-                    "per reagire subito dopo essere entrata in una riga.",
+                "VELOCITÀ DELLA SCANSIONE: quanto dura ogni passo. Se " +
+                    "alla persona sfuggono delle lettere, rendila più lenta.",
+                "TEMPO EXTRA SULLA PRIMA LETTERA: dà un momento in più " +
+                    "per reagire subito dopo l'ingresso in una riga.",
                 "TEMPO MINIMO TRA LE PRESSIONI: se una sola pressione scrive " +
                     "due lettere, aumentalo.",
                 "IGNORA I TREMORI: una raffica di tocchi ravvicinati conta " +
@@ -285,10 +285,10 @@ val ITALIAN = Language(
         TutorialPage(
             title = "Ecco tutto",
             lines = listOf(
-                "Chiudi questa guida e prova tu stesso per qualche minuto " +
-                    "prima di spiegarlo a lei. È l'unico modo per spiegarlo " +
-                    "bene.",
-                "Se qualcosa non funziona per lei, quasi sempre è " +
+                "Chiudi questa guida e prova tu per qualche minuto " +
+                    "prima di spiegarlo alla persona. È l'unico modo per " +
+                    "spiegarlo bene.",
+                "Se qualcosa non funziona per la persona, quasi sempre è " +
                     "un'impostazione e non l'app. Comincia dalla velocità.",
                 "Puoi riaprire questa guida quando vuoi: ⚙ → COME " +
                     "FUNZIONA.",
@@ -296,28 +296,27 @@ val ITALIAN = Language(
         ),
     ),
     onboarding = OnboardingText(
-        welcomeTitle = "Prepararla",
+        welcomeTitle = "La messa a punto",
         welcomeLines = listOf(
             "Questa app permette a una persona che non può parlare né " +
                 "scrivere a mano di comporre frasi e dirle ad alta voce.",
-            "Ci sono diversi modi di usarla. Due domande su di lei, e " +
-                "l'app sarà impostata nel modo che le è più adatto.",
+            "Ci sono diversi modi di usarla. Due domande su chi la userà, e " +
+                "l'app sarà impostata nel modo più adatto.",
             "Ogni risposta si può cambiare più tardi nelle impostazioni " +
                 "(⚙, in alto a destra).",
         ),
         start = "INIZIA",
-        skip = "SALTA",
-        methodTitle = "Come sceglierà una lettera?",
-        methodHint = "Non sai quale? Parti da quello che le chiede di " +
-            "meno. Se aspettare la stanca, o se è difficile cogliere il " +
-            "momento giusto, prova con le frecce.",
+        methodTitle = "Come sceglierà una lettera la persona?",
+        methodHint = "Non sai quale? Parti da quello che chiede di " +
+            "meno alla persona. Se aspettare è faticoso, o se è difficile " +
+            "cogliere il momento giusto, prova con le frecce.",
         methodDirectDetail = "Riesce a toccare con sicurezza un tasto " +
             "preciso. Il modo più veloce, finché dura.",
         methodArrowsDetail = "Riesce a toccare pochi pulsanti grandi, ma " +
-            "non tasti piccoli. Niente si muove finché non lo muove lei.",
+            "non tasti piccoli. Niente si muove finché non lo si muove.",
         methodScanDetail = "Riesce a fare un solo movimento, con un " +
             "pulsante o con un tocco. Un'evidenziazione si muove da sola e " +
-            "lei preme quando arriva su ciò che vuole.",
+            "si preme quando arriva su ciò che si vuole.",
         pressTitle = "Cosa premerà?",
         pressHint = "Un pulsante esterno si collega al tablet via " +
             "Bluetooth. Prima va abbinato nelle impostazioni Bluetooth del " +
@@ -331,6 +330,22 @@ val ITALIAN = Language(
             "sopra non dà fastidio.",
         pressBoth = "Entrambi",
         pressBothDetail = "I pulsanti, e anche le metà dello schermo.",
+        practiceWord = "CIAO",
+        practiceWrite = "Prova: scrivere",
+        practiceWriteScan = "Aspetta che l'evidenziazione arrivi sulla riga, " +
+            "premi, poi premi di nuovo sulla lettera.",
+        practiceWriteArrows = "Sposta l'evidenziazione con le frecce, poi premi " +
+            "SCEGLI su ogni lettera.",
+        practiceWriteDirect = "Tocca una lettera alla volta.",
+        practiceUndo = "Ora torna indietro di una lettera",
+        practiceUndoScan = "Premi il pulsante per annullare, oppure tocca la " +
+            "metà sinistra dello schermo se il tocco è attivo.",
+        practiceUndoArrows = "Premi ⌫ LETTERA accanto a SCEGLI, oppure il tasto " +
+            "⌫ sulla griglia.",
+        practiceUndoDirect = "Tocca il tasto ⌫.",
+        practiceDone = "Fatto. È tutto ciò che la persona userà.",
+        practiceFinish = "FINE",
+        practiceAgain = "ESERCITATI",
     ),
     bindPressFor = "Premi il pulsante per",
     bindButtonFor = "Pulsante per",

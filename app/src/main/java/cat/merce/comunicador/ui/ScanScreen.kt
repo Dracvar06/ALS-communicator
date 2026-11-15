@@ -515,7 +515,8 @@ private fun TutorialPanel(controller: ScanController) {
                 Spacer(Modifier.width(20.dp))
             }
             TouchButton(
-                text = if (last) {
+                // During setup the last page leads on to practice.
+                text = if (last && !controller.setupInProgress) {
                     controller.language.settingsClose
                 } else {
                     controller.language.tutorialNext
@@ -523,7 +524,7 @@ private fun TutorialPanel(controller: ScanController) {
                 onTap = controller::nextTutorialPage,
             )
             Spacer(Modifier.weight(1f))
-            if (!last) {
+            if (!last && !controller.setupInProgress) {
                 TouchButton(
                     text = controller.language.settingsClose,
                     onTap = controller::closeTutorial,
@@ -636,8 +637,8 @@ private fun OnboardingPanel(controller: ScanController) {
             } else {
                 TouchButton(text = language.tutorialBack, onTap = controller::onboardingBack)
             }
-            Spacer(Modifier.weight(1f))
-            TouchButton(text = text.skip, onTap = controller::closeOnboarding)
+            // No skip. A helper who skipped setup, then could not explain the
+            // app, is how it was failing. Either switch still leaves.
         }
     }
 }
@@ -1527,9 +1528,71 @@ private fun TouchButton(text: String, onTap: () -> Unit) {
     }
 }
 
+/**
+ * The instructions above the grid during practice. Only words and one touch
+ * button: the grid below is the real one, so the practice is the real thing.
+ */
+@Composable
+private fun PracticeBanner(controller: ScanController, step: PracticeStep) {
+    val text = controller.language.onboarding
+    val mode = controller.inputMode
+    val (title, hint) = when (step) {
+        PracticeStep.Write -> "${text.practiceWrite} ${controller.practiceWord}" to when (mode) {
+            InputMode.Scan -> text.practiceWriteScan
+            InputMode.Arrows -> text.practiceWriteArrows
+            InputMode.Direct -> text.practiceWriteDirect
+        }
+        PracticeStep.Undo -> text.practiceUndo to when (mode) {
+            InputMode.Scan -> text.practiceUndoScan
+            InputMode.Arrows -> text.practiceUndoArrows
+            InputMode.Direct -> text.practiceUndoDirect
+        }
+        PracticeStep.Done -> text.practiceDone to ""
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            // Clear of the battery and the settings corner, which sit on top.
+            .padding(bottom = 12.dp, end = 180.dp)
+            .background(TextAreaBackground, RoundedCornerShape(12.dp))
+            .padding(horizontal = 24.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                color = CellLit,
+                fontFamily = Hyperlegible,
+                fontWeight = FontWeight.Bold,
+                fontSize = 28.sp
+            )
+            if (hint.isNotEmpty()) {
+                Text(
+                    text = hint,
+                    color = Ink,
+                    fontFamily = Hyperlegible,
+                    fontSize = 20.sp,
+                    lineHeight = 26.sp
+                )
+            }
+        }
+        if (step == PracticeStep.Done) {
+            Spacer(Modifier.width(20.dp))
+            TouchButton(text = text.practiceFinish, onTap = controller::finishPractice)
+        } else if (!controller.setupInProgress) {
+            // Started from settings, so it is optional and can be put away.
+            Spacer(Modifier.width(20.dp))
+            TouchButton(text = controller.language.settingsClose, onTap = controller::finishPractice)
+        }
+    }
+}
+
 @Composable
 private fun WritingGrid(controller: ScanController) {
     Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
+
+        controller.practiceStep?.let { step -> PracticeBanner(controller, step) }
 
         // The text box gets close to two rows' worth of height, so a sentence
         // is easy to read at a glance. It is the thing being said, so it earns
@@ -1617,10 +1680,17 @@ private fun SettingsPanel(controller: ScanController) {
             // First, and before any heading, because a helper who has opened
             // settings without knowing what the app does needs this before
             // anything else here will mean much to them.
-            TouchButton(
-                text = controller.language.settingsTutorial,
-                onTap = controller::openTutorial,
-            )
+            Row {
+                TouchButton(
+                    text = controller.language.settingsTutorial,
+                    onTap = controller::openTutorial,
+                )
+                Spacer(Modifier.width(20.dp))
+                TouchButton(
+                    text = controller.language.onboarding.practiceAgain,
+                    onTap = controller::startPractice,
+                )
+            }
 
             // ----------------------------------------------------------------
             // How writing works

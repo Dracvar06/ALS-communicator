@@ -142,6 +142,11 @@ class ScanController(
      * Erase one letter from the arrow pad, without steering to the key first.
      */
     fun eraseLetter() {
+        eraseLetterUnchecked()
+        checkPractice()
+    }
+
+    private fun eraseLetterUnchecked() {
         clearArmed = false
         if (!canErase()) return
         val textBefore = text
@@ -157,6 +162,11 @@ class ScanController(
      * second one, with nothing else in between, does it.
      */
     fun eraseAll() {
+        eraseAllUnchecked()
+        checkPractice()
+    }
+
+    private fun eraseAllUnchecked() {
         if (!canErase()) { clearArmed = false; return }
         if (text.isEmpty()) { clearArmed = false; return }
         if (!clearArmed) {
@@ -422,7 +432,7 @@ class ScanController(
     }
 
     fun nextTutorialPage() {
-        if (tutorialPage < tutorialPages.size - 1) tutorialPage++ else closeTutorial()
+        if (tutorialPage < tutorialPages.size - 1) tutorialPage++ else finishTutorial()
     }
 
     fun previousTutorialPage() {
@@ -439,6 +449,9 @@ class ScanController(
     fun closeTutorial() {
         if (!inTutorial) return
         inTutorial = false
+        // Left early by a switch: setup is over, practice or not. The helper
+        // can still practise from settings.
+        if (practiceStep == null) setupInProgress = false
         // Out to the grid rather than back to settings. The last page asks the
         // helper to go and try it, so that is where they should land.
         closeSettings()
@@ -465,6 +478,7 @@ class ScanController(
     private var onboardingPress: ScanPress? = null
 
     fun openOnboarding() {
+        setupInProgress = true
         onboardingPress = null
         onboardingStep = OnboardingStep.Welcome
     }
@@ -518,6 +532,7 @@ class ScanController(
     /** Leaves onboarding for the grid, keeping whatever was already chosen. */
     fun closeOnboarding() {
         if (!inOnboarding) return
+        setupInProgress = false
         onboardingStep = null
         onboardingPress = null
         closeSettings()
@@ -529,6 +544,79 @@ class ScanController(
         onboardingStep = null
         onboardingPress = null
         openTutorial()
+    }
+
+    /** The end of the walkthrough: during setup, on to practice. */
+    fun finishTutorial() {
+        if (setupInProgress) startPractice() else closeTutorial()
+    }
+
+    /**
+     * True while a fresh install's walkthrough is part of setup rather than
+     * opened from settings. Setup cannot be closed from its own screens: the
+     * helper has to finish it, practice included, because a helper who skipped
+     * straight to the grid and then could not explain the app is exactly how
+     * it was failing. Either switch still leaves, so the person using it can
+     * never be trapped.
+     */
+    var setupInProgress: Boolean by mutableStateOf(false)
+        private set
+
+    /**
+     * The practice round at the end of setup: the helper writes a short word
+     * with the method they chose, then undoes one letter. It runs on the real
+     * grid, so it is never a screen anybody can get stuck on: at worst the
+     * grid is simply in use, with a line of instructions above it.
+     */
+    var practiceStep: PracticeStep? by mutableStateOf(null)
+        private set
+
+    val practiceWord: String get() = language.onboarding.practiceWord
+
+    /** How long the text was when the word was reached, so undo can be spotted. */
+    private var practiceLengthAtWord = 0
+
+    /**
+     * Whatever was being written when practice started from settings, put back
+     * afterwards. Practice must never cost somebody a sentence.
+     */
+    private var textBeforePractice = ""
+
+    /** From settings: try it again, without the setup around it. */
+    fun startPractice() {
+        practiceStep = PracticeStep.Write
+        closeTutorial()
+        closeSettings()
+        textBeforePractice = text
+        text = ""
+        history.clear()
+        refreshCanUndo()
+        refreshSuggestions()
+        restartTiming()
+    }
+
+    fun finishPractice() {
+        practiceStep = null
+        setupInProgress = false
+        text = textBeforePractice
+        textBeforePractice = ""
+        history.clear()
+        refreshCanUndo()
+        refreshSuggestions()
+        restartTiming()
+    }
+
+    private fun checkPractice() {
+        when (practiceStep) {
+            PracticeStep.Write ->
+                if (text.trim().equals(practiceWord, ignoreCase = true)) {
+                    practiceLengthAtWord = text.length
+                    practiceStep = PracticeStep.Undo
+                }
+            PracticeStep.Undo ->
+                if (text.length < practiceLengthAtWord) practiceStep = PracticeStep.Done
+            else -> {}
+        }
     }
 
     /** The carer's screen for finding out what a switch interface sends. */
@@ -683,6 +771,11 @@ class ScanController(
 
     /** The writing switch was pressed. */
     fun press() {
+        pressUnchecked()
+        checkPractice()
+    }
+
+    private fun pressUnchecked() {
         clearArmed = false
         if (inOnboarding) {
             closeOnboarding()
@@ -774,6 +867,11 @@ class ScanController(
      * follow: the cell she touched is the cell she chose.
      */
     fun touchKey(row: Int, col: Int) {
+        touchKeyUnchecked(row, col)
+        checkPractice()
+    }
+
+    private fun touchKeyUnchecked(row: Int, col: Int) {
         if (inputMode != InputMode.Direct || inSettings || inTutorial || inOnboarding) return
         val grid = rows
         if (row !in grid.indices || col !in grid[row].indices) return
@@ -820,6 +918,11 @@ class ScanController(
      * keeps walking back.
      */
     fun undo() {
+        undoUnchecked()
+        checkPractice()
+    }
+
+    private fun undoUnchecked() {
         if (inOnboarding) {
             closeOnboarding()
             return

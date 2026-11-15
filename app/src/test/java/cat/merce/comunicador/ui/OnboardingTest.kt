@@ -165,4 +165,85 @@ class OnboardingTest {
             )
         }
     }
+
+    /** Touches each letter of [word] on the grid, in direct mode. */
+    private fun ScanController.touchWord(word: String) {
+        for (letter in word) {
+            val (row, col) = rows.withIndex().firstNotNullOf { (r, keys) ->
+                keys.indices.firstOrNull { label(keys[it]) == letter.toString() }?.let { r to it }
+            }
+            touchKey(row, col)
+        }
+    }
+
+    /** Fresh install, touch method, walkthrough read to the end. */
+    private fun throughSetup(): ScanController {
+        val c = atMethod()
+        c.chooseMethod(InputMode.Direct)
+        repeat(c.tutorialPages.size) { c.nextTutorialPage() }
+        return c
+    }
+
+    @Test
+    fun `setup ends in practice, not in the grid`() {
+        val c = throughSetup()
+        assertFalse(c.inTutorial)
+        assertEquals(PracticeStep.Write, c.practiceStep)
+        assertTrue(c.setupInProgress)
+    }
+
+    @Test
+    fun `practice wants the word, then one letter undone`() {
+        val c = throughSetup()
+        c.touchWord(c.practiceWord)
+        assertEquals(PracticeStep.Undo, c.practiceStep)
+        c.undo()
+        assertEquals(PracticeStep.Done, c.practiceStep)
+        c.finishPractice()
+        assertNull(c.practiceStep)
+        assertFalse(c.setupInProgress)
+        assertEquals("", c.text)
+    }
+
+    @Test
+    fun `a wrong letter does not finish the word step`() {
+        val c = throughSetup()
+        c.touchWord(c.practiceWord.dropLast(1))
+        assertEquals(PracticeStep.Write, c.practiceStep)
+    }
+
+    @Test
+    fun `practice from settings gives back what was being written`() {
+        val c = ScanController()
+        c.useInputMode(InputMode.Direct)
+        c.touchWord("SI")
+        val before = c.text
+        c.openSettings()
+        c.startPractice()
+        assertFalse(c.inSettings)
+        assertEquals("", c.text)
+        c.finishPractice()
+        assertEquals(before, c.text)
+    }
+
+    @Test
+    fun `a switch during the setup walkthrough still leaves, and ends setup`() {
+        val c = atMethod()
+        c.chooseMethod(InputMode.Direct)
+        assertTrue(c.setupInProgress)
+        c.press()
+        assertFalse(c.inTutorial)
+        assertFalse(c.setupInProgress)
+        assertNull(c.practiceStep)
+    }
+
+    @Test
+    fun `every practice word can be typed on its own grid`() {
+        for (language in LANGUAGES) {
+            val keys = language.letterRows.flatten().toSet()
+            for (letter in language.onboarding.practiceWord) {
+                assertTrue("${language.code}: $letter", letter.toString() in keys)
+            }
+        }
+    }
 }
