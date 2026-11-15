@@ -132,6 +132,12 @@ class MainActivity : ComponentActivity() {
             initialForgiveMistakes = settings.getBoolean(KEY_FORGIVE, true),
             initialBoldWriting = settings.getBoolean(KEY_BOLD_WRITING, true),
             initialVowelColours = settings.getBoolean(KEY_VOWEL_COLOURS, false),
+            // Drawn on a new install only. Somebody already using the app has
+            // learnt the halves, and their screen should not change under them.
+            initialTouchGuideLeft = settings.getInt(
+                KEY_TOUCH_GUIDE_LEFT,
+                if (settings.all.isEmpty()) ScanController.TOUCH_GUIDE_TOUCHES else 0
+            ),
             // Off unless a carer turned it on, and never on in the standard build.
             initialAiSuggestions = AiEngine.AVAILABLE && settings.getBoolean(KEY_AI_SUGGESTIONS, false),
         )
@@ -145,6 +151,11 @@ class MainActivity : ComponentActivity() {
             settings.edit(commit = true) { putBoolean(KEY_FORGIVE, on) }
         }
 
+        controller.onTouchGuideChanged = { left ->
+            // apply, not commit: this runs on every touch, and losing the last
+            // step of a fade to a crash costs nothing.
+            settings.edit { putInt(KEY_TOUCH_GUIDE_LEFT, left) }
+        }
         controller.onVowelColoursChanged = { on ->
             settings.edit(commit = true) { putBoolean(KEY_VOWEL_COLOURS, on) }
         }
@@ -750,6 +761,7 @@ class MainActivity : ComponentActivity() {
         const val KEY_FORGIVE = "forgive_mistakes"
         const val KEY_BOLD_WRITING = "bold_writing"
         const val KEY_VOWEL_COLOURS = "vowel_colours"
+        const val KEY_TOUCH_GUIDE_LEFT = "touch_guide_left"
         const val KEY_AI_SUGGESTIONS = "ai_suggestions"
 
         /** Replaced by [KEY_ARROW_PLACEMENT]; still read once, then ignored. */

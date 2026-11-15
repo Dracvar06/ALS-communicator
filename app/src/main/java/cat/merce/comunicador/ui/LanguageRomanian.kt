@@ -114,6 +114,7 @@ val ROMANIAN = Language(
     settingsBoldWritingDetail = "Fraza pe care o scrie persoana, mai groasă, ca să se citească de departe.",
     settingsVowelsTitle = "Vocale colorate",
     settingsVowelsDetail = "Vocalele în altă culoare, ca să fie găsite dintr-o privire.",
+    settingsShowHalves = "ARATĂ DIN NOU CELE DOUĂ BUTOANE",
     settingsArrowShapeTitle = "Cum arată săgețile",
     settingsArrowShapeDetail = "Separate, fiecare săgeată are butonul ei și se vede cât de mare este. Unite, sunt desenate ca o singură formă. Ce răspunde la atingere este la fel în ambele cazuri.",
     settingsArrowShapeJoined = "Unite",

@@ -63,6 +63,7 @@ class ScanController(
     initialForgiveMistakes: Boolean = true,
     initialBoldWriting: Boolean = true,
     initialVowelColours: Boolean = false,
+    initialTouchGuideLeft: Int = 0,
     initialAiSuggestions: Boolean = false,
 ) {
 
@@ -1298,6 +1299,37 @@ class ScanController(
         onVowelColoursChanged?.invoke(enabled)
     }
 
+    /**
+     * How many more touches the drawn-in halves stay visible for.
+     *
+     * The single thing nobody understood: that the screen is two big buttons.
+     * Telling people did not work, so a new install draws them, a write half
+     * and an undo half with arrows, and lets them fade a little with every
+     * touch until the person has learnt where they are. Then they are gone,
+     * and the letters have the whole screen again.
+     */
+    var touchGuideLeft: Int by mutableStateOf(initialTouchGuideLeft)
+        private set
+
+    var onTouchGuideChanged: ((Int) -> Unit)? = null
+
+    /** How strongly to draw the halves, from 1 (new) down to 0 (gone). */
+    val touchGuideStrength: Float
+        get() = (touchGuideLeft.toFloat() / TOUCH_GUIDE_TOUCHES).coerceIn(0f, 1f)
+
+    /** A touch on either half: the drawing fades one step. */
+    fun noteHalfTouched() {
+        if (touchGuideLeft <= 0) return
+        touchGuideLeft--
+        onTouchGuideChanged?.invoke(touchGuideLeft)
+    }
+
+    /** From settings: draw the halves again, at full strength. */
+    fun showTouchGuide() {
+        touchGuideLeft = TOUCH_GUIDE_TOUCHES
+        onTouchGuideChanged?.invoke(touchGuideLeft)
+    }
+
     fun isVowel(key: Key): Boolean =
         vowelColours && key is Key.Letter && key.char.uppercase() in language.vowels
 
@@ -1519,6 +1551,13 @@ class ScanController(
     }
 
     companion object {
+        /**
+         * Touches before the drawn-in halves have faded away completely. Enough
+         * for a few sentences, so they are still there for the first real
+         * conversation, not only for practice.
+         */
+        const val TOUCH_GUIDE_TOUCHES = 80
+
         /**
          * How long each step lasts, in milliseconds. Adjustable in settings and
          * saved between runs, so this is only the value on a fresh install.

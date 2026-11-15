@@ -3,6 +3,7 @@ package cat.merce.comunicador.ui
 import android.os.SystemClock
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
@@ -378,9 +379,17 @@ private fun BoxScope.GridContent(controller: ScanController, arrows: Boolean) {
     // the input, and in direct mode the letters are — in both cases a half
     // screen listening for taps would swallow them before they arrived.
     if (controller.touchInput && controller.inputMode == InputMode.Scan) {
+        val strength = controller.touchGuideStrength
+        if (strength > 0f) TouchGuide(controller.language, strength)
         TouchZones(
-            onWrite = controller::press,
-            onUndo = controller::undo,
+            onWrite = {
+                controller.noteHalfTouched()
+                controller.press()
+            },
+            onUndo = {
+                controller.noteHalfTouched()
+                controller.undo()
+            },
             debounceMs = controller.debounceMs,
             antiTremor = controller.antiTremor,
         )
@@ -398,6 +407,67 @@ private fun BoxScope.GridContent(controller: ScanController, arrows: Boolean) {
             BatteryReadout(controller)
             SettingsCornerButton(onOpen = controller::openSettings)
         }
+    }
+}
+
+// Undo is amber rather than red: red already means "the highlight is here",
+// and a red half of the screen would compete with it.
+private val GuideUndo = Color(0xFFE09A2B)
+private val GuideWrite = Color(0xFF3FA34D)
+
+/**
+ * The two touch halves, drawn in: an undo half and a write half, each with
+ * its arrow and word, and a line between them. Only a picture: it takes no
+ * touches, so every tap still reaches the halves underneath.
+ *
+ * Fades with [strength] as the person uses it. Never fully opaque, even at
+ * the start, because the letters under it still have to be read.
+ */
+@Composable
+private fun TouchGuide(language: Language, strength: Float) {
+    Row(modifier = Modifier.fillMaxSize()) {
+        GuideHalf(
+            colour = GuideUndo,
+            label = "\u21B6  " + language.settingsUndo.uppercase(),
+            strength = strength,
+            modifier = Modifier.weight(1f),
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(6.dp)
+                .background(Ink.copy(alpha = 0.7f * strength))
+        )
+        GuideHalf(
+            colour = GuideWrite,
+            label = language.settingsWrite.uppercase() + "  \u2192",
+            strength = strength,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun GuideHalf(colour: Color, label: String, strength: Float, modifier: Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .background(colour.copy(alpha = 0.22f * strength))
+            .border(6.dp, colour.copy(alpha = 0.9f * strength)),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        // Along the bottom edge, where it covers least of the grid.
+        Text(
+            text = label,
+            color = Ink.copy(alpha = strength),
+            fontFamily = Hyperlegible,
+            fontWeight = FontWeight.Bold,
+            fontSize = 44.sp,
+            modifier = Modifier
+                .padding(bottom = 16.dp)
+                .background(colour.copy(alpha = 0.85f * strength), RoundedCornerShape(16.dp))
+                .padding(horizontal = 32.dp, vertical = 8.dp)
+        )
     }
 }
 
@@ -1988,6 +2058,13 @@ private fun SettingsPanel(controller: ScanController) {
                 onChange = { controller.useForgiveMistakes(it) },
                 titleSize = title,
                 detailSize = detail,
+            )
+
+            Spacer(Modifier.height(gap))
+
+            TouchButton(
+                text = controller.language.settingsShowHalves,
+                onTap = controller::showTouchGuide,
             )
 
             Spacer(Modifier.height(gap))

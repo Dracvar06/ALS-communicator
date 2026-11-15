@@ -115,6 +115,7 @@ val ARABIC = Language(
     settingsBoldWritingDetail = "الجملة التي يكتبها الشخص، بخط أثخن، لتُقرأ من بعيد.",
     settingsVowelsTitle = "أحرف المد بلون مختلف",
     settingsVowelsDetail = "أحرف المد (ا و ي) بلون آخر، لإيجادها بنظرة واحدة.",
+    settingsShowHalves = "أظهر الزرين مرة أخرى",
     settingsArrowShapeTitle = "شكل الأسهم",
     settingsArrowShapeDetail = "المنفصلة تعطي كل سهم زره الخاص، فيظهر حجمه. المتصلة ترسمها شكلا واحدا. ما يستجيب للمس هو نفسه في الحالتين.",
     settingsArrowShapeJoined = "متصلة",
