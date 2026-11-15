@@ -1048,7 +1048,10 @@ val SPANISH = Language(
 )
 
 /** Every language the app ships with. Adding one means adding it here. */
-val LANGUAGES = listOf(CATALAN, SPANISH, ENGLISH)
+val LANGUAGES = listOf(
+    CATALAN, SPANISH, ENGLISH,
+    GALICIAN, BASQUE, FRENCH, ITALIAN, PORTUGUESE, GERMAN, ROMANIAN, ARABIC,
+)
 
 fun languageForCode(code: String?): Language =
     LANGUAGES.firstOrNull { it.code == code } ?: CATALAN

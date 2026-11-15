@@ -496,8 +496,10 @@ class MainActivity : ComponentActivity() {
         if (result == TextToSpeech.LANG_MISSING_DATA ||
             result == TextToSpeech.LANG_NOT_SUPPORTED
         ) {
-            // Spanish is the closest widely installed voice to Catalan.
-            if (language.code == "ca") engine.setLanguage(Locale("es"))
+            // Catalan, Galician and Basque voices are often missing, and
+            // Spanish is the voice a tablet in Spain is most likely to have.
+            // A Spanish accent is better than silence.
+            if (language.code in setOf("ca", "gl", "eu")) engine.setLanguage(Locale("es"))
         }
     }
 

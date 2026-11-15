@@ -11,11 +11,13 @@ class StartingLanguageTest {
         assertEquals(ENGLISH, startingLanguage(null, "en"))
         assertEquals(SPANISH, startingLanguage(null, "es"))
         assertEquals(CATALAN, startingLanguage(null, "ca"))
+        assertEquals(FRENCH, startingLanguage(null, "fr"))
+        assertEquals(ARABIC, startingLanguage(null, "ar"))
     }
 
     @Test
     fun `a tablet language the app does not ship falls back to Catalan`() {
-        assertEquals(CATALAN, startingLanguage(null, "fr"))
+        assertEquals(CATALAN, startingLanguage(null, "ja"))
     }
 
     @Test
