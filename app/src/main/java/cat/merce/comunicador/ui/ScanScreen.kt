@@ -1,8 +1,10 @@
 package cat.merce.comunicador.ui
 
+import androidx.compose.ui.platform.LocalConfiguration
 import android.os.SystemClock
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import cat.merce.comunicador.ai.AiEngine
 import cat.merce.comunicador.BuildConfig
 import cat.merce.comunicador.input.Switch
 import cat.merce.comunicador.input.SwitchFilter
@@ -64,6 +67,10 @@ import kotlin.math.roundToLong
 private val Background = Color(0xFF000000)
 private val CellIdle = Color(0xFF1F1F1F)
 private val CellLit = Color(0xFFD32F2F)
+
+// A dull blue: plainly different from the grey, but far quieter than the red
+// highlight, which must stay the brightest thing on the screen.
+private val CellVowel = Color(0xFF263A5C)
 private val Ink = Color(0xFFFFFFFF)
 private val DimInk = Color(0xFF9E9E9E)
 private val TextAreaBackground = Color(0xFF121212)
@@ -206,6 +213,7 @@ fun ScanScreen(controller: ScanController) {
         when {
             controller.bindingRole != null || controller.bindingMoreRole != null ->
                 BindingPanel(controller)
+            controller.inOnboarding -> OnboardingPanel(controller)
             controller.inTutorial -> TutorialPanel(controller)
             controller.inDiagnostics -> DiagnosticsPanel(controller)
             controller.inSettings -> SettingsPanel(controller)
@@ -372,9 +380,17 @@ private fun BoxScope.GridContent(controller: ScanController, arrows: Boolean) {
     // the input, and in direct mode the letters are — in both cases a half
     // screen listening for taps would swallow them before they arrived.
     if (controller.touchInput && controller.inputMode == InputMode.Scan) {
+        val strength = controller.touchGuideStrength
+        if (strength > 0f) TouchGuide(controller.language, strength)
         TouchZones(
-            onWrite = controller::press,
-            onUndo = controller::undo,
+            onWrite = {
+                controller.noteHalfTouched()
+                controller.press()
+            },
+            onUndo = {
+                controller.noteHalfTouched()
+                controller.undo()
+            },
             debounceMs = controller.debounceMs,
             antiTremor = controller.antiTremor,
         )
@@ -392,6 +408,67 @@ private fun BoxScope.GridContent(controller: ScanController, arrows: Boolean) {
             BatteryReadout(controller)
             SettingsCornerButton(onOpen = controller::openSettings)
         }
+    }
+}
+
+// Undo is amber rather than red: red already means "the highlight is here",
+// and a red half of the screen would compete with it.
+private val GuideUndo = Color(0xFFE09A2B)
+private val GuideWrite = Color(0xFF3FA34D)
+
+/**
+ * The two touch halves, drawn in: an undo half and a write half, each with
+ * its arrow and word, and a line between them. Only a picture: it takes no
+ * touches, so every tap still reaches the halves underneath.
+ *
+ * Fades with [strength] as the person uses it. Never fully opaque, even at
+ * the start, because the letters under it still have to be read.
+ */
+@Composable
+private fun TouchGuide(language: Language, strength: Float) {
+    Row(modifier = Modifier.fillMaxSize()) {
+        GuideHalf(
+            colour = GuideUndo,
+            label = "\u21B6  " + language.settingsUndo.uppercase(),
+            strength = strength,
+            modifier = Modifier.weight(1f),
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(6.dp)
+                .background(Ink.copy(alpha = 0.7f * strength))
+        )
+        GuideHalf(
+            colour = GuideWrite,
+            label = language.settingsWrite.uppercase() + "  \u2192",
+            strength = strength,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun GuideHalf(colour: Color, label: String, strength: Float, modifier: Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .background(colour.copy(alpha = 0.22f * strength))
+            .border(6.dp, colour.copy(alpha = 0.9f * strength)),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        // Along the bottom edge, where it covers least of the grid.
+        Text(
+            text = label,
+            color = Ink.copy(alpha = strength),
+            fontFamily = Hyperlegible,
+            fontWeight = FontWeight.Bold,
+            fontSize = 44.sp,
+            modifier = Modifier
+                .padding(bottom = 16.dp)
+                .background(colour.copy(alpha = 0.85f * strength), RoundedCornerShape(16.dp))
+                .padding(horizontal = 32.dp, vertical = 8.dp)
+        )
     }
 }
 
@@ -513,7 +590,8 @@ private fun TutorialPanel(controller: ScanController) {
                 Spacer(Modifier.width(20.dp))
             }
             TouchButton(
-                text = if (last) {
+                // During setup the last page leads on to practice.
+                text = if (last && !controller.setupInProgress) {
                     controller.language.settingsClose
                 } else {
                     controller.language.tutorialNext
@@ -521,11 +599,203 @@ private fun TutorialPanel(controller: ScanController) {
                 onTap = controller::nextTutorialPage,
             )
             Spacer(Modifier.weight(1f))
-            if (!last) {
+            if (!last && !controller.setupInProgress) {
                 TouchButton(
                     text = controller.language.settingsClose,
                     onTap = controller::closeTutorial,
                 )
+            }
+        }
+    }
+}
+
+/**
+ * The questions a fresh install asks the helper: how she will choose a letter,
+ * then, for scanning, what she will press, or for arrows, where they go.
+ *
+ * Each answer is a big card with a line saying who it suits, because the
+ * helper is choosing for somebody else and the names alone ("arrows",
+ * "scanning") mean nothing to someone who has never seen them.
+ */
+@Composable
+private fun OnboardingPanel(controller: ScanController) {
+    val language = controller.language
+    val text = language.onboarding
+    val step = controller.onboardingStep ?: return
+
+    Column(modifier = Modifier.fillMaxSize().padding(40.dp)) {
+        when (step) {
+            OnboardingStep.Welcome -> {
+                OnboardingTitle(text.welcomeTitle)
+                Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                    // Phone-sized screen: say so first. The keys on a phone are
+                    // too small for anyone who needs this app to hit reliably,
+                    // and the helper is the one who can still get a tablet.
+                    if (LocalConfiguration.current.smallestScreenWidthDp < 600) {
+                        Text(
+                            text = text.phoneNotice,
+                            color = Ink,
+                            fontFamily = Hyperlegible,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 24.sp,
+                            lineHeight = 32.sp,
+                            modifier = Modifier
+                                .padding(bottom = 20.dp)
+                                .background(CellLit, RoundedCornerShape(12.dp))
+                                .padding(horizontal = 20.dp, vertical = 14.dp)
+                        )
+                    }
+                    for (line in text.welcomeLines) {
+                        Row(modifier = Modifier.padding(bottom = 14.dp)) {
+                            Text(
+                                text = "\u2022",
+                                color = CellLit,
+                                fontFamily = Hyperlegible,
+                                fontSize = 24.sp,
+                                modifier = Modifier.width(24.dp)
+                            )
+                            Text(
+                                text = line,
+                                color = Ink,
+                                fontFamily = Hyperlegible,
+                                fontSize = 24.sp,
+                                lineHeight = 32.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            OnboardingStep.Method -> {
+                OnboardingTitle(text.methodTitle, text.methodHint)
+                OnboardingChoices(
+                    modifier = Modifier.weight(1f),
+                    choices = listOf(
+                        Triple(language.settingsModeDirect, text.methodDirectDetail) {
+                            controller.chooseMethod(InputMode.Direct)
+                        },
+                        Triple(language.settingsModeArrows, text.methodArrowsDetail) {
+                            controller.chooseMethod(InputMode.Arrows)
+                        },
+                        Triple(language.settingsModeScan, text.methodScanDetail) {
+                            controller.chooseMethod(InputMode.Scan)
+                        },
+                    ),
+                )
+            }
+
+            OnboardingStep.ScanPress -> {
+                OnboardingTitle(text.pressTitle, text.pressHint)
+                OnboardingChoices(
+                    modifier = Modifier.weight(1f),
+                    choices = listOf(
+                        Triple(text.pressScreen, text.pressScreenDetail) {
+                            controller.chooseScanPress(ScanPress.Screen)
+                        },
+                        Triple(text.pressSwitches, text.pressSwitchesDetail) {
+                            controller.chooseScanPress(ScanPress.Switches)
+                        },
+                        Triple(text.pressBoth, text.pressBothDetail) {
+                            controller.chooseScanPress(ScanPress.Both)
+                        },
+                    ),
+                )
+            }
+
+            OnboardingStep.ArrowPlace -> {
+                OnboardingTitle(language.settingsArrowPlaceTitle, language.settingsArrowPlaceDetail)
+                OnboardingChoices(
+                    modifier = Modifier.weight(1f),
+                    choices = listOf(
+                        Triple(language.settingsArrowRight, "") {
+                            controller.chooseArrowPlace(ArrowPlacement.Right)
+                        },
+                        Triple(language.settingsArrowLeft, "") {
+                            controller.chooseArrowPlace(ArrowPlacement.Left)
+                        },
+                        Triple(language.settingsArrowBottom, "") {
+                            controller.chooseArrowPlace(ArrowPlacement.Bottom)
+                        },
+                    ),
+                )
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (step == OnboardingStep.Welcome) {
+                TouchButton(text = text.start, onTap = controller::startOnboarding)
+            } else {
+                TouchButton(text = language.tutorialBack, onTap = controller::onboardingBack)
+            }
+            // No skip. A helper who skipped setup, then could not explain the
+            // app, is how it was failing. Either switch still leaves.
+        }
+    }
+}
+
+@Composable
+private fun OnboardingTitle(title: String, hint: String? = null) {
+    Text(
+        text = title,
+        color = Ink,
+        fontFamily = Hyperlegible,
+        fontWeight = FontWeight.Bold,
+        fontSize = 40.sp
+    )
+    if (hint != null) {
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = hint,
+            color = DimInk,
+            fontFamily = Hyperlegible,
+            fontSize = 22.sp,
+            lineHeight = 30.sp
+        )
+    }
+    Spacer(Modifier.height(24.dp))
+}
+
+/**
+ * Side by side cards, one per answer. Touch only, like every carer control:
+ * a focusable button here would let her switch pick an answer.
+ */
+@Composable
+private fun OnboardingChoices(
+    choices: List<Triple<String, String, () -> Unit>>,
+    modifier: Modifier = Modifier,
+) {
+    Row(modifier = modifier.fillMaxWidth()) {
+        choices.forEachIndexed { index, (title, detail, onTap) ->
+            if (index > 0) Spacer(Modifier.width(20.dp))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .background(CellIdle, RoundedCornerShape(16.dp))
+                    .pointerInput(onTap) { detectTapGestures { onTap() } }
+                    .padding(28.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                Text(
+                    text = title,
+                    color = Ink,
+                    fontFamily = Hyperlegible,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 32.sp,
+                    lineHeight = 38.sp
+                )
+                if (detail.isNotEmpty()) {
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        text = detail,
+                        color = DimInk,
+                        fontFamily = Hyperlegible,
+                        fontSize = 22.sp,
+                        lineHeight = 30.sp
+                    )
+                }
             }
         }
     }
@@ -1238,7 +1508,11 @@ private fun LanguageChooser(current: Language, onChoose: (Language) -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = current.displayName,
+                text = if (current.experimental) {
+                    "${current.displayName} (${current.experimentalLabel})"
+                } else {
+                    current.displayName
+                },
                 color = Ink,
                 fontFamily = Hyperlegible,
                 fontWeight = FontWeight.Bold,
@@ -1265,7 +1539,11 @@ private fun LanguageChooser(current: Language, onChoose: (Language) -> Unit) {
                     },
                     text = {
                         Text(
-                            text = language.displayName,
+                            text = if (language.experimental) {
+                                "${language.displayName} (${current.experimentalLabel})"
+                            } else {
+                                language.displayName
+                            },
                             color = if (selected) CellLit else Ink,
                             fontFamily = Hyperlegible,
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
@@ -1350,9 +1628,71 @@ private fun TouchButton(text: String, onTap: () -> Unit) {
     }
 }
 
+/**
+ * The instructions above the grid during practice. Only words and one touch
+ * button: the grid below is the real one, so the practice is the real thing.
+ */
+@Composable
+private fun PracticeBanner(controller: ScanController, step: PracticeStep) {
+    val text = controller.language.onboarding
+    val mode = controller.inputMode
+    val (title, hint) = when (step) {
+        PracticeStep.Write -> "${text.practiceWrite} ${controller.practiceWord}" to when (mode) {
+            InputMode.Scan -> text.practiceWriteScan
+            InputMode.Arrows -> text.practiceWriteArrows
+            InputMode.Direct -> text.practiceWriteDirect
+        }
+        PracticeStep.Undo -> text.practiceUndo to when (mode) {
+            InputMode.Scan -> text.practiceUndoScan
+            InputMode.Arrows -> text.practiceUndoArrows
+            InputMode.Direct -> text.practiceUndoDirect
+        }
+        PracticeStep.Done -> text.practiceDone to ""
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            // Clear of the battery and the settings corner, which sit on top.
+            .padding(bottom = 12.dp, end = 180.dp)
+            .background(TextAreaBackground, RoundedCornerShape(12.dp))
+            .padding(horizontal = 24.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                color = CellLit,
+                fontFamily = Hyperlegible,
+                fontWeight = FontWeight.Bold,
+                fontSize = 28.sp
+            )
+            if (hint.isNotEmpty()) {
+                Text(
+                    text = hint,
+                    color = Ink,
+                    fontFamily = Hyperlegible,
+                    fontSize = 20.sp,
+                    lineHeight = 26.sp
+                )
+            }
+        }
+        if (step == PracticeStep.Done) {
+            Spacer(Modifier.width(20.dp))
+            TouchButton(text = text.practiceFinish, onTap = controller::finishPractice)
+        } else if (!controller.setupInProgress) {
+            // Started from settings, so it is optional and can be put away.
+            Spacer(Modifier.width(20.dp))
+            TouchButton(text = controller.language.settingsClose, onTap = controller::finishPractice)
+        }
+    }
+}
+
 @Composable
 private fun WritingGrid(controller: ScanController) {
     Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
+
+        controller.practiceStep?.let { step -> PracticeBanner(controller, step) }
 
         // The text box gets close to two rows' worth of height, so a sentence
         // is easy to read at a glance. It is the thing being said, so it earns
@@ -1375,6 +1715,7 @@ private fun WritingGrid(controller: ScanController) {
                     KeyCell(
                         label = controller.label(key),
                         lit = controller.isLit(rowIndex, colIndex),
+                        vowel = controller.isVowel(key),
                         modifier = Modifier.weight(1f).fillMaxHeight(),
                         onTap = if (direct) {
                             { controller.touchKey(rowIndex, colIndex) }
@@ -1440,10 +1781,17 @@ private fun SettingsPanel(controller: ScanController) {
             // First, and before any heading, because a helper who has opened
             // settings without knowing what the app does needs this before
             // anything else here will mean much to them.
-            TouchButton(
-                text = controller.language.settingsTutorial,
-                onTap = controller::openTutorial,
-            )
+            Row {
+                TouchButton(
+                    text = controller.language.settingsTutorial,
+                    onTap = controller::openTutorial,
+                )
+                Spacer(Modifier.width(20.dp))
+                TouchButton(
+                    text = controller.language.onboarding.practiceAgain,
+                    onTap = controller::startPractice,
+                )
+            }
 
             // ----------------------------------------------------------------
             // How writing works
@@ -1732,6 +2080,24 @@ private fun SettingsPanel(controller: ScanController) {
 
             Spacer(Modifier.height(gap))
 
+            TouchButton(
+                text = controller.language.settingsShowHalves,
+                onTap = controller::showTouchGuide,
+            )
+
+            Spacer(Modifier.height(gap))
+
+            SettingSwitch(
+                title = controller.language.settingsVowelsTitle,
+                detail = controller.language.settingsVowelsDetail,
+                checked = controller.vowelColours,
+                onChange = { controller.useVowelColours(it) },
+                titleSize = title,
+                detailSize = detail,
+            )
+
+            Spacer(Modifier.height(gap))
+
             SettingSwitch(
                 title = controller.language.settingsBoldWritingTitle,
                 detail = controller.language.settingsBoldWritingDetail,
@@ -1740,6 +2106,21 @@ private fun SettingsPanel(controller: ScanController) {
                 titleSize = title,
                 detailSize = detail,
             )
+
+            // Only the AI build has a model to offer; the standard build shows
+            // nothing here at all.
+            if (AiEngine.AVAILABLE) {
+                Spacer(Modifier.height(gap))
+                SettingSwitch(
+                    title = controller.language.settingsAiTitle,
+                    detail = controller.language.settingsAiDetail + "\n" +
+                        controller.language.settingsAiStatus(controller.aiStatus),
+                    checked = controller.aiSuggestions,
+                    onChange = { controller.useAiSuggestions(it) },
+                    titleSize = title,
+                    detailSize = detail,
+                )
+            }
 
             // ----------------------------------------------------------------
             // Switches and controllers
@@ -2155,12 +2536,17 @@ private fun KeyCell(
     onTap: (() -> Unit)? = null,
     debounceMs: Long = 0L,
     antiTremor: Boolean = false,
+    vowel: Boolean = false,
 ) {
     BoxWithConstraints(
         modifier = modifier
             .padding(4.dp)
             .background(
-                color = if (lit) CellLit else CellIdle,
+                color = when {
+                    lit -> CellLit
+                    vowel -> CellVowel
+                    else -> CellIdle
+                },
                 shape = RoundedCornerShape(10.dp)
             )
             .then(tapGuard(onTap, debounceMs, antiTremor)),

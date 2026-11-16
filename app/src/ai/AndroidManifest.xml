@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The AI build only. ONNX Runtime's library asks for network access so it can
+    send usage telemetry. This app never touches the network (hard constraint
+    4), so both are removed here, and telemetry is also switched off in code
+    (AiEngine). Check with: aapt2 dump permissions app-ai-release.apk
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
+</manifest>

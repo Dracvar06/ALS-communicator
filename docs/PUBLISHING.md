@@ -61,16 +61,19 @@ absent, the release build is simply unsigned, so a fresh clone still compiles.
 Then:
 
 ```
-./gradlew assembleRelease
+./gradlew assembleStandardRelease
 ```
 
-The result is `app/build/outputs/apk/release/app-release.apk`.
+The result is `app/build/outputs/apk/standard/release/app-standard-release.apk`.
+That is the one to give people. The AI build (`assembleAiRelease`, after
+`tools/fetch_ai_model.sh`) is about 550 MB and only for capable tablets; see
+the README.
 
 Check it really is signed by you:
 
 ```
 $ANDROID_HOME/build-tools/36.0.0/apksigner verify --print-certs \
-  app/build/outputs/apk/release/app-release.apk
+  app/build/outputs/apk/standard/release/app-standard-release.apk
 ```
 
 It should name your certificate, not "Android Debug".
@@ -81,7 +84,7 @@ It should name your certificate, not "Android Debug".
 
 No cable, no developer tools, no Play Store needed.
 
-1. Send them `app-release.apk` — email, a link, a USB stick, anything.
+1. Send them `app-standard-release.apk` — email, a link, a USB stick, anything.
 2. On the tablet, tap the file.
 3. Android asks whether to allow installing apps from that source (the browser,
    or Files, or Gmail). They allow it, once, for that app.
@@ -122,7 +125,7 @@ git push origin v0.3
 ```
 
 Then on GitHub: Releases → Draft a new release → pick the tag → attach
-`app-release.apk` → publish.
+`app-standard-release.apk` → publish.
 
 People download and install it as in section 2. Write clearly on the release
 page what the app is and who it is for.
@@ -138,7 +141,7 @@ submission takes some back and forth.
 ### Google Play — widest reach, most friction
 
 - One-off developer fee (about €25) and an account.
-- New apps are submitted as an **AAB** (`./gradlew bundleRelease`), not an APK.
+- New apps are submitted as an **AAB** (`./gradlew bundleStandardRelease`), not an APK.
 - Requires a privacy policy, a store listing, screenshots, content rating, and
   review. Expect rejections and iteration.
 - Play can manage the signing key for you, which protects against losing it.

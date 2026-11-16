@@ -31,7 +31,7 @@ package cat.merce.comunicador.prediction
 val CATALAN_OPENERS: List<String> = listOf(
     "vull", "necessito", "ajuda", "gràcies", "si us plau",
     "aigua", "dolor", "lavabo", "menjar", "fred",
-    "calor", "cansada", "espera", "para", "hola",
+    "calor", "descansar", "espera", "para", "hola",
     "estic", "tinc", "puc", "on", "què",
 )
 

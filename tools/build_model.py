@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-"""Builds the Catalan prediction model that ships inside the app.
+"""Builds a prediction model that ships inside the app.
 
     python3 tools/build_model.py ca.txt.gz app/src/main/assets/ca-model.txt
+    python3 tools/build_model.py --lang fr fr.txt.gz app/src/main/assets/fr-model.txt
+
+--lang picks which letters count as part of a word and which short words
+are split off the front (l'home, j'ai, dell'acqua). It defaults to ca.
 
 Input is one sentence per line, plain or gzipped. The source used so far is the
 Catalan side of OpenSubtitles from OPUS, which is film and television dialogue
@@ -32,19 +36,73 @@ MIN_WORD_COUNT = 3
 MIN_BIGRAM_COUNT = 2
 MAX_WORD_LENGTH = 20
 
-# Catalan letters, plus the apostrophe and the middle dot of l·l.
-TOKEN = re.compile(r"[a-zàèéíïòóúüç]+(?:['·][a-zàèéíïòóúüç]+)*'?", re.IGNORECASE)
+# The letters each language writes words with. A letter missing from here
+# splits a word in two, so "año" would be learnt as "a" and "o". Only the
+# lower case forms are needed, since text is lower-cased first.
+LETTERS = {
+    "ca": "a-zàèéíïòóúüç",
+    "es": "a-zñáéíóúü",
+    "en": "a-z",
+    "fr": "a-zàâæçéèêëîïôœùûüÿ",
+    "it": "a-zàèéìíîòóùú",
+    "pt": "a-záâãàçéêíóôõú",
+    "de": "a-zäöüß",
+    "gl": "a-zñáéíóúü",
+    "eu": "a-zñ",
+    "ro": "a-zăâîșț",
+    # The Arabic letters proper, without the vowel marks (stripped below) or
+    # the tatweel stretching stroke, which are decoration rather than spelling.
+    "ar": "\u0621-\u063a\u0641-\u064a",
+}
 
-# l', d', s', m', t', n' attach to the front of the next word. Split them off so
-# 'l'home' contributes the word 'home' rather than a form nothing can match.
-# Enclitics such as deixa'ls are left whole: they belong to the verb.
-PROCLITIC = re.compile(r"^([ldsmtn])'(.+)$")
+# Short words that attach to the front of the next one with an apostrophe.
+# They are split off so "l'home" contributes "home" rather than a form nothing
+# can match. Enclitics such as deixa'ls are left whole: they belong to the verb.
+# Languages missing here never split: English "don't" is one word.
+PROCLITICS = {
+    "ca": r"[ldsmtn]",
+    "fr": r"[ldjmnstc]|qu|jusqu|lorsqu|puisqu",
+    "it": r"[ldcmnstv]|un|dell|all|nell|sull|dall|coll|quest|quell|tutt",
+}
+
+# Vowel marks and other combining accents in Arabic script are almost never
+# written in everyday text; where they are, they would make the same word
+# count as several different ones.
+ARABIC_MARKS = re.compile("[\u064b-\u0652\u0670\u0640]")
+
+# Romanian is often typed with the older cedilla letters ş ţ instead of the
+# correct comma-below ș ț. Count them as the same word.
+ROMANIAN_FIXES = str.maketrans({"ş": "ș", "ţ": "ț"})
+
+LANG = "ca"
+TOKEN = None
+PROCLITIC = None
+
+
+def set_language(code):
+    global LANG, TOKEN, PROCLITIC
+    if code not in LETTERS:
+        raise SystemExit(f"unknown language {code!r}; known: {', '.join(LETTERS)}")
+    LANG = code
+    letters = LETTERS[code]
+    if code == "ca":
+        # Catalan also joins words with the middle dot of l·l.
+        TOKEN = re.compile(rf"[{letters}]+(?:['·][{letters}]+)*'?", re.IGNORECASE)
+    else:
+        TOKEN = re.compile(rf"[{letters}]+(?:'[{letters}]+)*'?", re.IGNORECASE)
+    proclitics = PROCLITICS.get(code)
+    PROCLITIC = re.compile(rf"^({proclitics})'(.+)$") if proclitics else None
 
 
 def tokenise(line):
+    line = line.lower().replace("\u2019", "'")
+    if LANG == "ar":
+        line = ARABIC_MARKS.sub("", line)
+    elif LANG == "ro":
+        line = line.translate(ROMANIAN_FIXES)
     words = []
-    for raw in TOKEN.findall(line.lower()):
-        head = PROCLITIC.match(raw)
+    for raw in TOKEN.findall(line):
+        head = PROCLITIC.match(raw) if PROCLITIC else None
         if head:
             words.append(head.group(1) + "'")
             raw = head.group(2)
@@ -69,11 +127,16 @@ def read_lines(path):
 
 
 def main():
-    if len(sys.argv) != 3:
+    args = sys.argv[1:]
+    language = "ca"
+    if len(args) >= 2 and args[0] == "--lang":
+        language, args = args[1], args[2:]
+    if len(args) != 2:
         print(__doc__)
         return 1
 
-    corpus_path, out_path = sys.argv[1], sys.argv[2]
+    set_language(language)
+    corpus_path, out_path = args
 
     unigrams = Counter()
     bigrams = defaultdict(Counter)

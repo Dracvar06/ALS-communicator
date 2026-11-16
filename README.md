@@ -77,7 +77,7 @@ Open the folder in Android Studio, plug in the device, and press Run. Or from a
 terminal, with the device connected and USB debugging on:
 
 ```bash
-./gradlew installDebug
+./gradlew installStandardDebug
 ```
 
 If Gradle complains it cannot find Java, point it at the copy inside Android
@@ -146,6 +146,33 @@ Adding a language means adding one `Language` entry and building a model with
 `tools/build_model.py`. Contributions of new languages are very welcome — it is
 the single highest-value thing anyone could add.
 
+### Optional: AI suggestions (experimental)
+
+There is a second build, `ai`, with a small language model (Gemma 3 270M)
+that runs on the tablet itself and reorders the suggested words using what has
+been written so far. It is for capable tablets only, and the standard build
+above does not contain any of it: no library, no model, same size (13 MB),
+same old devices.
+
+- **Still no network.** The model runs on the device; the AI build has exactly
+  the same permissions as the standard one (none for the internet).
+- **Off until a carer turns it on**, in Settings → Words and reading.
+- **It can never make a device worse.** It is not offered on a device with
+  under 3 GB of memory. Its answer is used only if it arrives within half a
+  second of the press, and never while the highlight is on the suggestion row,
+  so a word cannot move as she picks it. Too slow too often and it switches
+  itself off. Her own words always keep their places at the top.
+- **What it is worth, measured honestly** on 60 everyday Catalan messages,
+  tuned on half and tested on the other half (`tools/ai_eval/`): the n-gram
+  alone saves **49.9%** of presses; with the AI, **50.9%**. Letting the AI
+  replace the n-gram order did worse (**40.6%**), and Qwen 2.5 0.5B was worse
+  still. On an emulated tablet it answers in 220–420 ms.
+
+```bash
+tools/fetch_ai_model.sh      # downloads the model (about 450 MB), once
+./gradlew installAiDebug
+```
+
 ## How it is built
 
 Kotlin and Jetpack Compose, four layers, the first three with zero Android
@@ -156,6 +183,9 @@ scan/         the scanning state machine and the free cursor — pure logic
 input/        debounce and press filtering — pure logic
 prediction/   n-gram word prediction, and what it learns from her — pure logic
 ui/           Compose screens, settings, persistence, speech
+
+src/standard/ the normal build's stub: no AI
+src/ai/       the AI build: the on-device model, through ONNX Runtime
 ```
 
 Around 250 unit tests, run with `./gradlew test`. They cover the machine, not

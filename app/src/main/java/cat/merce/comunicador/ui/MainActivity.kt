@@ -23,12 +23,14 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import cat.merce.comunicador.ai.AiEngine
 import cat.merce.comunicador.input.PressCollapser
 import cat.merce.comunicador.input.Switch
 import cat.merce.comunicador.input.SwitchFilter
 import cat.merce.comunicador.prediction.NgramModel
 import cat.merce.comunicador.prediction.NgramPredictor
 import cat.merce.comunicador.prediction.PersonalModel
+import cat.merce.comunicador.prediction.WordScorer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -116,7 +118,10 @@ class MainActivity : ComponentActivity() {
                 ScanController.DEFAULT_FIRST_CELL_EXTRA_MS
             ),
             initialAntiTremor = settings.getBoolean(KEY_ANTI_TREMOR, false),
-            initialLanguage = languageForCode(settings.getString(KEY_LANGUAGE, null)),
+            initialLanguage = startingLanguage(
+                settings.getString(KEY_LANGUAGE, null),
+                Locale.getDefault().language
+            ),
             initialLocked = settings.getBoolean(KEY_LOCKED, false),
             initialOpenOnBoot = settings.getBoolean(KEY_OPEN_ON_BOOT, false),
             initialInputMode = InputMode.fromCode(settings.getString(KEY_INPUT_MODE, null)),
@@ -126,6 +131,15 @@ class MainActivity : ComponentActivity() {
             initialArrowShape = ArrowShape.fromCode(settings.getString(KEY_ARROW_SHAPE, null)),
             initialForgiveMistakes = settings.getBoolean(KEY_FORGIVE, true),
             initialBoldWriting = settings.getBoolean(KEY_BOLD_WRITING, true),
+            initialVowelColours = settings.getBoolean(KEY_VOWEL_COLOURS, false),
+            // Drawn on a new install only. Somebody already using the app has
+            // learnt the halves, and their screen should not change under them.
+            initialTouchGuideLeft = settings.getInt(
+                KEY_TOUCH_GUIDE_LEFT,
+                if (settings.all.isEmpty()) ScanController.TOUCH_GUIDE_TOUCHES else 0
+            ),
+            // Off unless a carer turned it on, and never on in the standard build.
+            initialAiSuggestions = AiEngine.AVAILABLE && settings.getBoolean(KEY_AI_SUGGESTIONS, false),
         )
         controller.onInputModeChanged = { mode ->
             settings.edit(commit = true) { putString(KEY_INPUT_MODE, mode.name) }
@@ -137,6 +151,14 @@ class MainActivity : ComponentActivity() {
             settings.edit(commit = true) { putBoolean(KEY_FORGIVE, on) }
         }
 
+        controller.onTouchGuideChanged = { left ->
+            // apply, not commit: this runs on every touch, and losing the last
+            // step of a fade to a crash costs nothing.
+            settings.edit { putInt(KEY_TOUCH_GUIDE_LEFT, left) }
+        }
+        controller.onVowelColoursChanged = { on ->
+            settings.edit(commit = true) { putBoolean(KEY_VOWEL_COLOURS, on) }
+        }
         controller.onBoldWritingChanged = { on ->
             settings.edit(commit = true) { putBoolean(KEY_BOLD_WRITING, on) }
         }
@@ -160,6 +182,16 @@ class MainActivity : ComponentActivity() {
         controller.onOpenOnBootChanged = { on ->
             settings.edit(commit = true) { putBoolean(KEY_OPEN_ON_BOOT, on) }
         }
+        controller.onAiSuggestionsChanged = { on ->
+            settings.edit(commit = true) { putBoolean(KEY_AI_SUGGESTIONS, on) }
+            if (on) loadAi() else stopAi(AiStatus.Off)
+        }
+        controller.onAiTooSlow = {
+            // Off for good on this device, until a carer turns it on again.
+            settings.edit(commit = true) { putBoolean(KEY_AI_SUGGESTIONS, false) }
+            controller.useAiSuggestions(false)
+            stopAi(AiStatus.TooSlow)
+        }
         controller.onLanguageChanged = { language ->
             settings.edit(commit = true) { putString(KEY_LANGUAGE, language.code) }
             // The phrase file belongs to the old language, so start the new
@@ -167,6 +199,7 @@ class MainActivity : ComponentActivity() {
             runCatching { phrasesFile.delete() }
             applyVoice(language)
             loadPrediction()
+            if (controller.aiSuggestions) loadAi()
         }
         controller.onTouchInputChanged = { on ->
             settings.edit(commit = true) { putBoolean(KEY_TOUCH_INPUT, on) }
@@ -211,17 +244,27 @@ class MainActivity : ComponentActivity() {
         controller.onWordUndone = ::forgetWord
 
         loadPrediction()
+        if (controller.aiSuggestions) loadAi()
 
         // A completely empty settings file means nobody has ever touched this
-        // install, so whoever is holding the device is setting it up. Show them
-        // how it works once, without being asked: the app failing because the
+        // install, so whoever is holding the device is setting it up. Ask them
+        // how she will use it, then show them how that works, once, without
+        // being asked: the app failing because the
         // person explaining it had it wrong is a real way for it to fail, and
         // the helper who most needs the guide is the one who does not know it
         // is there. Only ever on a fresh install, so it cannot interrupt her
         // mid-sentence later on.
         if (settings.all.isEmpty()) {
-            controller.openTutorial()
+            controller.openOnboarding()
             settings.edit(commit = true) { putBoolean(KEY_TUTORIAL_SEEN, true) }
+        }
+
+        // Pin the starting language once it has been picked from the tablet's,
+        // so that changing the tablet's language later never switches her
+        // keyboard under her. Done after the fresh-install check above, which
+        // relies on the settings file still being empty.
+        if (!settings.contains(KEY_LANGUAGE)) {
+            settings.edit(commit = true) { putString(KEY_LANGUAGE, controller.language.code) }
         }
 
         // She cannot wake a sleeping tablet, so it must not sleep.
@@ -238,6 +281,45 @@ class MainActivity : ComponentActivity() {
         setContent {
             ScanScreen(controller)
         }
+    }
+
+    /** The AI build's model while it is running. Only touched on the main thread. */
+    private var aiScorer: WordScorer? = null
+
+    /**
+     * Loads the optional AI model off the main thread. Until it is ready, and
+     * if it never is, the normal suggestions carry on untouched.
+     */
+    private fun loadAi() {
+        val refusal = AiEngine.refusal(this)
+        if (refusal != null) {
+            stopAi(if (refusal == "not-in-this-build") AiStatus.Off else AiStatus.NotEnoughMemory)
+            return
+        }
+        stopAi(AiStatus.Loading)
+        val language = controller.language.code
+        lifecycleScope.launch {
+            val loaded = withContext(Dispatchers.IO) { AiEngine.open(this@MainActivity, language) }
+            // Turned off, or switched language, while it was loading.
+            if (!controller.aiSuggestions || controller.language.code != language) {
+                AiEngine.close(loaded)
+                return@launch
+            }
+            if (loaded == null) {
+                stopAi(AiStatus.Failed)
+                return@launch
+            }
+            aiScorer = loaded
+            controller.useAiScorer(loaded)
+            controller.aiStatus = AiStatus.On
+        }
+    }
+
+    private fun stopAi(status: AiStatus) {
+        controller.useAiScorer(null)
+        AiEngine.close(aiScorer)
+        aiScorer = null
+        controller.aiStatus = status
     }
 
     /**
@@ -430,8 +512,10 @@ class MainActivity : ComponentActivity() {
         if (result == TextToSpeech.LANG_MISSING_DATA ||
             result == TextToSpeech.LANG_NOT_SUPPORTED
         ) {
-            // Spanish is the closest widely installed voice to Catalan.
-            if (language.code == "ca") engine.setLanguage(Locale("es"))
+            // Catalan, Galician and Basque voices are often missing, and
+            // Spanish is the voice a tablet in Spain is most likely to have.
+            // A Spanish accent is better than silence.
+            if (language.code in setOf("ca", "gl", "eu")) engine.setLanguage(Locale("es"))
         }
     }
 
@@ -676,6 +760,9 @@ class MainActivity : ComponentActivity() {
         const val KEY_ARROW_SHAPE = "arrow_shape"
         const val KEY_FORGIVE = "forgive_mistakes"
         const val KEY_BOLD_WRITING = "bold_writing"
+        const val KEY_VOWEL_COLOURS = "vowel_colours"
+        const val KEY_TOUCH_GUIDE_LEFT = "touch_guide_left"
+        const val KEY_AI_SUGGESTIONS = "ai_suggestions"
 
         /** Replaced by [KEY_ARROW_PLACEMENT]; still read once, then ignored. */
         const val KEY_ARROWS_ON_LEFT = "arrows_on_left"

@@ -1,0 +1,87 @@
+{
+ "tune_sentences": 30,
+ "test_sentences": 30,
+ "best": "blend b=6, not at start",
+ "results": {
+  "n-gram (today)": {
+   "tune": 0.512,
+   "test": 0.499
+  },
+  "AI reorders all": {
+   "tune": 0.348,
+   "test": 0.321
+  },
+  "blend b=0.5": {
+   "tune": 0.377,
+   "test": 0.363
+  },
+  "blend b=0.5, not at start": {
+   "tune": 0.43,
+   "test": 0.417
+  },
+  "blend b=1": {
+   "tune": 0.405,
+   "test": 0.402
+  },
+  "blend b=1, not at start": {
+   "tune": 0.449,
+   "test": 0.443
+  },
+  "blend b=2": {
+   "tune": 0.459,
+   "test": 0.448
+  },
+  "blend b=2, not at start": {
+   "tune": 0.476,
+   "test": 0.466
+  },
+  "blend b=3": {
+   "tune": 0.482,
+   "test": 0.473
+  },
+  "blend b=3, not at start": {
+   "tune": 0.489,
+   "test": 0.483
+  },
+  "blend b=4": {
+   "tune": 0.491,
+   "test": 0.483
+  },
+  "blend b=4, not at start": {
+   "tune": 0.494,
+   "test": 0.488
+  },
+  "blend b=6": {
+   "tune": 0.506,
+   "test": 0.492
+  },
+  "blend b=6, not at start": {
+   "tune": 0.508,
+   "test": 0.496
+  },
+  "keep top 1, blend b=0, not at start": {
+   "tune": 0.472,
+   "test": 0.451
+  },
+  "keep top 1, blend b=1, not at start": {
+   "tune": 0.479,
+   "test": 0.475
+  },
+  "keep top 1, blend b=2, not at start": {
+   "tune": 0.491,
+   "test": 0.479
+  },
+  "keep top 2, blend b=0, not at start": {
+   "tune": 0.478,
+   "test": 0.467
+  },
+  "keep top 2, blend b=1, not at start": {
+   "tune": 0.488,
+   "test": 0.48
+  },
+  "keep top 2, blend b=2, not at start": {
+   "tune": 0.495,
+   "test": 0.483
+  }
+ }
+}
